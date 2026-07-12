@@ -83,13 +83,20 @@ model SignalProviderConfig {
   @@unique([businessId, domain])
 }
 
+// Increment 3 (Cognitive Engine v1) populates this model for the first time.
+// `recommendation` is the one-sentence executive summary; `recommendedAction`
+// is the concrete next step; `reasoning` is the "why this matters" narrative,
+// grounded in `supportingSignalIds`. Kept as four distinct fields (rather than
+// one combined string) so the UI, and any future channel — email digest,
+// voice brief — can render each part appropriately. See DECISIONS.md.
 model MorningBrief {
   id                  String    @id @default(cuid())
   businessId          String
   business            Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   generatedAt         DateTime  @default(now())
-  recommendation      String
-  reasoning           String
+  recommendation      String // executive summary — one sentence
+  reasoning           String // why this matters, referencing supporting signals
+  recommendedAction   String // the concrete next action to take
   confidence          Float
   supportingSignalIds String[]
   ownerResponse       String?

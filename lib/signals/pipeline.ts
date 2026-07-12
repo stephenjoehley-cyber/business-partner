@@ -35,19 +35,8 @@ export async function generateSignalsForBusiness(
     effectiveWindow
   );
 
-  const persisted = await persistSignals(businessId, drafts);
-
-  return persisted.map((row) => ({
-    id: row.id,
-    businessId: row.businessId,
-    domain: row.domain as Signal['domain'],
-    type: row.type,
-    occurredAt: row.occurredAt,
-    relatedEntities: { personId: row.personId ?? undefined },
-    payload: row.payload as Signal['payload'],
-    sourceProviderId: row.sourceProviderId,
-    externalRef: row.externalRef,
-    confidence: row.confidence,
-    createdAt: row.createdAt,
-  }));
+  // persistSignals now returns the typed Signal[] shape directly (Increment
+  // 3 — see DECISIONS.md, "Signal repository returns the typed domain
+  // shape"), so no re-mapping is needed here.
+  return persistSignals(businessId, drafts);
 }

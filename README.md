@@ -4,8 +4,9 @@ The AI Chief Operating Officer for SMEs. This repo implements, in order:
 
 - **Increment 1 — Business Brain Foundation**
 - **Increment 2 — Signal Provider Abstraction**
+- **Increment 3 — Cognitive Engine v1**
 
-per `Business_Partner_MVP_Blueprint_v1.0.md`. See `DECISIONS.md` for the traceable log of why things are built the way they are.
+per `Business_Partner_MVP_Blueprint_v1.0.md`. See `DECISIONS.md` for the traceable log of why things are built the way they are — including the Increment 3 sequencing change (Cognitive Engine before completing all Signal Provider domains).
 
 ## What's in Increment 1
 
@@ -27,7 +28,25 @@ per `Business_Partner_MVP_Blueprint_v1.0.md`. See `DECISIONS.md` for the traceab
 
 ## What's deliberately not in this increment
 
-No Cognitive Engine, no Executive Orchestrator, no scheduling, no live integrations, no Tasks/CRM/Finance/Proposals providers yet (Increment 3). The Morning Brief screen still shows raw signals rather than a reasoned recommendation — that reasoning is Increment 4's job, not Increment 2's.
+No Cognitive Engine, no Executive Orchestrator, no scheduling, no live integrations, no Tasks/CRM/Finance/Proposals providers yet. The Morning Brief screen still shows raw signals rather than a reasoned recommendation — that reasoning is Increment 3's job.
+
+## What's in Increment 3
+
+The Cognitive Engine's first real reasoning cycle: **Observe → Understand → Prioritise → Recommend**, producing one genuine executive recommendation from existing Calendar and Email signals.
+
+- **`lib/cognition/observe.ts`** — scopes signals to what's still current (drops calendar meetings already in the past; never time-filters email, since an unanswered message stays relevant)
+- **`lib/cognition/understand.ts`** — connects each signal to Business Memory via a registered `SignalInterpreter`, producing a plain-language `Insight`
+- **`lib/cognition/interpreters/`** — the domain-specific reasoning seam (mirrors `SignalProvider` exactly): one interpreter per `(domain, type)`, each computing the five priority dimensions, a "why this matters" reasoning string, and a concrete recommended action. Ships with Email and Calendar interpreters, plus a fallback for any signal type without one yet (low confidence, never crashes, never invents meaning)
+- **`lib/cognition/prioritise.ts`** — the documented, fixed-weight composite scoring formula (business impact 0.30 / urgency 0.30 / strategic importance 0.20 / confidence 0.10 / owner preference 0.10)
+- **`lib/cognition/recommend.ts`** — selects the single highest-priority insight and builds the traceable `Recommendation`, with supporting evidence pulled from every other signal concerning the same known person
+- **`lib/cognition/pipeline.ts`** — `generateRecommendation(businessId)`, the exact function signature Increment 5's Executive Orchestrator will call on a schedule instead of the manual trigger used today
+- **`MorningBrief` persistence** (`lib/cognition/repository.ts`) — every recommendation is saved with its executive summary, reasoning, recommended action, confidence, and `supportingSignalIds`
+- The Morning Brief screen now shows the Cognitive Engine's one recommendation as its primary artifact — executive summary, why it matters, recommended next action, a confidence indicator, and the supporting signals it was traced back to — falling back to the honest empty state when no recommendation has been generated yet
+- 25 new Vitest tests (52 total) covering every pipeline stage, all registered interpreters, the fallback path, and the pipeline end-to-end
+
+## What's deliberately not in this increment
+
+No Executive Orchestrator or scheduling (Increment 5) — the pipeline runs on a manual trigger. No Tasks/CRM/Finance/Proposals signal types or interpreters yet — the interpreter registry is built to accept them without any change to the pipeline itself. No LLM call in the reasoning path yet — v1 is deliberately deterministic and rule-based so the pipeline's shape can be trusted and audited before a non-deterministic reasoner enters it (see DECISIONS.md).
 
 ## Getting started
 
@@ -83,22 +102,28 @@ app/
   (auth)/login, (auth)/signup     — authentication screens
   auth/callback                   — Supabase email confirmation handler
   onboarding/                     — 3-step wizard (profile, goals, people)
-  morning-brief/                  — placeholder Experience Layer screen
+  morning-brief/                  — Experience Layer: recommendation card + raw signal feed
   api/onboarding/                 — Route Handlers calling into lib/brain
+  api/signals/generate/           — manual Signal Provider pipeline trigger
+  api/recommendations/generate/   — manual Cognitive Engine pipeline trigger
 lib/
   brain/                          — Business Brain: repository + validation
+  signals/                        — Signal domain model, providers, registry, pipeline
+  cognition/                      — Cognitive Engine: Observe/Understand/Prioritise/Recommend, interpreters, pipeline, MorningBrief persistence
   supabase/                       — browser + server Supabase clients
   prisma.ts                       — Prisma client singleton
 prisma/
-  schema.prisma                   — Business Brain data model
+  schema.prisma                   — Business Brain + Signal + MorningBrief data model
 tests/
   validation.test.ts              — onboarding input validation
+  signals/                        — Signal Provider tests
+  cognition/                      — Cognitive Engine pipeline + interpreter tests
 ```
 
-## Trying Increment 2 locally
+## Trying Increment 2 + 3 locally
 
-After onboarding, the Morning Brief screen has a "Refresh signals" button under a **Signals (preview)** section. Clicking it calls `POST /api/signals/generate`, which runs the pipeline and persists seeded Calendar and Email signals for your business — re-clicking it the same day won't create duplicates (idempotent upsert on `externalRef`).
+After onboarding, the Morning Brief screen has a "Refresh signals" button that calls `POST /api/signals/generate`, persisting seeded Calendar and Email signals for your business (idempotent — re-clicking the same day won't duplicate). Once signals exist, click "Prepare my Morning Brief" to run the Cognitive Engine (`POST /api/recommendations/generate`) — it reasons over every current signal and shows the single highest-priority recommendation, with its reasoning, confidence, and the supporting signals it was traced back to.
 
-## Next: Increment 3
+## Next: Increment 4
 
-Seeded Tasks, CRM, and Finance/Proposals providers — completing all six domains before the Cognitive Engine (Increment 4) has enough signal variety to reason over meaningfully.
+Options on the table, per the Blueprint's own milestone sequence: extend the interpreter catalogue with Tasks/CRM/Finance/Proposals seeded providers now that the Cognitive Engine can prove out new signal types as they're added, or move to the real Morning Brief experience (scheduling, richer UI) around the one recommendation type that already works end-to-end. Sequencing decision deferred to the next planning conversation.

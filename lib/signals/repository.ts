@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import type { DraftSignal } from './types';
+import type { Signal as PrismaSignal } from '@prisma/client';
+import type { DraftSignal, Signal, SignalDomain } from './types';
 
 /**
  * The only module that touches Signal persistence directly.
@@ -9,7 +10,33 @@ import type { DraftSignal } from './types';
  * duplicates, regardless of whether the signal came from a seeded provider
  * or, later, a live one.
  */
-export async function persistSignals(businessId: string, drafts: DraftSignal[]) {
+
+/**
+ * Maps a raw Prisma row to the domain `Signal` shape (`relatedEntities`
+ * instead of a flat `personId`). Centralised here — rather than in the
+ * pipeline or, worse, duplicated at every call site — because this
+ * repository is the single place allowed to know what a persisted Signal
+ * row looks like. Added in Increment 3: the Cognitive Engine reads
+ * `getSignalsForBusiness` and needs the same typed shape the pipeline
+ * already produced in-memory before this fix.
+ */
+function toSignal(row: PrismaSignal): Signal {
+  return {
+    id: row.id,
+    businessId: row.businessId,
+    domain: row.domain as SignalDomain,
+    type: row.type,
+    occurredAt: row.occurredAt,
+    relatedEntities: { personId: row.personId ?? undefined },
+    payload: row.payload as Signal['payload'],
+    sourceProviderId: row.sourceProviderId,
+    externalRef: row.externalRef,
+    confidence: row.confidence,
+    createdAt: row.createdAt,
+  };
+}
+
+export async function persistSignals(businessId: string, drafts: DraftSignal[]): Promise<Signal[]> {
   const persisted = await Promise.all(
     drafts.map((draft) =>
       prisma.signal.upsert({
@@ -38,12 +65,28 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]) 
     )
   );
 
-  return persisted;
+  return persisted.map(toSignal);
 }
 
-export async function getSignalsForBusiness(businessId: string) {
-  return prisma.signal.findMany({
+export async function getSignalsForBusiness(businessId: string): Promise<Signal[]> {
+  const rows = await prisma.signal.findMany({
     where: { businessId },
     orderBy: { occurredAt: 'asc' },
   });
+  return rows.map(toSignal);
+}
+
+/**
+ * Resolves a Recommendation's `supportingSignalIds` back into full Signal
+ * records, scoped to the business — so the Morning Brief can render *why*
+ * a recommendation was made, not just assert that it's traceable.
+ */
+export async function getSignalsByIds(businessId: string, ids: string[]): Promise<Signal[]> {
+  if (ids.length === 0) return [];
+  const rows = await prisma.signal.findMany({
+    where: { businessId, id: { in: ids } },
+  });
+  const byId = new Map(rows.map((row: PrismaSignal) => [row.id, toSignal(row)]));
+  // Preserve the order supportingSignalIds specified (most relevant first).
+  return ids.map((id) => byId.get(id)).filter((s): s is Signal => Boolean(s));
 }
