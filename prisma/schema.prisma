@@ -1,0 +1,96 @@
+// Business Brain schema — Business Partner MVP Blueprint v1.0, Section 4.
+// Deliberately minimal: only what the Morning Brief needs today.
+// Every future memory layer (Asset 007) slots into this schema without restructuring it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id              String                 @id @default(cuid())
+  ownerId         String                 @unique // Supabase auth user id — one Business per owner in v1
+  name            String
+  industry        String
+  description     String?
+  website         String?
+  goals           Goal[]
+  people          Person[]
+  signals         Signal[]
+  briefs          MorningBrief[]
+  providerConfigs SignalProviderConfig[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  description String
+  priority    Int // owner-ranked, lower = higher priority
+  createdAt   DateTime @default(now())
+}
+
+model Person {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  relationship String // customer | prospect | supplier | employee | partner
+  email        String?
+  notes        String?
+  signals      Signal[]
+  createdAt    DateTime @default(now())
+}
+
+// Signal, SignalProviderConfig, and MorningBrief are modeled now so migrations
+// are stable across Increment 1–5, even though Increment 1 did not populate them.
+// Increment 2 populates Signal via the Signal Provider pipeline (lib/signals).
+model Signal {
+  id               String   @id @default(cuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  domain           String // calendar | email | tasks | crm | finance | proposals
+  type             String
+  occurredAt       DateTime
+  personId         String?
+  person           Person?  @relation(fields: [personId], references: [id])
+  payload          Json
+  sourceProviderId String
+  // Provider-supplied stable identifier (e.g. a Google Calendar event ID, or a
+  // deterministic hash for seeded data). Makes ingestion idempotent regardless
+  // of which provider — seeded or live — produced the signal. See DECISIONS.md.
+  externalRef      String
+  confidence       Float    @default(1.0)
+  createdAt        DateTime @default(now())
+
+  @@unique([businessId, externalRef])
+}
+
+model SignalProviderConfig {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  domain     String
+  providerId String
+  config     Json?
+
+  @@unique([businessId, domain])
+}
+
+model MorningBrief {
+  id                  String    @id @default(cuid())
+  businessId          String
+  business            Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  generatedAt         DateTime  @default(now())
+  recommendation      String
+  reasoning           String
+  confidence          Float
+  supportingSignalIds String[]
+  ownerResponse       String?
+}
