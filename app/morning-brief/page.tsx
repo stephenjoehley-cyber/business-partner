@@ -6,13 +6,25 @@ import { getLatestMorningBrief } from '@/lib/cognition/repository';
 import { generateNarrative } from '@/lib/narrative/generate';
 import { buildNarrativeInput } from '@/lib/narrative/fromMorningBrief';
 import { greetingForTime, isSameDay } from '@/lib/ui/time';
+import { isDemoMode } from '@/lib/demo/config';
+import { ensureDemoSeeded } from '@/lib/demo/seed';
 import { SignOutButton } from './SignOutButton';
 import { SignalPreviewPanel } from './SignalPreviewPanel';
 import { RecommendationTrigger } from './RecommendationTrigger';
 import { MorningBriefCard } from './MorningBriefCard';
 import { AllClearCard } from './AllClearCard';
+import { DemoModeBadge, DemoModeBanner } from './DemoModeBanner';
 
 export default async function MorningBriefPage() {
+  const demoMode = isDemoMode();
+  if (demoMode) {
+    // Business/Goals/People are seeded synchronously; Signals and the
+    // first Morning Brief require actually running the real pipeline
+    // once — see lib/demo/seed.ts. Idempotent and safe to call on every
+    // request.
+    await ensureDemoSeeded();
+  }
+
   const supabase = createClient();
   const {
     data: { user },
@@ -51,6 +63,8 @@ export default async function MorningBriefPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-6 py-16">
+      {demoMode && <DemoModeBanner />}
+
       <header className="mb-12 flex items-center justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Business Partner</p>
@@ -58,7 +72,7 @@ export default async function MorningBriefPage() {
             {greetingForTime()}, {business.name}.
           </h1>
         </div>
-        <SignOutButton />
+        {demoMode ? <DemoModeBadge /> : <SignOutButton />}
       </header>
 
       {!latestBrief && (

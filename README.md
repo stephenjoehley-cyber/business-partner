@@ -6,6 +6,7 @@ The AI Chief Operating Officer for SMEs. This repo implements, in order:
 - **Increment 2 — Signal Provider Abstraction**
 - **Increment 3 — Cognitive Engine v1**
 - **Increment 4 — Morning Brief Experience**
+- **Increment 5 — Zero-Configuration Founder Demo**
 
 per `Business_Partner_MVP_Blueprint_v1.0.md`. See `DECISIONS.md` for the traceable log of why things are built the way they are — including the Increment 3 sequencing change (Cognitive Engine before completing all Signal Provider domains) and the Increment 4 architectural principle: **the Cognitive Engine decides, the LLM communicates.**
 
@@ -131,9 +132,10 @@ lib/
   signals/                        — Signal domain model, providers, registry, pipeline
   cognition/                      — Cognitive Engine: Observe/Understand/Prioritise/Recommend, interpreters, pipeline, tiered MorningBrief persistence
   narrative/                      — Narrative Layer: NarrativeProvider seam, Claude implementation, versioned prompt contract, validation/fabrication guard
+  demo/                           — Demo Mode: isDemoMode(), in-memory store, seed orchestration, auth stub (Increment 5)
   ui/                             — small presentation-only helpers (greeting, same-day check) — deliberately outside the Cognitive Engine
-  supabase/                       — browser + server Supabase clients
-  prisma.ts                       — Prisma client singleton
+  supabase/                       — browser + server Supabase clients (Demo Mode-aware)
+  prisma.ts                       — Prisma client singleton (guarded against construction in Demo Mode)
 prisma/
   schema.prisma                   — Business Brain + Signal + tiered MorningBrief data model
 tests/
@@ -141,6 +143,7 @@ tests/
   signals/                        — Signal Provider tests
   cognition/                      — Cognitive Engine pipeline + interpreter tests
   narrative/                      — Narrative Layer validation, fabrication guard, and graceful-degradation tests
+  demo/                           — Demo Mode config, store, seed orchestration, auth stub, and repository-integration tests
   ui/                             — presentation helper tests
 ```
 
@@ -151,3 +154,21 @@ After onboarding, the Morning Brief screen has a "Refresh signals" button that c
 ## Next: Increment 5
 
 Per the Blueprint's own milestone sequence: the Executive Orchestrator — replacing the manual "Prepare my Morning Brief" trigger with a real schedule (the Good Morning Test, Asset 013A) — and/or extending the interpreter catalogue with Tasks/CRM/Finance/Proposals seeded providers now that two full increments have proven the Cognitive Engine and Narrative Layer contracts end-to-end. Sequencing decision deferred to the next planning conversation.
+
+## What's in Increment 5
+
+Before adding cron or more providers, a **Zero-Configuration Founder Demo** — see `DEMO.md` for the three-step version:
+
+```
+npm install
+npm run dev
+```
+
+then open `http://localhost:3000`. No Supabase project, no database migration, and no Anthropic API key required.
+
+- **`lib/demo/config.ts`** — `isDemoMode()`, the one decision point every demo adapter calls. Auto-activates when Supabase isn't configured; overridable with `NEXT_PUBLIC_DEMO_MODE=true`/`false`.
+- **`lib/demo/store.ts`** — an in-memory seeded business ("Meridian Gearboxes" / "Jane Cooper," the same example already used in the interpreter tests), scoped to one process lifetime.
+- **`lib/demo/seed.ts`** — runs the *real* Signal Provider and Cognitive Engine pipelines once, so the seeded Morning Brief is genuinely computed, not hand-authored.
+- **`lib/demo/authStub.ts`** — a fixed demo user satisfying the same minimal `AuthClient` interface the real Supabase client does, so every existing page and API route works unchanged.
+- Every repository module (`lib/brain`, `lib/signals`, `lib/cognition`) and both Supabase clients (`lib/supabase/server.ts`, `lib/supabase/client.ts`) check `isDemoMode()` and delegate to the above instead of Prisma/Supabase — the same seam pattern as `SignalProvider`/`NarrativeProvider`. No page, API route, or component needed to change.
+- The Morning Brief is visibly labelled Demo Mode (a banner and a header badge) whenever it's active — see `DECISIONS.md` for the full reasoning and every file touched.
