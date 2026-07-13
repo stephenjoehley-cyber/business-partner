@@ -79,7 +79,16 @@ export function OnboardingWizard({ initialBusiness }: { initialBusiness: Busines
 
       {stepIndex === 0 && (
         <BusinessProfileStep
-          initialValues={initialBusiness ?? undefined}
+          initialValues={
+            initialBusiness
+              ? {
+                  name: initialBusiness.name,
+                  industry: initialBusiness.industry,
+                  description: initialBusiness.description ?? undefined,
+                  website: initialBusiness.website ?? undefined,
+                }
+              : undefined
+          }
           onSubmit={submitProfile}
           isSubmitting={isSubmitting}
         />
