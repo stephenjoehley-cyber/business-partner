@@ -261,3 +261,38 @@ The audit flagged this pattern (header wordmark, evidence-disclosure labels, con
 
 **Test/type status:** all 123 existing tests pass unchanged; no test referenced `SignalPreviewPanel`, the deleted `/api/signals/generate` route, or the raw feed markup. `npx tsc --noEmit` shows only the pre-existing, sandbox-only Prisma-client-generation errors already present before this increment (the sandbox's network allowlist blocks `binaries.prisma.sh`) — none reference any file changed in this increment.
 
+## Increment 7 — Executive Orchestrator
+
+Objective: a real (non-demo) business receives a new Morning Brief every day without any owner action, closing the exact gap flagged at the end of Increment 6. Preceded by an approved Product Audit and Implementation Plan — this increment implements exactly what those two documents scoped, nothing more.
+
+### 2026-07-13 — `runDailyCycleForBusiness` (`lib/orchestrator/dailyCycle.ts`) is the one function every caller must use — no parallel reasoning paths
+New module, the path the Blueprint (Asset 015 §3) already reserved for it. Wraps the two existing, unmodified pipeline functions (`generateSignalsForBusiness`, `generateMorningBrief`) with an idempotency check and failure isolation. Called identically from three places: the new cron route, the onboarding People step, and its own tests.
+**Why:** per the Founder's explicit instruction, this function represents the daily executive cycle for a business, and every future caller — Calendar, Gmail, any later event-driven trigger — must converge on it rather than inventing a parallel path. Neither `generateSignalsForBusiness` nor `generateMorningBrief` changed at all; this is a wiring increment, not a reasoning increment, exactly as scoped in the audit.
+**Cost if wrong:** if a future increment bypasses this function and calls the two pipelines directly, it silently loses both the idempotency guarantee and failure isolation — worth watching for in review, since nothing currently prevents that bypass except this comment and the code review process.
+
+### 2026-07-13 — Idempotency implemented as a query (`hasMorningBriefToday`, `lib/cognition/repository.ts`), not a schema constraint
+New function alongside `saveMorningBrief`/`getLatestMorningBrief`, in the same module that already owns all MorningBrief persistence. Checks for an existing row with `generatedAt` inside the current UTC calendar day — no migration required.
+**Why:** Founder's product requirement was behavioural ("never two Morning Briefs for the same business on the same day"), explicitly leaving the mechanism as an implementation choice. A query-based check satisfies this without a schema change, matching the Blueprint's existing "single fixed UTC-based schedule" decision. Per the Founder's request, this is flagged as a comment at the check itself: a future database-level uniqueness constraint (e.g. a unique index on `(businessId, date)`) remains a valid hardening option if production requirements ever put this invariant under real pressure — not needed today.
+**Cost if wrong:** a race condition (two near-simultaneous calls for the same business) could theoretically produce two briefs, since the check-then-act isn't atomic. Not a realistic risk for v1's one scheduled cron run per day plus one onboarding call, which are never concurrent for the same business in practice. If this ever becomes a real risk (e.g. concurrent manual triggers), the schema-constraint hardening option already flagged is the fix, not a redesign.
+
+### 2026-07-13 — `getAllBusinessIds` (`lib/brain/repository.ts`) is deliberately unfiltered
+New function, one line of real logic: `prisma.business.findMany({ select: { id: true } })`, demo-mode aware like every other function in this module (returns the single fixed seeded business id in Demo Mode).
+**Why:** v1 has no per-business scheduling configuration (Operating Model §1 — one owner, one business, one schedule), so "which businesses should run today" is simply "every business that exists." Adding any filtering now would be building for a scheduling flexibility the product doesn't have yet.
+**Cost if wrong:** none identified for v1's scale. Revisit only if/when v2's multiple-businesses-per-account model requires selective scheduling.
+
+### 2026-07-13 — The scheduler route (`app/api/cron/daily-cycle/route.ts`) is authenticated by a shared secret, not a Supabase session — a genuinely different trust boundary from every other route
+New route, `GET`, checks an `Authorization: Bearer $CRON_SECRET` header against the `CRON_SECRET` environment variable before doing anything else.
+**Why:** a scheduled job has no user session to check — this is the first route in the codebase where that's true, so it can't reuse the existing auth pattern every other route follows. `GET`, not `POST`, because Vercel Cron (the scheduler named in `vercel.json`) invokes routes via `GET` and automatically attaches the `Authorization` header when `CRON_SECRET` is set.
+**Cost if wrong:** if `CRON_SECRET` is ever unset in production, the route returns 401 for every request, including the real cron trigger — a loud, immediate failure (no Morning Briefs generated that day) rather than a silent security gap, since the check explicitly requires the env var to be present, not just absent from the request.
+
+### 2026-07-13 — Onboarding's final step (`app/api/onboarding/people/route.ts`) calls `runDailyCycleForBusiness` synchronously, generating the inaugural Morning Brief before onboarding completes
+One addition, after the existing `addPeople` call succeeds. No new code path — reuses the identical function the daily cron calls.
+**Why:** Founder decision — a customer finishing onboarding and being told to wait until tomorrow would weaken the first experience; Business Partner should already be demonstrating value the moment onboarding ends, per Asset 005. Using the same function as the daily cycle (rather than a bespoke "first brief" path) is what "One Brain. One executive cycle. No special cases" means in practice.
+**Cost if wrong:** the final onboarding step now takes as long as a full Observe → Reason cycle, rather than returning instantly — a deliberate trade the Founder explicitly accepted, and one the existing submit-button loading state already covers without new UI.
+
+### 2026-07-13 — The manual `/api/recommendations/generate` route is left untouched
+No change made to this route, deliberately.
+**Why:** Founder decision — removing it now would solve a different problem than the one Increment 7 exists to solve. It becomes practically redundant for real accounts once the daily cycle is running (today's brief will already exist by the time anyone could click it), but whether it remains useful for diagnostics or founder workflows is a conscious future product decision, not a side effect of this increment.
+**Cost if wrong:** none — this is strictly a decision not to act, not a functional change.
+
+**Test/type status:** 135 tests passing (123 existing, unchanged, plus 12 new: 5 for `runDailyCycleForBusiness`, 3 for `hasMorningBriefToday`, 4 for `getAllBusinessIds`). `npx tsc --noEmit` shows only the same 15 pre-existing, sandbox-only Prisma-client-generation errors present before this increment — one new implicit-`any` error was found and fixed during implementation (an explicit parameter type on `getAllBusinessIds`' `.map` call, needed because the sandbox can't generate the Prisma client to infer it automatically).
