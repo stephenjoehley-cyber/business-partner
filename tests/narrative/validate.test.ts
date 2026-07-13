@@ -8,7 +8,8 @@ const baseInput: NarrativeInput = {
   reasoning: '"Re: quotation" was received 3 days ago and still requires a reply. Jane Cooper is a known customer.',
   recommendedAction: 'Reply to Jane Cooper about "Re: quotation".',
   confidence: 0.9,
-  supportingSignalSummaries: ['email signal (email awaiting reply overdue) on Sun Jul 12 2026'],
+  confidenceRegister: 'confident_now',
+  supportingSignalSummaries: ['An email from Jane Cooper, unanswered for 3 days'],
 };
 
 describe('validateNarrative', () => {
@@ -35,6 +36,7 @@ describe('validateNarrative', () => {
     const lowConfidenceInput: NarrativeInput = {
       ...baseInput,
       tier: 'low_confidence_insight',
+      confidenceRegister: 'cautious',
       recommendedAction: undefined,
     };
 
@@ -90,5 +92,44 @@ describe('validateNarrative', () => {
     );
 
     expect(narrative.headline).toContain('Jane');
+  });
+
+  it('rejects a percentage stated for confidence, even if numerically accurate (Editorial Style Guide §5)', () => {
+    expect(() =>
+      validateNarrative(
+        {
+          headline: 'Jane Cooper has been waiting 3 days for a reply.',
+          whyItMatters: 'I am 90% confident this needs a reply today.',
+          actionText: baseInput.recommendedAction,
+        },
+        baseInput
+      )
+    ).toThrow(/percentage/i);
+  });
+
+  it('rejects banned engineering language (Editorial Style Guide §4)', () => {
+    expect(() =>
+      validateNarrative(
+        {
+          headline: 'An email signal was detected for Jane Cooper.',
+          whyItMatters: baseInput.reasoning,
+          actionText: baseInput.recommendedAction,
+        },
+        baseInput
+      )
+    ).toThrow(/banned/i);
+  });
+
+  it('rejects an internal tier or register value leaking into copy', () => {
+    expect(() =>
+      validateNarrative(
+        {
+          headline: 'Jane Cooper has been waiting 3 days for a reply.',
+          whyItMatters: 'This is a confident_recommendation based on the evidence given.',
+          actionText: baseInput.recommendedAction,
+        },
+        baseInput
+      )
+    ).toThrow(/leaked/i);
   });
 });

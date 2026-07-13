@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { greetingForTime, isSameDay } from '@/lib/ui/time';
+import { asOfPhrase, greetingForTime, isSameDay } from '@/lib/ui/time';
 
 describe('greetingForTime', () => {
   it('greets "Good morning" before noon', () => {
@@ -22,5 +22,24 @@ describe('isSameDay', () => {
 
   it('returns false for two times on different calendar days', () => {
     expect(isSameDay(new Date('2026-07-13T23:59:00'), new Date('2026-07-14T00:01:00'))).toBe(false);
+  });
+});
+
+describe('asOfPhrase', () => {
+  it('phrases a same-day morning generation as "As of this morning"', () => {
+    const generatedAt = new Date('2026-07-13T07:00:00');
+    const now = new Date('2026-07-13T09:00:00');
+    expect(asOfPhrase(generatedAt, now)).toBe('As of this morning');
+  });
+
+  it('phrases yesterday distinctly from further-back days', () => {
+    const now = new Date('2026-07-13T09:00:00');
+    expect(asOfPhrase(new Date('2026-07-12T09:00:00'), now)).toBe('As of yesterday');
+    expect(asOfPhrase(new Date('2026-07-10T09:00:00'), now)).toBe('As of 3 days ago');
+  });
+
+  it('never includes a raw machine timestamp (seconds, colons) in the primary phrase', () => {
+    const now = new Date('2026-07-13T09:00:00');
+    expect(asOfPhrase(new Date('2026-07-13T07:00:00'), now)).not.toMatch(/:\d{2}:\d{2}/);
   });
 });

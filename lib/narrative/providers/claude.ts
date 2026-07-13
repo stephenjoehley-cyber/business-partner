@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { NarrativeProvider } from '../provider';
 import type { NarrativeInput } from '../types';
-import { SYSTEM_PROMPT, buildUserPrompt } from '../prompts/recommendation-narrative.v1';
+import { SYSTEM_PROMPT, buildUserPrompt } from '../prompts/recommendation-narrative.v2';
 
 /**
  * Model choice: this is a narrow, closed-input phrasing task — not

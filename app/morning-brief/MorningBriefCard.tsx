@@ -1,4 +1,8 @@
+import { confidenceRegisterFor, confidenceRegisterLabel } from '@/lib/narrative/confidenceRegister';
+import { describeSignalPlainly } from '@/lib/signals/describe';
 import type { Signal } from '@/lib/signals/types';
+import { asOfPhrase } from '@/lib/ui/time';
+import { relativeDatePhrase } from '@/lib/shared/time';
 
 interface MorningBriefCardProps {
   /** confident_recommendation renders a directive with a recommended action; low_confidence_insight renders the same shape informationally, with no action box. */
@@ -13,10 +17,6 @@ interface MorningBriefCardProps {
   supportingSignals: Signal[];
 }
 
-function signalLabel(signal: Signal): string {
-  return `${signal.domain} · ${signal.type.replaceAll('_', ' ')}`;
-}
-
 /**
  * Renders the Cognitive Engine's single output for a given day — never a
  * list. Product Principle 3, "One Screen. One Decision.": this card is the
@@ -26,6 +26,15 @@ function signalLabel(signal: Signal): string {
  * Transparency on demand."): one or two supporting observations are named
  * inline; the full traceable signal list is one click away, never forced
  * on the owner by default.
+ *
+ * Executive Presence Specification compliance, made explicit here because
+ * this component was where every named violation in the Increment 4
+ * Founder Experience Review actually lived: no raw signal domain/type
+ * (Principle 3), no confidence percentage in the primary view (Principle
+ * 4 — the register phrase is the headline; the number, if wanted at all,
+ * is a hover disclosure), and no machine-precision timestamp (Principle 5
+ * — `asOfPhrase` in the primary view, full precision only in a `title`
+ * attribute for an owner who wants it).
  */
 export function MorningBriefCard({
   tier,
@@ -36,8 +45,10 @@ export function MorningBriefCard({
   generatedAt,
   supportingSignals,
 }: MorningBriefCardProps) {
-  const confidencePercent = Math.round(confidence * 100);
   const isConfident = tier === 'confident_recommendation';
+  const register = confidenceRegisterFor(tier, confidence);
+  const registerLabel = confidenceRegisterLabel(register);
+  const confidencePercent = Math.round(confidence * 100);
   const relatedSignals = supportingSignals.slice(1); // the first is the subject of the headline itself
 
   return (
@@ -48,14 +59,14 @@ export function MorningBriefCard({
           aria-hidden
           style={{ opacity: isConfident ? 1 : 0.4 }}
         />
-        <span className="font-mono text-xs text-ink-faint" title="When this was generated">
-          {generatedAt.toLocaleString()}
+        <span className="font-mono text-xs text-ink-faint" title={generatedAt.toLocaleString()}>
+          {asOfPhrase(generatedAt)}
         </span>
       </div>
 
       {!isConfident && (
         <p className="mb-3 font-mono text-xs uppercase tracking-wide text-ink-faint">
-          No high-confidence recommendation today — here&apos;s the most relevant observation
+          I don&apos;t have enough to be confident about this yet — here&apos;s what&apos;s most worth noticing.
         </p>
       )}
 
@@ -72,23 +83,21 @@ export function MorningBriefCard({
 
       <div
         className="mt-6 flex items-center gap-2"
-        title={isConfident ? 'How confident the Cognitive Engine is in this recommendation' : 'Below the threshold for a direct recommendation'}
+        title={`${confidencePercent}% — full supporting evidence is below`}
       >
         <span
           className="inline-block h-3 w-1 rounded-sm bg-brass"
           aria-hidden
           style={{ opacity: 0.3 + 0.7 * confidence }}
         />
-        <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-          Confidence: {confidencePercent}%
-        </span>
+        <span className="font-mono text-xs uppercase tracking-wide text-ink-faint">{registerLabel}</span>
       </div>
 
       {relatedSignals.length > 0 && (
         <ul className="mt-4 flex flex-col gap-1">
           {relatedSignals.slice(0, 2).map((signal) => (
             <li key={signal.id} className="text-sm text-ink-faint">
-              Also relevant: {signalLabel(signal)} ({signal.occurredAt.toLocaleDateString()})
+              Also relevant: {describeSignalPlainly(signal)} ({relativeDatePhrase(generatedAt, signal.occurredAt)})
             </li>
           ))}
         </ul>
@@ -103,10 +112,9 @@ export function MorningBriefCard({
             {supportingSignals.map((signal) => (
               <li key={signal.id} className="rounded border border-surface-border px-3 py-2 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs uppercase tracking-wide text-brass-deep">{signal.domain}</span>
-                  <span className="text-xs text-ink-faint">{signal.occurredAt.toLocaleString()}</span>
+                  <span className="text-xs text-ink-faint">{relativeDatePhrase(generatedAt, signal.occurredAt)}</span>
                 </div>
-                <p className="mt-1 text-ink">{signal.type.replaceAll('_', ' ')}</p>
+                <p className="mt-1 text-ink">{describeSignalPlainly(signal)}</p>
               </li>
             ))}
           </ul>
@@ -115,3 +123,4 @@ export function MorningBriefCard({
     </div>
   );
 }
+

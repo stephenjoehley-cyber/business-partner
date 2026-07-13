@@ -1,5 +1,10 @@
 import type { Goal } from '@prisma/client';
 
+// Re-exported so existing interpreter imports (`from './util'`) are
+// unaffected — the implementations now live in `lib/shared/time.ts`, shared
+// with the Signal layer and the UI. See that file for why.
+export { relativeDayPhrase, pluralDays } from '@/lib/shared/time';
+
 export function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
@@ -16,16 +21,4 @@ export function matchGoals(goals: Goal[], keywords: readonly string[]): Goal[] {
     const description = g.description.toLowerCase();
     return keywords.some((k) => description.includes(k));
   });
-}
-
-/** "today" / "tomorrow" / "in 3 days" — used in reasoning text, never in raw data. */
-export function relativeDayPhrase(from: Date, to: Date): string {
-  const days = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
-  if (days <= 0) return 'today';
-  if (days === 1) return 'tomorrow';
-  return `in ${days} days`;
-}
-
-export function pluralDays(n: number): string {
-  return `${n} day${n === 1 ? '' : 's'}`;
 }

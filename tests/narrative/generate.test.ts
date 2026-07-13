@@ -9,7 +9,8 @@ const input: NarrativeInput = {
   reasoning: '"Re: quotation" was received 3 days ago and still requires a reply.',
   recommendedAction: 'Reply to Jane Cooper about "Re: quotation".',
   confidence: 0.9,
-  supportingSignalSummaries: ['email signal (email awaiting reply overdue) on Sun Jul 12 2026'],
+  confidenceRegister: 'confident_now',
+  supportingSignalSummaries: ['An email from Jane Cooper, unanswered for 3 days'],
 };
 
 function fakeProvider(generate: NarrativeProvider['generate']): NarrativeProvider {
@@ -69,6 +70,7 @@ describe('generateNarrative', () => {
     const lowConfidenceInput: NarrativeInput = {
       ...input,
       tier: 'low_confidence_insight',
+      confidenceRegister: 'cautious',
       recommendedAction: undefined,
     };
     const provider = fakeProvider(async () => {

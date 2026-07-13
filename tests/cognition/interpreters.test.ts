@@ -140,11 +140,20 @@ describe('calendar interpreter', () => {
 describe('fallback interpreter', () => {
   it('handles an unregistered (domain, type) with low confidence rather than throwing', () => {
     const context = makeContext();
-    const signal = makeEmailSignal({ domain: 'finance', type: 'invoice_overdue' } as never);
+    const signal = makeEmailSignal({
+      domain: 'finance',
+      type: 'invoice_overdue',
+      payload: { invoiceId: 'INV-1', amount: 500, daysOverdue: 12, customerName: 'Acme Co' } as never,
+    } as never);
     const result = interpretSignal(signal, context);
 
     expect(result.dimensions.confidence).toBeLessThan(0.5);
     expect(result.dimensions.businessImpact).toBeLessThan(0.5);
-    expect(result.insight.summary).toContain('not yet understood');
+    // Plain language, not a raw domain/type or the banned word "interpreter"
+    // (Editorial Style Guide §4) — this text can reach the owner verbatim
+    // as the deterministic fallback if the Narrative Layer is unavailable.
+    expect(result.insight.summary).toContain('Acme Co');
+    expect(result.insight.summary).not.toContain('invoice_overdue');
+    expect(result.reasoning).not.toMatch(/\binterpreter\b/i);
   });
 });

@@ -12,6 +12,8 @@
  * only rephrase them.
  */
 
+import type { ConfidenceRegister } from './confidenceRegister';
+
 /**
  * The Narrative Layer only ever runs for the two tiers that have language
  * worth improving. all_clear's message is already short and calm — running
@@ -31,8 +33,25 @@ export interface NarrativeInput {
   executiveSummary: string;
   reasoning: string;
   recommendedAction?: string;
+  /**
+   * Kept for observability/logging and as the input to
+   * `confidenceRegisterFor` — never handed to the model as a number to
+   * phrase (v1 did this; v2 doesn't). The Editorial Style Guide is explicit
+   * that a percentage must never be the primary way confidence is
+   * communicated, so the only confidence information
+   * recommendation-narrative.v2 gives the model is `confidenceRegister`
+   * below.
+   */
   confidence: number;
-  /** Short, human-readable descriptions of each supporting signal (e.g. "email from Jane Cooper, unanswered 3 days") — already-deterministic text, not raw payloads. */
+  /**
+   * The Cognitive Engine-derived register (see `confidenceRegister.ts`)
+   * the model is allowed to phrase within — never allowed to choose or
+   * change. "tier in, register out" (Editorial Style Guide §8): which
+   * register applies is decided once, deterministically, before the LLM
+   * ever sees this input.
+   */
+  confidenceRegister: ConfidenceRegister;
+  /** Short, human-readable descriptions of each supporting signal (e.g. "an email from Jane Cooper, unanswered for 3 days") — already-deterministic, plain-language text (see `lib/signals/describe.ts`), never a raw domain/type or payload. */
   supportingSignalSummaries: string[];
 }
 
