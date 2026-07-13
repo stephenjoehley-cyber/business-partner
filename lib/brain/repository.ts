@@ -1,6 +1,6 @@
 import type { Business, Goal, Person } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { isDemoMode } from '@/lib/demo/config';
+import { isDemoMode, DEMO_BUSINESS_ID } from '@/lib/demo/config';
 import {
   addDemoPeople,
   createDemoBusinessProfile,
@@ -127,4 +127,22 @@ export async function addPeople(businessId: string, people: PersonInput[]): Prom
       notes: p.notes,
     })),
   });
+}
+
+/**
+ * Every business the Executive Orchestrator (Increment 7) should run the
+ * daily executive cycle for. v1 has no per-business scheduling
+ * configuration (Operating Model §1 — one owner, one business, one
+ * schedule) so this is deliberately unfiltered: every business that
+ * exists. Demo Mode returns its single fixed seeded business id, mirroring
+ * every other repository function's demo/real split.
+ */
+export async function getAllBusinessIds(): Promise<string[]> {
+  if (isDemoMode()) {
+    const demo = getDemoBusinessById(DEMO_BUSINESS_ID);
+    return demo ? [demo.id] : [];
+  }
+
+  const businesses = await prisma.business.findMany({ select: { id: true } });
+  return businesses.map((b: { id: string }) => b.id);
 }
