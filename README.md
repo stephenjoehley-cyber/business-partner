@@ -172,3 +172,17 @@ then open `http://localhost:3000`. No Supabase project, no database migration, a
 - **`lib/demo/authStub.ts`** — a fixed demo user satisfying the same minimal `AuthClient` interface the real Supabase client does, so every existing page and API route works unchanged.
 - Every repository module (`lib/brain`, `lib/signals`, `lib/cognition`) and both Supabase clients (`lib/supabase/server.ts`, `lib/supabase/client.ts`) check `isDemoMode()` and delegate to the above instead of Prisma/Supabase — the same seam pattern as `SignalProvider`/`NarrativeProvider`. No page, API route, or component needed to change.
 - The Morning Brief is visibly labelled Demo Mode (a banner and a header badge) whenever it's active — see `DECISIONS.md` for the full reasoning and every file touched.
+
+
+## What's in Increment 7
+
+The Executive Orchestrator — the owner should never have to ask Business Partner to think. Implemented per the approved Product Audit and Implementation Plan; see `DECISIONS.md` for the full reasoning.
+
+- **`lib/orchestrator/dailyCycle.ts`** — `runDailyCycleForBusiness(businessId)`, the one function every caller (onboarding, the daily schedule, tests, and any future trigger) must use to run the daily executive cycle. Wraps the existing, unmodified `generateSignalsForBusiness` and `generateMorningBrief` pipelines with an idempotency check and per-business failure isolation. Not a scheduling utility — the operational mechanism by which Business Partner arrives prepared each day.
+- **`lib/cognition/repository.ts`** — `hasMorningBriefToday(businessId)`, the idempotency check: a business never receives two Morning Briefs on the same day. Implemented as a query, not a schema constraint (see `DECISIONS.md` for why, and for the noted future hardening option).
+- **`lib/brain/repository.ts`** — `getAllBusinessIds()`, every business the daily cycle should run for. Deliberately unfiltered — v1 has no per-business scheduling configuration.
+- **`app/api/cron/daily-cycle/route.ts`** — the scheduler-facing entry point, authenticated by `CRON_SECRET` rather than a user session (a scheduled job has no user), configured via `vercel.json` to run once daily.
+- **Onboarding** (`app/api/onboarding/people/route.ts`) now calls `runDailyCycleForBusiness` synchronously at the end of the final step, so a real owner's inaugural Morning Brief exists the moment onboarding completes — no separate "first brief" code path, the same function the daily cron calls.
+- The manual `/api/recommendations/generate` route is untouched — a conscious decision, not an oversight; see `DECISIONS.md`.
+
+135 tests passing (123 existing, unchanged, plus 12 new).
