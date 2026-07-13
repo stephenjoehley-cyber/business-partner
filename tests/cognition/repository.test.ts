@@ -10,7 +10,7 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 import { prisma } from '@/lib/prisma';
-import { getLatestMorningBrief, saveMorningBrief, toResult } from '@/lib/cognition/repository';
+import { getLatestMorningBrief, hasMorningBriefToday, saveMorningBrief, toResult } from '@/lib/cognition/repository';
 import type { MorningBriefResult } from '@/lib/cognition/types';
 
 const createMock = prisma.morningBrief.create as unknown as ReturnType<typeof vi.fn>;
@@ -149,6 +149,41 @@ describe('getLatestMorningBrief', () => {
 
     const result = await getLatestMorningBrief('biz-1');
     expect(result).toEqual(allClearBrief);
+  });
+});
+
+describe('hasMorningBriefToday', () => {
+  beforeEach(() => {
+    findFirstMock.mockReset();
+  });
+
+  it('queries for a MorningBrief within the UTC day of the given reference date', async () => {
+    findFirstMock.mockResolvedValue(null);
+
+    const reference = new Date('2026-07-13T14:00:00.000Z');
+    await hasMorningBriefToday('biz-1', reference);
+
+    expect(findFirstMock).toHaveBeenCalledWith({
+      where: {
+        businessId: 'biz-1',
+        generatedAt: {
+          gte: new Date('2026-07-13T00:00:00.000Z'),
+          lt: new Date('2026-07-14T00:00:00.000Z'),
+        },
+      },
+    });
+  });
+
+  it('returns false when no brief exists yet today', async () => {
+    findFirstMock.mockResolvedValue(null);
+    const result = await hasMorningBriefToday('biz-1', new Date('2026-07-13T14:00:00.000Z'));
+    expect(result).toBe(false);
+  });
+
+  it('returns true when a brief already exists today', async () => {
+    findFirstMock.mockResolvedValue({ id: 'brief-existing' });
+    const result = await hasMorningBriefToday('biz-1', new Date('2026-07-13T14:00:00.000Z'));
+    expect(result).toBe(true);
   });
 });
 
