@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Design system notes (Blueprint Section 10 — UI Architecture)
+
+  Business Partner should feel like a calm, dependable executive colleague —
+  not a chatbot, not a generic dashboard. The palette avoids the common
+  AI-generated defaults (cream + terracotta; near-black + neon accent;
+  broadsheet newsprint) in favour of something closer to an executive
+  ledger: ink, warm neutral paper, and a single brass accent used sparingly
+  for what deserves attention.
+
+  Signature element: the confidence marker on the Morning Brief (see
+  MorningBriefCard) — a small brass tick-mark styled like a ledger stamp,
+  used nowhere else, so it stays meaningful.
+*/
+
+:root {
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+body {
+  @apply bg-surface text-ink font-body antialiased;
+}
+
+h1, h2, h3 {
+  @apply font-body text-ink;
+}
+
+.focus-ring {
+  @apply outline-none ring-2 ring-brass ring-offset-2 ring-offset-surface;
+}
+
+/* Respect reduced-motion preferences throughout the app */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
