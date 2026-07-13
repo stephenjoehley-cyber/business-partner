@@ -223,3 +223,41 @@ Neither return value was ever used by its only caller (the onboarding API routes
 **Why:** required to give the Demo Mode branch (which returns nothing meaningful either) a return type that matches without fighting Prisma's internal batch-payload shape. A side benefit: the Brain's public interface no longer leaks a Prisma-specific return shape for functions where that shape was never meaningful to begin with.
 **Cost if wrong:** none identified — no caller anywhere in the codebase read these return values before this change.
 
+---
+
+## Increment 6 — Executive Presence Polish
+
+Objective: remove everything that reminds the owner they're using software, strengthen everything that makes the experience feel like an exceptional Chief of Staff. Presentation only — the Cognitive Engine, Narrative Layer, and Signal pipeline are untouched. Preceded by a written Executive Presence Audit (`INCREMENT_6_AUDIT.md`) and an approved implementation plan, per Asset 018's Stage 1/2/3/4 process — this is the first increment run under that discipline rather than starting from code.
+
+### 2026-07-13 — The raw signal feed is removed entirely, not redesigned (approved decision A)
+`app/morning-brief/page.tsx`'s "Signals (raw feed)" section and its supporting `SignalPreviewPanel.tsx` component are deleted. `describeSignalPlainly`'s plain-English evidence disclosure inside `MorningBriefCard` is now the only way an owner explores the reasoning behind a recommendation.
+**Why:** the audit found this section showing `signal.domain` and `signal.type.replaceAll('_', ' ')` — raw enum values, one lightly formatted — plus `signal.occurredAt.toLocaleString()`, a machine-precision timestamp. Both are named directly in Asset 017 §4 and Asset 016 Principle 5. The section's own code comment already anticipated this as Increment 2/3 scaffolding scoped for removal "when the real Morning Brief ships in Increment 6" — this isn't new debt, it's the debt this increment existed to close. Rather than reformat it to be compliant, it's removed outright: it would have duplicated evidence the recommendation card already discloses correctly, and a second evidence surface competes with the first (Asset 016 Principle 6, "One Thought At A Time").
+**Cost if wrong:** a founder or stakeholder demo that got used to seeing the itemised raw feed loses that view. No functionality is lost — `getSignalsForBusiness` is still called (for `todaysAgenda` on the all-clear card) and every signal is still fully traceable through the evidence disclosure on a real recommendation.
+
+### 2026-07-13 — `/api/signals/generate` is removed; signal refresh is folded into `/api/recommendations/generate`
+The dedicated route and its manual "Refresh signals" trigger are deleted. `POST /api/recommendations/generate` now calls `generateSignalsForBusiness(business.id)` immediately before `generateMorningBrief(business.id)`, in one request.
+**Why:** "signals" were never a concept an owner should need to hold in their head separately from "a recommendation" — the two-button UI (refresh signals, then prepare a brief) was an implementation detail of the Increment 2/3 architecture leaking into the experience. This composition is exactly what the Executive Orchestrator (Asset 014) will eventually do on a schedule — observe, then reason — so this is a step toward that architecture, not a detour from it. Neither `lib/signals/pipeline.ts` nor `lib/cognition/pipeline.ts` changed; this is a route-level composition only.
+**Cost if wrong:** until the Orchestrator's scheduled pipeline exists, a real (non-demo) account has no way to refresh signals or regenerate a brief once one exists (see the next entry) other than this one combined action being available again — which it currently isn't, per approved decision C. This is a deliberate, named trade-off, not an oversight: Demo Mode is unaffected (`ensureDemoSeeded` calls both pipelines directly and doesn't go through this route), and a real account's first brief is unaffected. A real account's *second* brief, before the Orchestrator ships, is the gap — flagged here for Increment 7 planning.
+
+### 2026-07-13 — `RecommendationTrigger` now renders only when no Morning Brief exists yet (approved decision C)
+Previously rendered on every state (empty, all-clear, and confident/low-confidence recommendation) — three places the owner could see a button inviting them to manually re-run the reasoning engine, one of them sitting directly beside the answer it had already produced. Now renders only inside the `!latestBrief` branch of `app/morning-brief/page.tsx`.
+**Why:** a manual "run the engine again" control next to an answer already given contradicts the Constitution's "Business software waits. Business Partners notice" and the First-Time User Experience's closing promise ("I've already started," never "you're ready to start"). An `all_clear` tier is a real Cognitive Engine conclusion, not an absence of one — so it gets the same treatment as a confident recommendation, not the treatment of the true empty state.
+**Cost if wrong:** see the previous entry — this is the mechanism by which a real account currently loses the ability to manually refresh once a brief exists. Accepted as a deliberate trade-off pending the Executive Orchestrator (Increment 7 candidate).
+
+### 2026-07-13 — Demo Mode banner no longer names an environment variable or tells the reader to "connect Supabase"
+`app/morning-brief/DemoModeBanner.tsx` rewritten. Previous copy: "Connect Supabase and set `NEXT_PUBLIC_DEMO_MODE=false` to run against a real account." New copy states only that this is a demonstration and that it behaves like the real product would.
+**Why:** named directly in the Increment 6 brief ("without exposing environment variables or implementation details") and Asset 016 Principle 3. Reconfiguring infrastructure is a developer task; it belongs in the README, not in front of an owner exploring the product.
+**Cost if wrong:** none identified — a developer evaluating the demo still has the README and `DEMO.md` for setup instructions; nothing about running the project changed, only what's shown inside it.
+
+### 2026-07-13 — Empty-state copy no longer says "executive cycle," and the Goals/People/Industry stat block is removed
+`app/morning-brief/page.tsx`'s true-empty-state card previously read "Refresh your signals below, then run your first executive cycle" beside a `<dl>` of raw counts. Replaced with one sentence in judgement-first, owner-facing language.
+**Why:** "executive cycle" is Cognitive Engine architecture vocabulary (Observe → Understand → Prioritise → Recommend), not owner language — Asset 017 §1. The stat block reported database counts without concluding anything from them, which is the "unnecessary information" the Increment 6 brief's Product Debt Review names directly.
+**Cost if wrong:** none identified — the counts weren't referenced by any other component or test.
+
+### 2026-07-13 — Monospace/uppercase-tracked typography for UI chrome is retained, not redesigned (approved decision B)
+The audit flagged this pattern (header wordmark, evidence-disclosure labels, confidence register label, onboarding step numbers) as worth a Design System judgement call, without asserting a violation. Founder decision: retain it for this increment; no visual identity redesign as part of Executive Presence Polish.
+**Why recorded here:** so a future contributor reading this file sees that the pattern was reviewed and deliberately kept, not overlooked.
+**Cost if wrong:** none — no code changed as a result of this decision.
+
+**Test/type status:** all 123 existing tests pass unchanged; no test referenced `SignalPreviewPanel`, the deleted `/api/signals/generate` route, or the raw feed markup. `npx tsc --noEmit` shows only the pre-existing, sandbox-only Prisma-client-generation errors already present before this increment (the sandbox's network allowlist blocks `binaries.prisma.sh`) — none reference any file changed in this increment.
+
