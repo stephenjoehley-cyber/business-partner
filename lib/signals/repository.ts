@@ -77,9 +77,9 @@ export async function getSignalsForBusiness(businessId: string): Promise<Signal[
 }
 
 /**
- * Resolves a Recommendation's `supportingSignalIds` back into full Signal
- * records, scoped to the business — so the Morning Brief can render *why*
- * a recommendation was made, not just assert that it's traceable.
+ * Resolves a MorningBriefResult's `supportingSignalIds` back into full
+ * Signal records, scoped to the business — so the Morning Brief can render
+ * *why* a recommendation was made, not just assert that it's traceable.
  */
 export async function getSignalsByIds(businessId: string, ids: string[]): Promise<Signal[]> {
   if (ids.length === 0) return [];

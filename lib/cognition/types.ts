@@ -6,7 +6,7 @@
  * Every stage of the pipeline has an explicit, typed output. Nothing skips
  * a stage: Prioritise only ever sees the Insights the Understand stage
  * produced, never a raw Signal directly. This is what keeps the pipeline
- * explainable — every Recommendation can be traced back through the exact
+ * explainable — every MorningBriefResult can be traced back through the exact
  * dimensions and reasoning that produced it.
  */
 
@@ -52,9 +52,9 @@ export interface PrioritisedInsight {
   dimensions: PriorityDimensions;
   /** Weighted composite of the five dimensions — see prioritise.ts for the exact, documented formula. */
   priorityScore: number;
-  /** Why this scored the way it did — becomes the Recommendation's "why this matters" if this Insight wins. */
+  /** Why this scored the way it did — becomes the MorningBriefResult's "why this matters" if this Insight wins. */
   reasoning: string;
-  /** The concrete next action this Insight implies — becomes the Recommendation's action if this Insight wins. */
+  /** The concrete next action this Insight implies — becomes the MorningBriefResult's action if this Insight wins (confident_recommendation tier only). */
   recommendedAction: string;
 }
 
@@ -66,13 +66,53 @@ export interface PrioritisedInsight {
  */
 export type UnderstoodSignal = Omit<PrioritisedInsight, 'priorityScore'>;
 
-/** Stage 4 (Recommend) output — the single executive recommendation shown to the owner. */
-export interface Recommendation {
-  executiveSummary: string;
-  reasoning: string;
-  recommendedAction: string;
-  confidence: number;
-  /** Every Signal id that contributed to this recommendation, in order of relevance. Always non-empty — a Recommendation with no supporting signal is not traceable and should not exist. */
-  supportingSignalIds: string[];
-  generatedAt: Date;
-}
+/**
+ * Below this, the Cognitive Engine will not present something it found as
+ * a confident recommendation — it will say so honestly instead (Executive
+ * Honesty, DECISIONS.md). Chosen so that a fallback-interpreted signal
+ * (confidence 0.3) never qualifies, while every registered interpreter's
+ * "unknown relationship" floor (0.7) comfortably does — see calendar.ts /
+ * email.ts. A number in between exists on purpose: it's easier to defend a
+ * clear gap than a threshold sitting flush against real interpreter output.
+ */
+export const CONFIDENCE_THRESHOLD = 0.6;
+
+export type MorningBriefTier = 'confident_recommendation' | 'low_confidence_insight' | 'all_clear';
+
+/**
+ * Stage 4 (Recommend) output — always exactly one of three tiers
+ * ("Executive Honesty"). Business Partner never fabricates certainty and
+ * never leaves the owner with nothing: it either recommends, honestly
+ * flags its own uncertainty while still surfacing the most relevant
+ * observation, or reports a genuine all-clear.
+ *
+ * A discriminated union (rather than nullable fields on one shape) so the
+ * Narrative Layer and UI cannot accidentally read a `recommendedAction`
+ * that a low-confidence or all-clear brief was never entitled to have.
+ */
+export type MorningBriefResult =
+  | {
+      tier: 'confident_recommendation';
+      executiveSummary: string;
+      reasoning: string;
+      recommendedAction: string;
+      confidence: number;
+      /** Every Signal id that contributed, in order of relevance. Always non-empty — traceability is what makes this tier trustworthy. */
+      supportingSignalIds: string[];
+      generatedAt: Date;
+    }
+  | {
+      tier: 'low_confidence_insight';
+      /** The single most relevant observation, framed informationally — never phrased as a directive, since confidence didn't clear the bar for one. */
+      executiveSummary: string;
+      reasoning: string;
+      confidence: number;
+      supportingSignalIds: string[];
+      generatedAt: Date;
+    }
+  | {
+      tier: 'all_clear';
+      /** Plain statement that nothing currently requires executive attention. "Nothing urgent" is itself useful information — never silence. */
+      message: string;
+      generatedAt: Date;
+    };

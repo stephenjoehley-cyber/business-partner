@@ -10,13 +10,14 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 import { prisma } from '@/lib/prisma';
-import { getLatestRecommendation, saveRecommendation } from '@/lib/cognition/repository';
-import type { Recommendation } from '@/lib/cognition/types';
+import { getLatestMorningBrief, saveMorningBrief, toResult } from '@/lib/cognition/repository';
+import type { MorningBriefResult } from '@/lib/cognition/types';
 
 const createMock = prisma.morningBrief.create as unknown as ReturnType<typeof vi.fn>;
 const findFirstMock = prisma.morningBrief.findFirst as unknown as ReturnType<typeof vi.fn>;
 
-const recommendation: Recommendation = {
+const confidentBrief: MorningBriefResult = {
+  tier: 'confident_recommendation',
   executiveSummary: 'An email from Jane Cooper has gone unanswered for 3 days.',
   reasoning: '"Re: quotation" was received 3 days ago and still requires a reply.',
   recommendedAction: 'Reply to Jane Cooper about "Re: quotation".',
@@ -25,40 +26,164 @@ const recommendation: Recommendation = {
   generatedAt: new Date('2026-07-13T06:00:00.000Z'),
 };
 
-describe('saveRecommendation', () => {
+const lowConfidenceBrief: MorningBriefResult = {
+  tier: 'low_confidence_insight',
+  executiveSummary: 'A generic enquiry was received.',
+  reasoning: 'Not enough context to be confident this needs urgent attention.',
+  confidence: 0.4,
+  supportingSignalIds: ['sig-2'],
+  generatedAt: new Date('2026-07-13T06:00:00.000Z'),
+};
+
+const allClearBrief: MorningBriefResult = {
+  tier: 'all_clear',
+  message: 'No signals currently require executive attention.',
+  generatedAt: new Date('2026-07-13T06:00:00.000Z'),
+};
+
+describe('saveMorningBrief', () => {
   beforeEach(() => {
     createMock.mockReset();
   });
 
-  it('persists all five recommendation components, mapped to the MorningBrief schema', async () => {
-    await saveRecommendation('biz-1', recommendation);
+  it('persists a confident_recommendation with all its fields, and a null message', async () => {
+    await saveMorningBrief('biz-1', confidentBrief);
 
     expect(createMock).toHaveBeenCalledWith({
       data: {
         businessId: 'biz-1',
-        generatedAt: recommendation.generatedAt,
-        recommendation: recommendation.executiveSummary,
-        reasoning: recommendation.reasoning,
-        recommendedAction: recommendation.recommendedAction,
-        confidence: recommendation.confidence,
-        supportingSignalIds: recommendation.supportingSignalIds,
+        generatedAt: confidentBrief.generatedAt,
+        tier: 'confident_recommendation',
+        recommendation: confidentBrief.executiveSummary,
+        reasoning: confidentBrief.reasoning,
+        recommendedAction: confidentBrief.recommendedAction,
+        confidence: confidentBrief.confidence,
+        supportingSignalIds: confidentBrief.supportingSignalIds,
+        message: null,
+      },
+    });
+  });
+
+  it('persists a low_confidence_insight with a null recommendedAction', async () => {
+    await saveMorningBrief('biz-1', lowConfidenceBrief);
+
+    expect(createMock).toHaveBeenCalledWith({
+      data: {
+        businessId: 'biz-1',
+        generatedAt: lowConfidenceBrief.generatedAt,
+        tier: 'low_confidence_insight',
+        recommendation: lowConfidenceBrief.executiveSummary,
+        reasoning: lowConfidenceBrief.reasoning,
+        recommendedAction: null,
+        confidence: lowConfidenceBrief.confidence,
+        supportingSignalIds: lowConfidenceBrief.supportingSignalIds,
+        message: null,
+      },
+    });
+  });
+
+  it('persists an all_clear brief with every recommendation-shaped field null', async () => {
+    await saveMorningBrief('biz-1', allClearBrief);
+
+    expect(createMock).toHaveBeenCalledWith({
+      data: {
+        businessId: 'biz-1',
+        generatedAt: allClearBrief.generatedAt,
+        tier: 'all_clear',
+        recommendation: null,
+        reasoning: null,
+        recommendedAction: null,
+        confidence: null,
+        supportingSignalIds: [],
+        message: allClearBrief.message,
       },
     });
   });
 });
 
-describe('getLatestRecommendation', () => {
+describe('getLatestMorningBrief', () => {
   beforeEach(() => {
     findFirstMock.mockReset();
   });
 
   it('queries the most recent MorningBrief for the business, ordered by generatedAt descending', async () => {
     findFirstMock.mockResolvedValue(null);
-    await getLatestRecommendation('biz-1');
+    const result = await getLatestMorningBrief('biz-1');
 
     expect(findFirstMock).toHaveBeenCalledWith({
       where: { businessId: 'biz-1' },
       orderBy: { generatedAt: 'desc' },
     });
+    expect(result).toBeNull();
+  });
+
+  it('maps a persisted confident_recommendation row back into the typed result', async () => {
+    findFirstMock.mockResolvedValue({
+      id: 'brief-1',
+      tier: 'confident_recommendation',
+      recommendation: confidentBrief.executiveSummary,
+      reasoning: confidentBrief.reasoning,
+      recommendedAction: confidentBrief.recommendedAction,
+      confidence: confidentBrief.confidence,
+      supportingSignalIds: confidentBrief.supportingSignalIds,
+      message: null,
+      generatedAt: confidentBrief.generatedAt,
+    });
+
+    const result = await getLatestMorningBrief('biz-1');
+    expect(result).toEqual(confidentBrief);
+  });
+
+  it('maps a persisted all_clear row back into the typed result', async () => {
+    findFirstMock.mockResolvedValue({
+      id: 'brief-2',
+      tier: 'all_clear',
+      recommendation: null,
+      reasoning: null,
+      recommendedAction: null,
+      confidence: null,
+      supportingSignalIds: [],
+      message: allClearBrief.message,
+      generatedAt: allClearBrief.generatedAt,
+    });
+
+    const result = await getLatestMorningBrief('biz-1');
+    expect(result).toEqual(allClearBrief);
+  });
+});
+
+describe('toResult', () => {
+  it('throws on a corrupt confident_recommendation row missing a required field', () => {
+    expect(() =>
+      toResult({
+        id: 'brief-3',
+        tier: 'confident_recommendation',
+        recommendation: 'Summary',
+        reasoning: null,
+        recommendedAction: 'Do the thing',
+        confidence: 0.9,
+        supportingSignalIds: [],
+        message: null,
+        generatedAt: new Date(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+    ).toThrow('missing required fields');
+  });
+
+  it('throws on an unknown tier', () => {
+    expect(() =>
+      toResult({
+        id: 'brief-4',
+        tier: 'mystery_tier',
+        recommendation: null,
+        reasoning: null,
+        recommendedAction: null,
+        confidence: null,
+        supportingSignalIds: [],
+        message: null,
+        generatedAt: new Date(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+    ).toThrow('unknown tier');
   });
 });

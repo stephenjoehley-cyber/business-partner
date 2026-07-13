@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
-import { generateRecommendation } from '@/lib/cognition/pipeline';
+import { generateMorningBrief } from '@/lib/cognition/pipeline';
 
 /**
- * Manual trigger for Increment 3. The Executive Orchestrator (Increment 5)
- * will call generateRecommendation on a schedule instead — this route
+ * Manual trigger for Increment 3/4. The Executive Orchestrator (Increment
+ * 5) will call generateMorningBrief on a schedule instead — this route
  * exists so the Cognitive Engine is demonstrable and testable before that
  * scheduling layer is built (same reasoning as /api/signals/generate).
+ *
+ * Always returns a morningBrief (never null) — Executive Honesty means
+ * there is always something to report, even if it's an all_clear tier.
  */
 export async function POST() {
   const supabase = createClient();
@@ -24,14 +27,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Complete your business profile first' }, { status: 409 });
   }
 
-  const recommendation = await generateRecommendation(business.id);
+  const morningBrief = await generateMorningBrief(business.id);
 
-  if (!recommendation) {
-    return NextResponse.json(
-      { recommendation: null, message: 'No signals to reason over yet — refresh signals first.' },
-      { status: 200 }
-    );
-  }
-
-  return NextResponse.json({ recommendation });
+  return NextResponse.json({ morningBrief });
 }

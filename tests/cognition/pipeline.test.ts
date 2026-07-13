@@ -9,18 +9,18 @@ vi.mock('@/lib/signals/repository', () => ({
 }));
 
 vi.mock('@/lib/cognition/repository', () => ({
-  saveRecommendation: vi.fn(),
+  saveMorningBrief: vi.fn(),
 }));
 
 import { getBusinessById } from '@/lib/brain/repository';
 import { getSignalsForBusiness } from '@/lib/signals/repository';
-import { saveRecommendation } from '@/lib/cognition/repository';
-import { generateRecommendation } from '@/lib/cognition/pipeline';
+import { saveMorningBrief } from '@/lib/cognition/repository';
+import { generateMorningBrief } from '@/lib/cognition/pipeline';
 import type { Signal } from '@/lib/signals/types';
 
 const getBusinessByIdMock = getBusinessById as unknown as ReturnType<typeof vi.fn>;
 const getSignalsForBusinessMock = getSignalsForBusiness as unknown as ReturnType<typeof vi.fn>;
-const saveRecommendationMock = saveRecommendation as unknown as ReturnType<typeof vi.fn>;
+const saveMorningBriefMock = saveMorningBrief as unknown as ReturnType<typeof vi.fn>;
 
 const BUSINESS = {
   id: 'biz-1',
@@ -52,42 +52,44 @@ function makeEmailSignal(daysSinceReceived: number): Signal {
   };
 }
 
-describe('generateRecommendation', () => {
+describe('generateMorningBrief', () => {
   beforeEach(() => {
     getBusinessByIdMock.mockReset();
     getSignalsForBusinessMock.mockReset();
-    saveRecommendationMock.mockReset();
-    saveRecommendationMock.mockResolvedValue({ id: 'brief-1' });
+    saveMorningBriefMock.mockReset();
+    saveMorningBriefMock.mockResolvedValue({ id: 'brief-1' });
   });
 
   it('throws when the business does not exist', async () => {
     getBusinessByIdMock.mockResolvedValue(null);
-    await expect(generateRecommendation('missing-biz')).rejects.toThrow('No business found');
+    await expect(generateMorningBrief('missing-biz')).rejects.toThrow('No business found');
   });
 
-  it('returns null and persists nothing when there are no signals to reason over', async () => {
+  it('returns an all_clear tier and still persists it when there are no signals to reason over', async () => {
     getBusinessByIdMock.mockResolvedValue(BUSINESS);
     getSignalsForBusinessMock.mockResolvedValue([]);
 
-    const result = await generateRecommendation('biz-1');
+    const result = await generateMorningBrief('biz-1');
 
-    expect(result).toBeNull();
-    expect(saveRecommendationMock).not.toHaveBeenCalled();
+    expect(result.tier).toBe('all_clear');
+    expect(saveMorningBriefMock).toHaveBeenCalledWith('biz-1', result);
   });
 
-  it('runs Observe → Understand → Prioritise → Recommend end-to-end and persists the result', async () => {
+  it('runs Observe → Understand → Prioritise → Recommend end-to-end and persists a confident recommendation', async () => {
     getBusinessByIdMock.mockResolvedValue(BUSINESS);
     getSignalsForBusinessMock.mockResolvedValue([makeEmailSignal(3)]);
 
-    const result = await generateRecommendation('biz-1');
+    const result = await generateMorningBrief('biz-1');
 
-    expect(result).not.toBeNull();
-    expect(result?.executiveSummary).toContain('Jane Cooper');
-    expect(result?.recommendedAction).toContain('Reply to Jane Cooper');
-    expect(result?.supportingSignalIds).toEqual(['sig-email-1']);
-    expect(result?.confidence).toBeGreaterThan(0);
+    expect(result.tier).toBe('confident_recommendation');
+    if (result.tier === 'confident_recommendation') {
+      expect(result.executiveSummary).toContain('Jane Cooper');
+      expect(result.recommendedAction).toContain('Reply to Jane Cooper');
+      expect(result.supportingSignalIds).toEqual(['sig-email-1']);
+      expect(result.confidence).toBeGreaterThan(0);
+    }
 
-    expect(saveRecommendationMock).toHaveBeenCalledWith('biz-1', result);
+    expect(saveMorningBriefMock).toHaveBeenCalledWith('biz-1', result);
   });
 
   it('picks the single highest-priority signal when multiple are observed', async () => {
@@ -96,8 +98,11 @@ describe('generateRecommendation', () => {
     const freshEmail: Signal = { ...makeEmailSignal(0), id: 'sig-email-2', externalRef: 'ref-email-2' };
     getSignalsForBusinessMock.mockResolvedValue([freshEmail, staleEmail]);
 
-    const result = await generateRecommendation('biz-1');
+    const result = await generateMorningBrief('biz-1');
 
-    expect(result?.supportingSignalIds[0]).toBe(staleEmail.id);
+    expect(result.tier).toBe('confident_recommendation');
+    if (result.tier === 'confident_recommendation') {
+      expect(result.supportingSignalIds[0]).toBe(staleEmail.id);
+    }
   });
 });

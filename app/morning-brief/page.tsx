@@ -2,11 +2,15 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { getSignalsByIds, getSignalsForBusiness } from '@/lib/signals/repository';
-import { getLatestRecommendation } from '@/lib/cognition/repository';
+import { getLatestMorningBrief } from '@/lib/cognition/repository';
+import { generateNarrative } from '@/lib/narrative/generate';
+import { buildNarrativeInput } from '@/lib/narrative/fromMorningBrief';
+import { greetingForTime, isSameDay } from '@/lib/ui/time';
 import { SignOutButton } from './SignOutButton';
 import { SignalPreviewPanel } from './SignalPreviewPanel';
 import { RecommendationTrigger } from './RecommendationTrigger';
 import { MorningBriefCard } from './MorningBriefCard';
+import { AllClearCard } from './AllClearCard';
 
 export default async function MorningBriefPage() {
   const supabase = createClient();
@@ -21,35 +25,94 @@ export default async function MorningBriefPage() {
 
   const [signals, latestBrief] = await Promise.all([
     getSignalsForBusiness(business.id),
-    getLatestRecommendation(business.id),
+    getLatestMorningBrief(business.id),
   ]);
 
-  const supportingSignals = latestBrief
-    ? await getSignalsByIds(business.id, latestBrief.supportingSignalIds)
-    : [];
+  const supportingSignals =
+    latestBrief && latestBrief.tier !== 'all_clear'
+      ? await getSignalsByIds(business.id, latestBrief.supportingSignalIds)
+      : [];
+
+  // The Narrative Layer is a pure communication pass over an
+  // already-decided MorningBriefResult (DECISIONS.md, "The Cognitive
+  // Engine decides. The LLM communicates.") — run at render time, not
+  // baked into persistence, so an LLM outage never invalidates a stored
+  // brief and a future prompt-contract improvement applies to it
+  // automatically. It always resolves (falls back to the Cognitive
+  // Engine's own deterministic strings on any failure), so there is no
+  // additional empty/error state to handle here.
+  const narrative =
+    latestBrief && latestBrief.tier !== 'all_clear'
+      ? await generateNarrative(buildNarrativeInput(latestBrief, supportingSignals))
+      : null;
+
+  const today = new Date();
+  const todaysAgenda = signals.filter((signal) => signal.domain === 'calendar' && isSameDay(signal.occurredAt, today));
 
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-6 py-16">
       <header className="mb-12 flex items-center justify-between">
         <div>
           <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Business Partner</p>
-          <h1 className="text-xl font-semibold">{business.name}</h1>
+          <h1 className="text-xl font-semibold">
+            {greetingForTime()}, {business.name}.
+          </h1>
         </div>
         <SignOutButton />
       </header>
 
-      {latestBrief ? (
+      {!latestBrief && (
+        /*
+          Honest empty state (Constitution Principle 10 / Blueprint Section
+          9): no MorningBrief exists yet because no cycle has run. This is
+          distinct from the all_clear tier below — that's a real Cognitive
+          Engine conclusion; this is simply "nothing has been asked yet."
+        */
+        <div className="rounded-lg border border-surface-border bg-surface-card p-8">
+          <span className="mb-4 inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
+          <h2 className="text-lg font-semibold">I&apos;ve already started.</h2>
+          <p className="mt-2 max-w-md text-ink-faint">
+            Your business profile, goals, and key people are saved.{' '}
+            {signals.length > 0
+              ? 'Signals are ready — run your first executive cycle to see a recommendation.'
+              : 'Refresh your signals below, then run your first executive cycle.'}
+          </p>
+          <dl className="mt-6 grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <dt className="text-ink-faint">Goals</dt>
+              <dd className="font-mono text-ink">{business.goals.length}</dd>
+            </div>
+            <div>
+              <dt className="text-ink-faint">People</dt>
+              <dd className="font-mono text-ink">{business.people.length}</dd>
+            </div>
+            <div>
+              <dt className="text-ink-faint">Industry</dt>
+              <dd className="text-ink">{business.industry}</dd>
+            </div>
+          </dl>
+          <div className="mt-6">
+            <RecommendationTrigger />
+          </div>
+        </div>
+      )}
+
+      {latestBrief?.tier === 'all_clear' && (
         <>
-          {/*
-            Increment 3: the Cognitive Engine's Observe → Understand →
-            Prioritise → Recommend cycle has produced a real, persisted,
-            traceable recommendation. This is the Morning Brief's one
-            primary artifact (Product Principle 3).
-          */}
+          <AllClearCard message={latestBrief.message} generatedAt={latestBrief.generatedAt} todaysAgenda={todaysAgenda} />
+          <div className="mt-4">
+            <RecommendationTrigger />
+          </div>
+        </>
+      )}
+
+      {latestBrief && latestBrief.tier !== 'all_clear' && narrative && (
+        <>
           <MorningBriefCard
-            executiveSummary={latestBrief.recommendation}
-            reasoning={latestBrief.reasoning}
-            recommendedAction={latestBrief.recommendedAction}
+            tier={latestBrief.tier}
+            headline={narrative.headline}
+            whyItMatters={narrative.whyItMatters}
+            actionText={narrative.actionText}
             confidence={latestBrief.confidence}
             generatedAt={latestBrief.generatedAt}
             supportingSignals={supportingSignals}
@@ -58,50 +121,13 @@ export default async function MorningBriefPage() {
             <RecommendationTrigger />
           </div>
         </>
-      ) : (
-        <>
-          {/*
-            Honest empty state (Constitution Principle 10 / Blueprint
-            Section 9): no MorningBrief exists yet because no cycle has run.
-            This never fabricates a recommendation — it says plainly what's
-            true, and offers the manual trigger that stands in for
-            Increment 5's scheduler.
-          */}
-          <div className="rounded-lg border border-surface-border bg-surface-card p-8">
-            <span className="mb-4 inline-block h-2 w-2 rounded-full bg-brass" aria-hidden />
-            <h2 className="text-lg font-semibold">I&apos;ve already started.</h2>
-            <p className="mt-2 max-w-md text-ink-faint">
-              Your business profile, goals, and key people are saved.{' '}
-              {signals.length > 0
-                ? 'Signals are ready — run your first executive cycle to see a recommendation.'
-                : 'Refresh your signals below, then run your first executive cycle.'}
-            </p>
-            <dl className="mt-6 grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <dt className="text-ink-faint">Goals</dt>
-                <dd className="font-mono text-ink">{business.goals.length}</dd>
-              </div>
-              <div>
-                <dt className="text-ink-faint">People</dt>
-                <dd className="font-mono text-ink">{business.people.length}</dd>
-              </div>
-              <div>
-                <dt className="text-ink-faint">Industry</dt>
-                <dd className="text-ink">{business.industry}</dd>
-              </div>
-            </dl>
-            <div className="mt-6">
-              <RecommendationTrigger />
-            </div>
-          </div>
-        </>
       )}
 
       {/*
-        Raw signal feed stays visible below the recommendation — this is
-        the same honesty principle applied one level deeper: the owner can
-        always see the underlying facts the Cognitive Engine reasoned over,
-        not just its conclusion.
+        Raw signal feed stays visible below the recommendation — the same
+        honesty principle applied one level deeper: the owner can always
+        see the underlying facts Business Partner reasoned over, not just
+        its conclusion.
       */}
       <section className="mt-8">
         <h3 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Signals (raw feed)</h3>

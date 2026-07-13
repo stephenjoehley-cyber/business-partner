@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 
 /**
  * Manually runs the Cognitive Engine's Observe → Understand → Prioritise →
- * Recommend cycle for Increment 3. The Executive Orchestrator (Increment 5)
- * replaces this button with a schedule — nothing about the pipeline itself
- * changes when that happens.
+ * Recommend cycle. The Executive Orchestrator (Increment 5) replaces this
+ * button with a schedule — nothing about the pipeline itself changes when
+ * that happens.
  */
 export function RecommendationTrigger() {
   const router = useRouter();
@@ -21,14 +21,11 @@ export function RecommendationTrigger() {
       const res = await fetch('/api/recommendations/generate', { method: 'POST' });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(data?.error ?? 'Could not generate a recommendation.');
-      }
-      if (!data?.recommendation) {
-        setMessage(data?.message ?? 'No signals to reason over yet.');
+        throw new Error(data?.error ?? 'Could not prepare your Morning Brief.');
       }
       router.refresh();
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Could not generate a recommendation.');
+      setMessage(e instanceof Error ? e.message : 'Could not prepare your Morning Brief.');
     } finally {
       setIsGenerating(false);
     }

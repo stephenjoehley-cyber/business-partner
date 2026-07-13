@@ -84,20 +84,28 @@ model SignalProviderConfig {
 }
 
 // Increment 3 (Cognitive Engine v1) populates this model for the first time.
-// `recommendation` is the one-sentence executive summary; `recommendedAction`
-// is the concrete next step; `reasoning` is the "why this matters" narrative,
-// grounded in `supportingSignalIds`. Kept as four distinct fields (rather than
-// one combined string) so the UI, and any future channel — email digest,
-// voice brief — can render each part appropriately. See DECISIONS.md.
+// Increment 4 adds `tier` and `message` for the Executive Honesty model: a
+// MorningBrief is always exactly one of three tiers (see
+// lib/cognition/types.ts MorningBriefResult), so the fields below the tier
+// column are nullable — which fields are populated depends on which tier
+// this row is. `recommendation` is the one-sentence executive summary;
+// `recommendedAction` is the concrete next step (confident_recommendation
+// only); `reasoning` is the "why this matters" narrative, grounded in
+// `supportingSignalIds`; `message` is the all_clear tier's only content.
+// Kept as distinct fields (rather than one combined string) so the UI, and
+// any future channel — email digest, voice brief — can render each part
+// appropriately. See DECISIONS.md.
 model MorningBrief {
   id                  String    @id @default(cuid())
   businessId          String
   business            Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   generatedAt         DateTime  @default(now())
-  recommendation      String // executive summary — one sentence
-  reasoning           String // why this matters, referencing supporting signals
-  recommendedAction   String // the concrete next action to take
-  confidence          Float
-  supportingSignalIds String[]
+  tier                String // 'confident_recommendation' | 'low_confidence_insight' | 'all_clear'
+  recommendation      String? // executive summary — one sentence. Null only for all_clear.
+  reasoning           String? // why this matters, referencing supporting signals. Null only for all_clear.
+  recommendedAction   String? // the concrete next action to take. Only present for confident_recommendation.
+  confidence          Float? // null only for all_clear — there is nothing to be confident or unconfident about.
+  supportingSignalIds String[] // empty for all_clear.
+  message             String? // all_clear tier's plain statement. Null for the other two tiers.
   ownerResponse       String?
 }
