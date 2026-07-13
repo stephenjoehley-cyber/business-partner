@@ -45,6 +45,8 @@ Every query is scoped through `ownerId` → `Business` lookups tied to the authe
 **Why:** defense-in-depth (RLS) is real value, but sequencing it now would mean designing and testing RLS policies before we know the final shape of `Signal` access patterns (Increment 2+). Building it once, correctly, in the Hardening increment is simpler than building it twice.
 **Cost if wrong:** a bug in application-layer scoping is exploitable until Increment 7 ships. Mitigated by keeping the scoping logic in one place (`lib/brain/repository.ts`) rather than scattered across routes.
 
+**2026-07-13 correction:** "Increment 7" above refers to the original Blueprint's milestone numbering, predating the approved SaaS Operating Model and Product Roadmap. The Increment 7 that was actually built (the Executive Orchestrator) did not touch RLS. RLS remains deferred — flagged, not scheduled — per Operating Model v1 §2, unchanged.
+
 ### 2026-07-12 — Design tokens: ink / warm paper / brass, one accent
 Rejected the default "cream + terracotta" and "near-black + neon" AI-app palettes in favour of an executive-ledger feel.
 **Why:** Constitution Principle -1 — "we are building a Business Partner, not business software" — extends to visual register. A chatbot-coded palette undercuts that from the first screen.
