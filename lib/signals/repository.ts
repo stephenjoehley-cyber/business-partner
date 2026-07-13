@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import type { Signal as PrismaSignal } from '@prisma/client';
 import type { DraftSignal, Signal, SignalDomain } from './types';
+import { isDemoMode } from '@/lib/demo/config';
+import { getDemoSignalsByIds, getDemoSignalsForBusiness, persistDemoSignals } from '@/lib/demo/store';
 
 /**
  * The only module that touches Signal persistence directly.
@@ -9,6 +11,12 @@ import type { DraftSignal, Signal, SignalDomain } from './types';
  * identity" — so re-running the generation pipeline never creates
  * duplicates, regardless of whether the signal came from a seeded provider
  * or, later, a live one.
+ *
+ * Increment 5 (Demo Mode): each function checks `isDemoMode()` first and
+ * delegates to `lib/demo/store.ts` instead of Prisma — same seam as
+ * `lib/brain/repository.ts`. The upsert-by-externalRef identity is
+ * preserved in the demo store too, so re-running signal generation stays
+ * idempotent there as well.
  */
 
 /**
@@ -37,6 +45,8 @@ function toSignal(row: PrismaSignal): Signal {
 }
 
 export async function persistSignals(businessId: string, drafts: DraftSignal[]): Promise<Signal[]> {
+  if (isDemoMode()) return persistDemoSignals(businessId, drafts);
+
   const persisted = await Promise.all(
     drafts.map((draft) =>
       prisma.signal.upsert({
@@ -69,6 +79,8 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]):
 }
 
 export async function getSignalsForBusiness(businessId: string): Promise<Signal[]> {
+  if (isDemoMode()) return getDemoSignalsForBusiness(businessId);
+
   const rows = await prisma.signal.findMany({
     where: { businessId },
     orderBy: { occurredAt: 'asc' },
@@ -82,6 +94,8 @@ export async function getSignalsForBusiness(businessId: string): Promise<Signal[
  * *why* a recommendation was made, not just assert that it's traceable.
  */
 export async function getSignalsByIds(businessId: string, ids: string[]): Promise<Signal[]> {
+  if (isDemoMode()) return getDemoSignalsByIds(businessId, ids);
+
   if (ids.length === 0) return [];
   const rows = await prisma.signal.findMany({
     where: { businessId, id: { in: ids } },

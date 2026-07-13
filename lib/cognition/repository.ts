@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { MorningBriefResult } from './types';
+import { isDemoMode } from '@/lib/demo/config';
+import { getLatestDemoMorningBrief, saveDemoMorningBrief } from '@/lib/demo/store';
 
 /**
  * The only module that touches MorningBrief persistence directly — same
@@ -10,6 +12,12 @@ import type { MorningBriefResult } from './types';
  * directly — the discriminated union's tier boundaries (e.g. "only
  * confident_recommendation has recommendedAction") are enforced here once,
  * not re-derived at every call site.
+ *
+ * Increment 5 (Demo Mode): `saveMorningBrief`/`getLatestMorningBrief`
+ * delegate to `lib/demo/store.ts` when active. The demo store holds the
+ * already-typed `MorningBriefResult` directly — there's no Prisma row to
+ * map to or from, so `toRow`/`toResult` simply aren't part of that path.
+ * They remain the single source of truth for the real persistence shape.
  */
 
 type MorningBriefRow = Awaited<ReturnType<typeof prisma.morningBrief.create>>;
@@ -104,11 +112,17 @@ export function toResult(row: MorningBriefRow): MorningBriefResult {
 }
 
 export async function saveMorningBrief(businessId: string, result: MorningBriefResult) {
+  if (isDemoMode()) {
+    saveDemoMorningBrief(result);
+    return result;
+  }
   return prisma.morningBrief.create({ data: toRow(businessId, result) });
 }
 
 /** Most recent MorningBrief for a business, typed back into MorningBriefResult, or null if none has been generated yet. */
 export async function getLatestMorningBrief(businessId: string): Promise<MorningBriefResult | null> {
+  if (isDemoMode()) return getLatestDemoMorningBrief();
+
   const row = await prisma.morningBrief.findFirst({
     where: { businessId },
     orderBy: { generatedAt: 'desc' },
