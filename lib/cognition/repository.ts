@@ -129,3 +129,38 @@ export async function getLatestMorningBrief(businessId: string): Promise<Morning
   });
   return row ? toResult(row) : null;
 }
+
+/**
+ * Whether a MorningBrief already exists for this business within the given
+ * day (defaults to today, UTC). This is the Executive Orchestrator's
+ * (Increment 7) idempotency check — the application-layer guarantee that
+ * the daily executive cycle never produces two briefs for the same
+ * business on the same day, per the approved Product Audit and
+ * Implementation Plan.
+ *
+ * Implemented as a query against the existing `generatedAt` column rather
+ * than a schema change — no migration required, and a future database-level
+ * uniqueness constraint (e.g. a unique index on (businessId, date)) remains
+ * a valid hardening option if production requirements ever put this
+ * invariant under real pressure. Not needed today.
+ */
+export async function hasMorningBriefToday(businessId: string, referenceDate: Date = new Date()): Promise<boolean> {
+  const startOfDayUtc = new Date(
+    Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth(), referenceDate.getUTCDate())
+  );
+  const startOfNextDayUtc = new Date(startOfDayUtc.getTime() + 24 * 60 * 60 * 1000);
+
+  if (isDemoMode()) {
+    const latest = getLatestDemoMorningBrief();
+    if (!latest) return false;
+    return latest.generatedAt >= startOfDayUtc && latest.generatedAt < startOfNextDayUtc;
+  }
+
+  const existing = await prisma.morningBrief.findFirst({
+    where: {
+      businessId,
+      generatedAt: { gte: startOfDayUtc, lt: startOfNextDayUtc },
+    },
+  });
+  return existing !== null;
+}
