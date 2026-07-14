@@ -63,6 +63,10 @@ export default function LoginPage() {
           />
         </FormField>
 
+        <Link href="/forgot-password" className="-mt-2 self-start text-sm text-ink-faint underline underline-offset-2">
+          Forgot password?
+        </Link>
+
         {error && <p className="text-sm text-signal-attention">{error}</p>}
 
         <button
