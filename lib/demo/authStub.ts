@@ -3,7 +3,7 @@ import { DEMO_OWNER_EMAIL, DEMO_OWNER_ID } from './config';
 /**
  * The exact subset of the Supabase auth client every call site in this
  * app actually uses (`getUser`, `signOut`, `signInWithPassword`, `signUp`,
- * `exchangeCodeForSession`) — grep the codebase and this is the complete
+ * `exchangeCodeForSession`, `setSession`) — grep the codebase and this is the complete
  * list. A real `SupabaseClient` satisfies this interface structurally (it
  * has all of these methods, with compatible signatures), so
  * `lib/supabase/server.ts` / `lib/supabase/client.ts` can return either
@@ -24,6 +24,7 @@ export interface AuthClient {
       options?: { emailRedirectTo?: string };
     }): Promise<{ data: unknown; error: { message: string } | null }>;
     exchangeCodeForSession(code: string): Promise<{ data: unknown; error: unknown }>;
+    setSession(session: { access_token: string; refresh_token: string }): Promise<{ data: unknown; error: unknown }>;
     resetPasswordForEmail(
       email: string,
       options?: { redirectTo?: string }
@@ -60,6 +61,9 @@ export const demoAuthClient: AuthClient = {
       return { data: { user: DEMO_USER, session: null }, error: null };
     },
     async exchangeCodeForSession() {
+      return { data: { session: null }, error: null };
+    },
+    async setSession() {
       return { data: { session: null }, error: null };
     },
     async resetPasswordForEmail() {
