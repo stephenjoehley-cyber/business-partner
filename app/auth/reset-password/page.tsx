@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { FormField, inputClasses } from '@/components/FormField';
@@ -14,8 +14,12 @@ import { FormField, inputClasses } from '@/components/FormField';
  * fragment is never sent to the server, so it can only be read here,
  * client-side, from window.location.hash after mount. Both are handled so
  * neither link format leaves the owner stuck.
+ *
+ * useSearchParams() requires this to run inside a Suspense boundary for
+ * Next.js to prerender the route at build time — the actual form lives in
+ * ResetPasswordForm below, and the default export just wraps it.
  */
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -140,5 +144,19 @@ export default function ResetPasswordPage() {
         </form>
       )}
     </main>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-8 px-6">
+          <p className="text-ink-faint">Checking your reset link…</p>
+        </main>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
