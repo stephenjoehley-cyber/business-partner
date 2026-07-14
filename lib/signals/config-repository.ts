@@ -54,8 +54,8 @@ export async function setProviderConfigData(
 
   return prisma.signalProviderConfig.upsert({
     where: { businessId_domain: { businessId, domain } },
-    update: { providerId, config: configData },
-    create: { businessId, domain, providerId, config: configData },
+    update: { providerId, config: configData as Prisma.InputJsonValue },
+    create: { businessId, domain, providerId, config: configData as Prisma.InputJsonValue },
   });
 }
 
