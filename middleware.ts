@@ -2,8 +2,8 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isDemoMode } from '@/lib/demo/config';
 
-const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback'];
-const DEMO_REDIRECT_PATHS = ['/login', '/signup', '/onboarding', '/settings'];
+const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback', '/forgot-password', '/auth/reset-password'];
+const DEMO_REDIRECT_PATHS = ['/login', '/signup', '/onboarding', '/settings', '/forgot-password', '/auth/reset-password'];
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 export async function middleware(request: NextRequest) {
