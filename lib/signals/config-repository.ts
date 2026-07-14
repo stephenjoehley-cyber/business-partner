@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import type { SignalDomain } from './types';
+import type { Prisma } from '@prisma/client';
 import { isDemoMode } from '@/lib/demo/config';
 import { getDemoConfiguredProviderId } from '@/lib/demo/store';
 
