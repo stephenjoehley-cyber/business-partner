@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { getSignalsByIds, getSignalsForBusiness } from '@/lib/signals/repository';
 import { getLatestMorningBrief } from '@/lib/cognition/repository';
+import { getConfiguredProviderId } from '@/lib/signals/config-repository';
 import { generateNarrative } from '@/lib/narrative/generate';
 import { buildNarrativeInput } from '@/lib/narrative/fromMorningBrief';
 import { greetingForTime, isSameDay } from '@/lib/ui/time';
@@ -60,6 +61,16 @@ export default async function MorningBriefPage() {
   const today = new Date();
   const todaysAgenda = signals.filter((signal) => signal.domain === 'calendar' && isSameDay(signal.occurredAt, today));
 
+  // Per the Founder's refinement to Phase B, Item 5 (2026-07-14): a real
+  // business with nothing connected should be told what Business Partner
+  // needs next, not just that things are quiet. Demo Mode never prompts —
+  // there's nothing for it to connect. Only computed when actually needed
+  // (the all_clear tier), not on every render.
+  const promptCalendarConnect =
+    !demoMode &&
+    latestBrief?.tier === 'all_clear' &&
+    (await getConfiguredProviderId(business.id, 'calendar')) !== 'google-calendar';
+
   return (
     <main className="mx-auto min-h-screen max-w-2xl px-6 py-16">
       {demoMode && <DemoModeBanner />}
@@ -99,7 +110,12 @@ export default async function MorningBriefPage() {
       )}
 
       {latestBrief?.tier === 'all_clear' && (
-        <AllClearCard message={latestBrief.message} generatedAt={latestBrief.generatedAt} todaysAgenda={todaysAgenda} />
+        <AllClearCard
+          message={latestBrief.message}
+          generatedAt={latestBrief.generatedAt}
+          todaysAgenda={todaysAgenda}
+          promptCalendarConnect={promptCalendarConnect}
+        />
       )}
 
       {latestBrief && latestBrief.tier !== 'all_clear' && narrative && (
