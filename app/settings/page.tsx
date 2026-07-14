@@ -28,39 +28,39 @@ export default async function SettingsPage({
   const needsReconnect = Boolean(config?.lastError);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 px-6">
-      <h1 className="font-body text-ink text-xl font-semibold">Settings</h1>
+    < main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 px-6">
+      < h1 className="font-body text-ink text-xl font-semibold">Settings</h1>
 
-      <div className="rounded-lg border border-surface-border bg-surface-card p-6">
-        <h2 className="font-body text-ink font-medium">Google Calendar</h2>
+      < div className="rounded-lg border border-surface-border bg-surface-card p-6">
+        < h2 className="font-body text-ink font-medium">Google Calendar</h2>
 
-        <p className="mt-2 text-sm text-ink-faint">
+        < p className="mt-2 text-sm text-ink-faint">
           {isConnected
             ? needsReconnect
               ? 'Calendar needs to be reconnected.'
               : 'Connected. Business Partner is observing your schedule.'
             : 'Not connected. Business Partner is ready to observe your schedule once connected.'}
-        </p>
+        < /p>
 
         {searchParams.calendar === 'error' && (
-          <p className="mt-2 text-sm text-ink-faint">
+          < p className="mt-2 text-sm text-ink-faint">
             Something went wrong connecting Google Calendar. Please try again.
-          </p>
+          < /p>
         )}
 
-        <div className="mt-4">
+        < div className="mt-4">
           {isConnected ? (
-            <DisconnectButton />
+            < DisconnectButton />
           ) : (
-            
+            < a
               href="/api/integrations/google-calendar/connect"
               className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
             >
               Connect Google Calendar
-            </a>
+            < /a>
           )}
-        </div>
-      </div>
-    </main>
+        < /div>
+      < /div>
+    < /main>
   );
 }
