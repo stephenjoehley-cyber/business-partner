@@ -24,6 +24,11 @@ export interface AuthClient {
       options?: { emailRedirectTo?: string };
     }): Promise<{ data: unknown; error: { message: string } | null }>;
     exchangeCodeForSession(code: string): Promise<{ data: unknown; error: unknown }>;
+    resetPasswordForEmail(
+      email: string,
+      options?: { redirectTo?: string }
+    ): Promise<{ data: unknown; error: { message: string } | null }>;
+    updateUser(attributes: { password?: string }): Promise<{ data: unknown; error: { message: string } | null }>;
   };
 }
 
@@ -56,6 +61,12 @@ export const demoAuthClient: AuthClient = {
     },
     async exchangeCodeForSession() {
       return { data: { session: null }, error: null };
+    },
+    async resetPasswordForEmail() {
+      return { data: {}, error: null };
+    },
+    async updateUser() {
+      return { data: { user: DEMO_USER }, error: null };
     },
   },
 };
