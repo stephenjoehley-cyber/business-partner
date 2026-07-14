@@ -18,7 +18,11 @@ export interface AuthClient {
       email: string;
       password: string;
     }): Promise<{ data: unknown; error: { message: string } | null }>;
-    signUp(credentials: { email: string; password: string }): Promise<{ data: unknown; error: { message: string } | null }>;
+    signUp(credentials: {
+      email: string;
+      password: string;
+      options?: { emailRedirectTo?: string };
+    }): Promise<{ data: unknown; error: { message: string } | null }>;
     exchangeCodeForSession(code: string): Promise<{ data: unknown; error: unknown }>;
   };
 }
