@@ -38,7 +38,15 @@ function ResetPasswordForm() {
       if (code) {
         const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
         if (exchangeErr) {
-          setExchangeError('This reset link has expired or already been used. Please request a new one.');
+          // TEMPORARY DIAGNOSTIC — remove once the real cause is confirmed.
+          console.error('exchangeCodeForSession failed:', exchangeErr);
+          const debugMessage =
+            typeof exchangeErr === 'object' && exchangeErr !== null && 'message' in exchangeErr
+              ? String((exchangeErr as { message: unknown }).message)
+              : JSON.stringify(exchangeErr);
+          setExchangeError(
+            `This reset link has expired or already been used. Please request a new one. (debug: ${debugMessage})`
+          );
         }
         setIsExchanging(false);
         return;
