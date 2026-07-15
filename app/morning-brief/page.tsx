@@ -35,6 +35,18 @@ export default async function MorningBriefPage() {
   const business = await getBusinessByOwner(user.id);
   if (!business) redirect('/onboarding');
 
+  // Greeting priority: Preferred Name (captured at signup, stored in
+  // Supabase user_metadata — no schema change) falls back to the business
+  // name for any account that signed up before this existed, including
+  // Demo Mode's stubbed user. Founder + CPO decision, 2026-07-15: Business
+  // Partner should greet the person, not the business (Constitution,
+  // Executive Presence Specification).
+  const preferredName =
+    typeof user.user_metadata?.preferredName === 'string' && user.user_metadata.preferredName.trim()
+      ? user.user_metadata.preferredName.trim()
+      : undefined;
+  const greetingName = preferredName ?? business.name;
+
   const [signals, latestBrief] = await Promise.all([
     getSignalsForBusiness(business.id),
     getLatestMorningBrief(business.id),
@@ -79,7 +91,7 @@ export default async function MorningBriefPage() {
         <div>
           <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Business Partner</p>
           <h1 className="text-xl font-semibold">
-            {greetingForTime()}, {business.name}.
+            {greetingForTime()}, {greetingName}.
           </h1>
         </div>
         {demoMode ? <DemoModeBadge /> : <SignOutButton />}
