@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { OnboardingWizard } from './OnboardingWizard';
+import { SignOutButton } from '@/app/morning-brief/SignOutButton';
 
 export default async function OnboardingPage() {
   const supabase = createClient();
@@ -19,6 +20,9 @@ export default async function OnboardingPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-xl px-6 py-16">
+      <div className="mb-6 flex justify-end">
+        <SignOutButton />
+      </div>
       <OnboardingWizard initialBusiness={existingBusiness} />
     </main>
   );
