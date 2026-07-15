@@ -5,6 +5,52 @@ import { isDemoMode } from '@/lib/demo/config';
 import { getDemoSignalsByIds, getDemoSignalsForBusiness, persistDemoSignals } from '@/lib/demo/store';
 
 /**
+ * Generic across domain and type deliberately — named for what it answers
+ * ("has Business Partner seen this person before, in this kind of
+ * interaction"), not for Calendar specifically, so Gmail and future
+ * interaction domains can reuse it without a redesign (Founder decision,
+ * Phase B Item 5 Calendar-gaps Implementation Plan, 2026-07-15).
+ *
+ * Deliberately excludes `excludeExternalRef` so a signal is never compared
+ * against itself — re-fetching the same real-world event (already
+ * deduplicated by the (businessId, externalRef) upsert identity above)
+ * must never count as "an earlier interaction" with the same person.
+ */
+export async function hasPriorInteractionForPerson(
+  businessId: string,
+  personId: string,
+  domain: SignalDomain,
+  type: string,
+  beforeDate: Date,
+  excludeExternalRef: string
+): Promise<boolean> {
+  if (isDemoMode()) {
+    const signals = getDemoSignalsForBusiness(businessId);
+    return signals.some(
+      (s) =>
+        s.domain === domain &&
+        s.type === type &&
+        s.relatedEntities.personId === personId &&
+        s.externalRef !== excludeExternalRef &&
+        s.occurredAt.getTime() < beforeDate.getTime()
+    );
+  }
+
+  const existing = await prisma.signal.findFirst({
+    where: {
+      businessId,
+      personId,
+      domain,
+      type,
+      externalRef: { not: excludeExternalRef },
+      occurredAt: { lt: beforeDate },
+    },
+    select: { id: true },
+  });
+  return existing !== null;
+}
+
+/**
  * The only module that touches Signal persistence directly.
  *
  * Upserts by (businessId, externalRef) — see DECISIONS.md, "Signal
