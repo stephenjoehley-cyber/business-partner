@@ -6,14 +6,17 @@ import { createClient } from '@/lib/supabase/client';
 import { FormField, inputClasses } from '@/components/FormField';
 
 /**
- * Handles a Supabase password-recovery link. Supabase can send two
- * different link formats depending on configuration: a `?code=` query
- * parameter (PKCE flow, exchanged via exchangeCodeForSession — the same
- * pattern the signup confirmation callback uses), or an older
- * `#access_token=...&refresh_token=...&type=recovery` URL fragment. A
- * fragment is never sent to the server, so it can only be read here,
- * client-side, from window.location.hash after mount. Both are handled so
- * neither link format leaves the owner stuck.
+ * Handles a Supabase password-recovery link.
+ *
+ * Important: the Supabase browser client automatically detects and
+ * processes a recovery link's `?code=` or `#access_token=...` the moment
+ * it's created (detectSessionInUrl defaults to true in every browser).
+ * This page used to ALSO call exchangeCodeForSession/setSession itself —
+ * that raced the client's own automatic exchange and reliably lost,
+ * since the single-use code was already consumed a moment earlier by the
+ * client's own initialization. The fix is to not duplicate that work:
+ * getSession() waits for the automatic detection to finish and simply
+ * reports the outcome, which is all this page needs.
  *
  * useSearchParams() requires this to run inside a Suspense boundary for
  * Next.js to prerender the route at build time — the actual form lives in
@@ -32,50 +35,37 @@ function ResetPasswordForm() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    async function establishSession() {
-      const code = searchParams.get('code');
+    async function checkSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      if (code) {
-        const { error: exchangeErr } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeErr) {
-          // TEMPORARY DIAGNOSTIC — remove once the real cause is confirmed.
-          console.error('exchangeCodeForSession failed:', exchangeErr);
-          const debugMessage =
-            typeof exchangeErr === 'object' && exchangeErr !== null && 'message' in exchangeErr
-              ? String((exchangeErr as { message: unknown }).message)
-              : JSON.stringify(exchangeErr);
-          setExchangeError(
-            `This reset link has expired or already been used. Please request a new one. (debug: ${debugMessage})`
-          );
-        }
+      if (session) {
         setIsExchanging(false);
         return;
       }
 
-      const rawHash = window.location.hash.startsWith('#')
+      const hash = window.location.hash.startsWith('#')
         ? window.location.hash.slice(1)
         : window.location.hash;
-      const hashParams = new URLSearchParams(rawHash);
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
+      const hashParams = new URLSearchParams(hash);
 
-      if (accessToken && refreshToken) {
-        const { error: sessionErr } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        if (sessionErr) {
-          setExchangeError('This reset link has expired or already been used. Please request a new one.');
-        }
-        setIsExchanging(false);
-        return;
+      const urlErrorDescription =
+        searchParams.get('error_description') ?? hashParams.get('error_description');
+      const hasCode = Boolean(searchParams.get('code'));
+      const hasHashToken = Boolean(hashParams.get('access_token'));
+
+      if (urlErrorDescription) {
+        setExchangeError(decodeURIComponent(urlErrorDescription.replace(/\+/g, ' ')));
+      } else if (hasCode || hasHashToken) {
+        setExchangeError('This reset link has expired or already been used. Please request a new one.');
+      } else {
+        setExchangeError('This reset link is missing or incomplete. Please request a new one.');
       }
-
-      setExchangeError('This reset link is missing or incomplete. Please request a new one.');
       setIsExchanging(false);
     }
 
-    establishSession();
+    checkSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
