@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { PasswordField } from '@/components/PasswordField';
 
@@ -58,9 +59,9 @@ function ResetPasswordForm() {
       if (urlErrorDescription) {
         setExchangeError(decodeURIComponent(urlErrorDescription.replace(/\+/g, ' ')));
       } else if (hasCode || hasHashToken) {
-        setExchangeError('This reset link has expired or already been used. Please request a new one.');
+        setExchangeError('This reset link has expired or already been used.');
       } else {
-        setExchangeError('This reset link is missing or incomplete. Please request a new one.');
+        setExchangeError('This reset link is missing or incomplete.');
       }
       setIsExchanging(false);
     }
@@ -101,8 +102,23 @@ function ResetPasswordForm() {
   if (exchangeError) {
     return (
       <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-8 px-6">
-        <h1 className="text-2xl font-semibold">Link no longer valid</h1>
-        <p className="text-ink-faint">{exchangeError}</p>
+        <div>
+          <h1 className="text-2xl font-semibold">Link no longer valid</h1>
+          <p className="mt-1 text-ink-faint">{exchangeError}</p>
+        </div>
+
+        <p className="text-sm text-ink-faint">
+          <Link href="/forgot-password" className="font-medium text-ink underline underline-offset-2">
+            Request a new one
+          </Link>
+        </p>
+
+        <p className="text-sm text-ink-faint">
+          Remembered it after all?{' '}
+          <Link href="/login" className="font-medium text-ink underline underline-offset-2">
+            Sign in
+          </Link>
+        </p>
       </main>
     );
   }
