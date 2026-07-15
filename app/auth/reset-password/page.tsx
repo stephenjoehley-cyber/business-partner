@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { FormField, inputClasses } from '@/components/FormField';
+import { PasswordField } from '@/components/PasswordField';
 
 /**
  * Handles a Supabase password-recovery link.
@@ -117,18 +117,15 @@ function ResetPasswordForm() {
         <p className="text-ink-faint">Password updated. Taking you to Business Partner…</p>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <FormField label="New password" htmlFor="password">
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete="new-password"
-              className={inputClasses}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </FormField>
+          <PasswordField
+            label="New password"
+            htmlFor="password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            required
+            minLength={8}
+          />
 
           {error && <p className="text-sm text-signal-attention">{error}</p>}
 
