@@ -280,5 +280,47 @@ describe('GoogleCalendarProvider', () => {
       // unknown attendee before her (no Person) or Second Contact after her.
       expect(signals[0].relatedEntities.personId).toBe('person-jane');
     });
+
+    it('regression: only the earliest of two same-batch meetings with the same person is marked as the first meeting', async () => {
+      // Found during real end-to-end testing, 2026-07-15: two meetings with
+      // the same attendee, fetched in the same batch, both said "first
+      // meeting" because neither had been persisted yet when the check ran.
+      const earlierEvent = {
+        id: 'event-jane-earlier',
+        summary: 'First call',
+        start: { dateTime: '2026-07-16T09:00:00.000Z' },
+        end: { dateTime: '2026-07-16T09:30:00.000Z' },
+        attendees: [{ email: 'jane@example.com', displayName: 'Jane Cooper' }],
+      };
+      const laterEvent = {
+        id: 'event-jane-later',
+        summary: 'Follow-up call',
+        start: { dateTime: '2026-07-18T09:00:00.000Z' },
+        end: { dateTime: '2026-07-18T09:30:00.000Z' },
+        attendees: [{ email: 'jane@example.com', displayName: 'Jane Cooper' }],
+      };
+
+      getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+      hasPriorInteractionForPersonMock.mockResolvedValue(false); // nothing persisted yet, for either event
+      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
+        ok: true,
+        // Google returns events ordered by startTime, exactly as requested
+        // (orderBy=startTime) — earlier event first, as in production.
+        json: async () => ({ items: [earlierEvent, laterEvent] }),
+      });
+
+      const signals = await provider.fetchSignals(contextWithJane, window);
+
+      expect(signals).toHaveLength(2);
+      const earlierSignal = signals.find((s) => s.externalRef === 'event-jane-earlier');
+      const laterSignal = signals.find((s) => s.externalRef === 'event-jane-later');
+
+      expect((earlierSignal!.payload as { isFirstMeetingWithPerson: boolean }).isFirstMeetingWithPerson).toBe(
+        true
+      );
+      expect((laterSignal!.payload as { isFirstMeetingWithPerson: boolean }).isFirstMeetingWithPerson).toBe(
+        false
+      );
+    });
   });
 });
