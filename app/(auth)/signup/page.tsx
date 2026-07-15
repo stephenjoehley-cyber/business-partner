@@ -10,6 +10,7 @@ import { PasswordField } from '@/components/PasswordField';
 export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
+  const [preferredName, setPreferredName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,10 @@ export default function SignupPage() {
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: { preferredName: preferredName.trim() || undefined },
+      },
     });
 
     if (signUpError) {
@@ -44,6 +48,17 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <FormField label="What would you like Business Partner to call you?" htmlFor="preferredName">
+          <input
+            id="preferredName"
+            type="text"
+            autoComplete="given-name"
+            className={inputClasses}
+            value={preferredName}
+            onChange={(e) => setPreferredName(e.target.value)}
+          />
+        </FormField>
+
         <FormField label="Email" htmlFor="email">
           <input
             id="email"
