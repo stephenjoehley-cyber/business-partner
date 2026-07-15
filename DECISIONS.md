@@ -350,3 +350,45 @@ The "Link no longer valid" screen's text used to say "Please request a new one" 
 **Cost if wrong:** none — additive navigation only.
 
 **Test/type status:** 155 tests passing (153 existing at the start of this correction, plus 2 new covering `setSession`/`getSession` on `demoAuthClient`). `npx tsc --noEmit` shows only the same pre-existing, sandbox-only Prisma-client-generation errors present before this correction (the sandbox's network allowlist blocks `binaries.prisma.sh`) — none reference any file changed here. A full local `next build` could not be run in the sandbox (it also blocks `fonts.googleapis.com`); the Suspense-boundary fix was verified against Vercel's real production build instead, consistent with this project's standing practice of trusting real builds over sandbox approximations for anything the sandbox cannot fully exercise.
+
+## Google Calendar — Attendee Resolution & Genuine First-Meeting Detection
+
+Objective: close two gaps found during the Phase B Item 5 Founder Experience Review (15 July 2026) — a live Calendar signal never resolved its attendee to an existing Business Memory contact, and always reported `isFirstMeetingWithPerson: false` regardless of reality. Approved via Product Audit and Implementation Plan (Option B), following real end-to-end evidence, not a synthetic test.
+
+### 2026-07-15 — `GoogleCalendarProvider` resolves `relatedEntities.personId` by matching attendee emails against existing `Person` records
+`lib/signals/providers/google/calendar.ts`. Attendee emails (case-insensitive, trimmed) are matched against `context.people`, already passed into every `SignalProvider.fetchSignals` call per the existing `BusinessContext` contract. First match, in Google's returned attendee order, wins.
+**Why:** the live provider never implemented this half of `CalendarSignalPayload`'s existing, already-defined contract — `relatedEntities.personId` was always empty, so the Cognitive Engine's interpreter (`lib/cognition/interpreters/calendar.ts`) could never recognise a known contact, regardless of whether one existed.
+**Cost if wrong:** an event with several attendees who are all existing contacts links to only the first match found — a declared, schema-level limitation (`RelatedEntities.personId` is a single field), not an oversight. Multi-person linkage would need a `RelatedEntities` schema change, out of scope here.
+
+### 2026-07-15 — `GoogleCalendarProvider` computes a genuine `isFirstMeetingWithPerson`, replacing the hardcoded `false`
+New repository function `hasPriorInteractionForPerson` (`lib/signals/repository.ts`), deliberately generic across `domain`/`type` rather than Calendar-specific (CPO naming recommendation) so Gmail and future interaction domains can reuse it without redesign. A matched `Person` is "first meeting" only if no earlier persisted signal already connects the two; an attendee with no matched `Person` at all is trivially a first meeting, since there is no record to check against.
+**Why:** considered and rejected moving this logic into the shared Cognitive Engine interpreter instead (Option A) — the Founder's own reasoning: Signal Providers observe and normalise; the Cognitive Engine understands and judges. Computing this inside the interpreter would have made a shared code path (used by every calendar signal, seeded and live) depend on live-provider-specific historical reasoning, at real risk to Demo Mode's deliberately hand-tuned seeded scenarios. Option B keeps the change contained to one file, consistent with `CalendarSignalPayload` already being provider-supplied, per-domain data (MVP Blueprint §5).
+**Cost if wrong:** if Option A is later judged correct after all, this becomes a refactor — moving already-correct logic from provider to interpreter — not a redesign; the underlying data (`Signal.personId`, the historical query) doesn't change.
+
+### 2026-07-15 — Same-batch blind spot in first-meeting detection, found during real end-to-end testing, fixed same day
+Found directly by the Founder deliberately creating two real test meetings with the same attendee in the same fetch window: both were marked "first meeting," because the historical check only looked at signals already persisted from a *previous* run — it had no visibility into sibling events being processed in the same batch. `GoogleCalendarProvider.fetchSignals` now processes events sequentially, in the chronological order Google already returns them in (`orderBy=startTime`), tracking which people have already been seen earlier in the same batch.
+**Why:** the original implementation used `Promise.all` over all events, computing each `isFirstMeetingWithPerson` independently and concurrently — correct against the database, blind to concurrent siblings.
+**Cost if wrong:** none identified — verified directly against the real scenario that exposed it (two real Calendar events, same attendee, same fetch), not just a synthetic test.
+
+**Test/type status:** 167 tests passing (155 before this work; 12 new — 6 in `tests/signals/providers/google/calendar.test.ts` covering attendee matching, first-meeting detection, and the same-batch regression; 5 in `tests/signals/repository.test.ts` covering `hasPriorInteractionForPerson` directly, both real and Demo Mode branches; 1 additional regression test added after the same-batch fix). 5 pre-existing, sandbox-only failures in `tests/demo/repositoryIntegration.test.ts` remain, confirmed unrelated by re-running the identical suite against unmodified `main`. `npx tsc --noEmit` shows 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category as before (17 baseline + 2 new, both "no exported member 'Person'" in the two files that now import it directly) — none reference genuine logic in the files changed here.
+
+## Personal Greeting (Preferred Name)
+
+Objective: greet the person using Business Partner, not the business they work for — Founder + CPO decision, 2026-07-15, reasoned directly from the Constitution and Executive Presence Specification's "exceptional colleague" standard, and from the Operating Model's future multi-user roadmap (§1, v3): a business-name greeting is already impersonal and becomes actively wrong once more than one person can share a business workspace.
+
+### 2026-07-15 — Signup captures a single "Preferred Name" field, stored in Supabase `user_metadata`
+`app/(auth)/signup/page.tsx`. Deliberately one free-text field ("What would you like Business Partner to call you?"), not separate first/last name fields (CPO recommendation) — avoids assumptions about global naming conventions and scales internationally without new identity fields. No database schema change: Supabase's existing `user_metadata` mechanism carries it.
+**Why:** the smallest-footprint way to capture this — no Prisma migration, no new table, nothing to backfill.
+**Cost if wrong:** none identified for new signups. Every account that signed up before this field existed (including the Founder's own test accounts) has no way to set one retroactively — a real, declared limitation, not an oversight (see Decision Backlog Q9).
+
+### 2026-07-15 — Morning Brief greets by Preferred Name, falling back to the business name
+`app/morning-brief/page.tsx`. Greeting priority: Preferred Name (from `user.user_metadata`) → business name, unchanged from today's existing behaviour, if no Preferred Name is on file.
+**Why:** graceful fallback means every existing account — and Demo Mode's stubbed user, which has no `user_metadata` at all — keeps exactly today's behaviour with zero migration required, while every new signup gets the more personal experience immediately.
+**Cost if wrong:** none identified — verified directly with a real, live throwaway signup (Preferred Name "Essjay"), confirmed the Morning Brief read "Good afternoon, Essjay."
+
+### 2026-07-15 — `AuthClient` (`lib/demo/authStub.ts`) widened to expose `user_metadata` and `signUp`'s `data` option
+Two fields added to the shared interface Demo Mode and the real Supabase client both conform to, following the exact pattern already used for `setSession`/`getSession` (Production Password-Reset Correction, same file).
+**Why:** the interface is deliberately the exact list of Supabase auth surface any call site uses; Preferred Name introduced two genuinely new call sites (`getUser().data.user.user_metadata`, `signUp()`'s `options.data`).
+**Cost if wrong:** none — pure type-contract additions; Demo Mode's stub already ignores its `signUp` parameters entirely, so no behavioural change there.
+
+**Test/type status:** 167 tests passing, unchanged from the Calendar work above — no new tests added for this change; existing `tests/demo/authStub.test.ts` (7 tests) re-verified passing after the interface widening. `npx tsc --noEmit` shows no new errors beyond the same 19 pre-existing, sandbox-only category.
