@@ -309,3 +309,44 @@ One method changed, in one file (`lib/signals/registry.ts`). Previously: `config
 **Cost if wrong:** a real business with nothing connected now sees zero signals rather than plausible-looking ones — the Cognitive Engine's existing `all_clear` tier already handles this truthfully and gracefully; no new failure mode introduced. Google Calendar (Phase B, Item 5) begins against this corrected baseline: connecting a live provider raises a business out of `all_clear` with real data, not with fabricated data being replaced by real data.
 
 **Test/type status:** 137 tests passing (135 existing, with `tests/signals/registry.test.ts` rewritten — 7 tests, up from 5, covering both Demo Mode's unchanged default and the real-account truthful-null behaviour explicitly). `npx tsc --noEmit` shows the same 15 pre-existing, sandbox-only Prisma-client-generation errors, unaffected by this change.
+
+## Production Password-Reset Correction
+
+Objective: a real production account must be able to complete password reset end-to-end. Surfaced directly by the first real end-to-end test of the feature on 15 July 2026 — every attempt failed with "Link no longer valid," across nine consecutive build/commit cycles, before the actual root cause was isolated. Recorded here in full, including the paths that did *not* fix it, per Asset 018 §6 (Handover Protocol) and the Founder's explicit instruction that a correct diagnosis matters more than a fast one.
+
+### 2026-07-15 — `useSearchParams()` in `/auth/reset-password` wrapped in a `Suspense` boundary
+`app/auth/reset-password/page.tsx` split into an inner `ResetPasswordForm` and a default-exported wrapper.
+**Why:** Next.js cannot statically prerender a route that calls `useSearchParams()` outside a Suspense boundary — this was failing the production build outright (`next build` error, not caught by `tsc` or `vitest` alone, since neither exercises Next.js's static-generation step).
+**Cost if wrong:** none identified — this is the standard, Next.js-documented fix for this exact build error, and the fallback UI shown during Suspense is a one-line "Checking your reset link…" message, not a new state to maintain.
+
+### 2026-07-15 — `AuthClient` contract (`lib/demo/authStub.ts`) widened to include `setSession` and `getSession`
+Two methods added to the hand-maintained interface and its Demo Mode stub, in two separate commits, as each was discovered missing.
+**Why:** this interface is deliberately the *exact* list of Supabase auth methods any call site uses (see the file's own header comment) — `exchangeCodeForSession` and `resetPasswordForEmail`/`updateUser` were already present from earlier work, but `setSession` (needed for the older `#access_token=` link format) and later `getSession` (needed for the actual fix below) were genuinely new call sites this feature introduced.
+**Cost if wrong:** none — these are pure type-contract additions with no behavioural change to the real Supabase client; the Demo Mode stub implementations are no-ops consistent with every other method in this file.
+
+### 2026-07-15 — Middleware (`middleware.ts`) checks `isPublicPath` before creating a Supabase server client, not after
+Reordered so public auth paths (`/login`, `/signup`, `/forgot-password`, `/auth/reset-password`, `/auth/callback`) return immediately, without calling `supabase.auth.getUser()` at all.
+**Why:** public auth pages never need to know whether the visitor is logged in, so the previous unconditional `getUser()` call on every request was pure overhead on these paths — worth removing on its own merits (Product Principles, Principle 14: every feature must earn its place). Investigated as a candidate fix for the password-reset bug (a stale session cookie was a plausible trigger for an unwanted cookie refresh); testing after this change alone showed the bug was still present, so **this was not the root cause** — it is kept because it is independently correct, not because it fixed anything.
+**Cost if wrong:** none — behaviour for protected paths is unchanged (`!user` still redirects to `/login`); this only removes a redundant network call on paths that never used its result.
+
+### 2026-07-15 — `@supabase/ssr` upgraded from `0.5.1` to `0.12.3`
+`package.json`/`package-lock.json` only; no application code changed. `@supabase/supabase-js` resolved automatically to `2.110.5` to satisfy the newer package's peer dependency, within the existing `^2.45.4` range already permitted by our own constraint.
+**Why:** Supabase's own documentation attributes cookie/session-handling fixes to this version range, directly relevant to the bug being investigated. Tested in isolation after the upgrade; the identical failure persisted, so **this was not the root cause** either — kept because running seven minor versions behind a security-relevant auth library is worth correcting regardless of whether it fixed this specific bug.
+**Cost if wrong:** none identified — full type-check and test suite passed unchanged after the upgrade, and both `middleware.ts` and `lib/supabase/server.ts` already used the current `getAll`/`setAll` cookie API, not a deprecated one, so no migration was needed.
+
+### 2026-07-15 — Reset-password page no longer calls `exchangeCodeForSession`/`setSession` itself — the actual root cause and fix
+`app/auth/reset-password/page.tsx`'s session-establishment logic replaced: instead of manually reading the `?code=` or `#access_token=` parameter and exchanging it, the page now calls `supabase.auth.getSession()` once and checks the result.
+**Why:** the Supabase browser client (`createBrowserClient`) defaults `detectSessionInUrl` to `true`, meaning it automatically detects and exchanges a recovery link's code *at client-construction time* — before this page's own `useEffect` ever ran. The page's manual exchange call was therefore always racing the client's own automatic one for the same single-use code, and always lost, since the client's own exchange ran first. This is confirmed directly from the installed `@supabase/ssr` source (`createBrowserClient.js`), not inferred — and it explains why the identical error persisted across a library upgrade, a middleware change, and cleared browser cookies: none of those things were ever the actual cause. `getSession()` correctly waits for the client's own automatic detection to finish and simply reports the outcome, eliminating the race entirely rather than working around it.
+**Cost if wrong:** none identified — verified with a clean, single-attempt, real end-to-end test (fresh reset request, immediate link click, single "Save new password" click) completing successfully, not just a retry after a first failure.
+
+### 2026-07-15 — Consistent password-visibility toggle added across the Authentication feature family
+New shared `components/PasswordField.tsx`, used identically by Login, Signup, and Reset-password in place of each page's own raw `<input type="password">`.
+**Why:** per Asset 018 §5 (Feature Families) — a toggle added to only one of three password fields in the same feature family would be an inconsistency the founder correctly flagged before it shipped. One shared component, not three copies of the same toggle logic.
+**Cost if wrong:** none — purely additive UI; no change to any submission logic on any of the three pages.
+
+### 2026-07-15 — Reset-password's error state gained real actionable links, not just instructional text
+The "Link no longer valid" screen's text used to say "Please request a new one" without actually linking anywhere. Now links directly to `/forgot-password` ("Request a new one") and `/login` ("Remembered it after all? Sign in"), matching the pattern already established on `/forgot-password` itself.
+**Why:** Editorial Style Guide (Asset 017) §2 — "every recommendation ends somewhere the owner can act." An instruction with no way to act on it left the owner needing to already know the app's own URL structure.
+**Cost if wrong:** none — additive navigation only.
+
+**Test/type status:** 155 tests passing (153 existing at the start of this correction, plus 2 new covering `setSession`/`getSession` on `demoAuthClient`). `npx tsc --noEmit` shows only the same pre-existing, sandbox-only Prisma-client-generation errors present before this correction (the sandbox's network allowlist blocks `binaries.prisma.sh`) — none reference any file changed here. A full local `next build` could not be run in the sandbox (it also blocks `fonts.googleapis.com`); the Suspense-boundary fix was verified against Vercel's real production build instead, consistent with this project's standing practice of trusting real builds over sandbox approximations for anything the sandbox cannot fully exercise.
