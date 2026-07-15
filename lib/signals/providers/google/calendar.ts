@@ -39,9 +39,20 @@ export class GoogleCalendarProvider implements SignalProvider {
     try {
       const accessToken = await this.getValidAccessToken(business.id, stored);
       const events = await this.fetchEvents(accessToken, window);
-      const signals = await Promise.all(
-        events.map((event) => this.toDraftSignal(event, business.id, people))
-      );
+
+      // Google returns events with orderBy=startTime, so processing them in
+      // this order — sequentially, not via Promise.all — means each event's
+      // "has this happened before" check can see every earlier event in the
+      // same batch, not only what's already persisted from a previous run.
+      // Without this, two same-day-fetched meetings with the same person
+      // could both be mislabelled "first" (found during real end-to-end
+      // testing, 2026-07-15 — see DECISIONS.md).
+      const signals: DraftSignal<CalendarSignalPayload>[] = [];
+      const seenPersonIdsThisBatch = new Set<string>();
+      for (const event of events) {
+        const signal = await this.toDraftSignal(event, business.id, people, seenPersonIdsThisBatch);
+        signals.push(signal);
+      }
 
       await setProviderConfigData(business.id, 'calendar', this.providerId, {
         ...stored,
@@ -127,7 +138,8 @@ export class GoogleCalendarProvider implements SignalProvider {
   private async toDraftSignal(
     event: GoogleEvent,
     businessId: string,
-    people: Person[]
+    people: Person[],
+    seenPersonIdsThisBatch: Set<string>
   ): Promise<DraftSignal<CalendarSignalPayload>> {
     const startTime = event.start?.dateTime ?? event.start?.date ?? new Date().toISOString();
     const endTime = event.end?.dateTime ?? event.end?.date ?? startTime;
@@ -145,19 +157,24 @@ export class GoogleCalendarProvider implements SignalProvider {
     // No matched Person at all means Business Partner has no record of this
     // contact whatsoever — first meeting by definition. A matched Person is
     // only a "first meeting" if no earlier Calendar signal on file already
-    // connects the two, checked against real persisted history (not a
-    // provider-invented guess) — see the approved Implementation Plan,
-    // Phase B Item 5 Calendar gaps, 2026-07-15.
-    const isFirstMeetingWithPerson = personId
-      ? !(await hasPriorInteractionForPerson(
-          businessId,
-          personId,
-          'calendar',
-          'meeting_upcoming',
-          new Date(startTime),
-          event.id
-        ))
-      : true;
+    // connects the two — checked against real persisted history AND against
+    // any earlier event for the same person already processed in this same
+    // fetch (see the batch-ordering fix above; a persisted-only check missed
+    // same-batch siblings entirely).
+    let isFirstMeetingWithPerson = true;
+    if (personId) {
+      const alreadySeenThisBatch = seenPersonIdsThisBatch.has(personId);
+      const hasPriorPersistedMeeting = await hasPriorInteractionForPerson(
+        businessId,
+        personId,
+        'calendar',
+        'meeting_upcoming',
+        new Date(startTime),
+        event.id
+      );
+      isFirstMeetingWithPerson = !(alreadySeenThisBatch || hasPriorPersistedMeeting);
+      seenPersonIdsThisBatch.add(personId);
+    }
 
     return {
       domain: 'calendar',
