@@ -392,3 +392,23 @@ Two fields added to the shared interface Demo Mode and the real Supabase client 
 **Cost if wrong:** none — pure type-contract additions; Demo Mode's stub already ignores its `signUp` parameters entirely, so no behavioural change there.
 
 **Test/type status:** 167 tests passing, unchanged from the Calendar work above — no new tests added for this change; existing `tests/demo/authStub.test.ts` (7 tests) re-verified passing after the interface widening. `npx tsc --noEmit` shows no new errors beyond the same 19 pre-existing, sandbox-only category.
+## Phase B Item 6 — Business Memory Persistence Verification
+
+Objective: verify Operating Model §7's five Business Memory commitments against the actual codebase, per the Roadmap's own framing of this item ("largely already built... verification, not new design"). Found: three of four verified cleanly; one governing document overstated reality rather than the product having a real gap.
+
+### 2026-07-15 — Verified: Creation, Enrichment, Isolation
+`lib/brain/repository.ts`, `lib/signals/repository.ts` reviewed directly. Every real (non-Demo-Mode) query scoped by `ownerId` or `businessId`; the one deliberately unscoped function (`getAllBusinessIds`) is documented and doesn't leak data — it only returns IDs, re-scoped by every subsequent call. Creation confirmed live via the same-day Personal Greeting throwaway signup test — a genuine, unplanned end-to-end run of this exact commitment.
+**Why:** direct code review plus one real production test, rather than re-reading the Roadmap's own description and assuming it still matched reality.
+**Cost if wrong:** none — nothing changed; this is a verification record.
+
+### 2026-07-15 — Governance correction: Operating Model §11's "Full data deletion/export on request" checkmark corrected
+Prisma schema fully supports deletion (`onDelete: Cascade` throughout), but no application feature — route, UI, or function — exists to delete or export a business's data. Founder decision: correct the Operating Model's checkmark to reflect reality rather than expand this Roadmap item to build the feature now. Deletion/export is scheduled deliberately before first commercial release (Decision Backlog Q11), not silently deferred.
+**Why:** "I'd rather have an unchecked box than an inaccurate checkmark" (Founder, 2026-07-15) — truthfulness applies to governing documents themselves, not only to what Business Partner tells an owner.
+**Cost if wrong:** none identified — no commercial customer exists yet for whom this commitment is currently being relied upon.
+
+### 2026-07-15 — Migration strategy question logged, not resolved from code
+No `prisma/migrations` directory exists in the repository, and no evidence of how `schema.prisma` changes have reached the live production database (`prisma migrate` vs. `db push`). This is a factual question only the Founder can answer from actual deployment history — logged as Decision Backlog Q10, not blocking this item's closure.
+**Why:** cannot be verified from the code alone; recording the open question rather than guessing.
+**Cost if wrong:** none — informational only.
+
+**Status:** Phase B, Item 6 closed. No code changed as part of this item; the one real finding was a governance document correction, not an implementation gap.
