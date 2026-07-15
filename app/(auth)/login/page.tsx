@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { FormField, inputClasses } from '@/components/FormField';
+import { PasswordField } from '@/components/PasswordField';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -51,17 +52,14 @@ export default function LoginPage() {
           />
         </FormField>
 
-        <FormField label="Password" htmlFor="password">
-          <input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            className={inputClasses}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </FormField>
+        <PasswordField
+          label="Password"
+          htmlFor="password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+          required
+        />
 
         <Link href="/forgot-password" className="-mt-2 self-start text-sm text-ink-faint underline underline-offset-2">
           Forgot password?
