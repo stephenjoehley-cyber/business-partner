@@ -1,6 +1,8 @@
+import type { Person } from '@prisma/client';
 import type { SignalProvider, BusinessContext, TimeWindow } from '../../provider';
 import type { CalendarSignalPayload, DraftSignal } from '../../types';
 import { getProviderConfigData, setProviderConfigData } from '../../config-repository';
+import { hasPriorInteractionForPerson } from '../../repository';
 import { encryptToken, decryptToken } from './tokenStorage';
 import { refreshAccessToken } from './oauth';
 
@@ -27,7 +29,7 @@ export class GoogleCalendarProvider implements SignalProvider {
   readonly providerId = 'google-calendar';
 
   async fetchSignals(context: BusinessContext, window: TimeWindow): Promise<DraftSignal[]> {
-    const { business } = context;
+    const { business, people } = context;
 
     const stored = (await getProviderConfigData(business.id, 'calendar')) as StoredGoogleConfig | null;
     if (!stored) {
@@ -37,7 +39,9 @@ export class GoogleCalendarProvider implements SignalProvider {
     try {
       const accessToken = await this.getValidAccessToken(business.id, stored);
       const events = await this.fetchEvents(accessToken, window);
-      const signals = events.map((event) => this.toDraftSignal(event, business.id));
+      const signals = await Promise.all(
+        events.map((event) => this.toDraftSignal(event, business.id, people))
+      );
 
       await setProviderConfigData(business.id, 'calendar', this.providerId, {
         ...stored,
@@ -95,7 +99,36 @@ export class GoogleCalendarProvider implements SignalProvider {
     return data.items ?? [];
   }
 
-  private toDraftSignal(event: GoogleEvent, businessId: string): DraftSignal<CalendarSignalPayload> {
+  /**
+   * Matches an event's attendees against existing Person records for this
+   * business, by email (case-insensitive, trimmed). Returns the first
+   * match found, in attendee order.
+   *
+   * Known, declared limitation (schema constraint, not an oversight):
+   * `RelatedEntities.personId` holds a single id, so an event with several
+   * attendees who are all existing contacts links to only the first match.
+   * Supporting multiple related people per signal would need a schema
+   * change to `RelatedEntities`, out of scope here.
+   */
+  private matchAttendeeToPerson(
+    attendees: GoogleEvent['attendees'],
+    people: Person[]
+  ): Person | undefined {
+    if (!attendees) return undefined;
+    for (const attendee of attendees) {
+      const email = attendee.email?.trim().toLowerCase();
+      if (!email) continue;
+      const match = people.find((p) => p.email?.trim().toLowerCase() === email);
+      if (match) return match;
+    }
+    return undefined;
+  }
+
+  private async toDraftSignal(
+    event: GoogleEvent,
+    businessId: string,
+    people: Person[]
+  ): Promise<DraftSignal<CalendarSignalPayload>> {
     const startTime = event.start?.dateTime ?? event.start?.date ?? new Date().toISOString();
     const endTime = event.end?.dateTime ?? event.end?.date ?? startTime;
     const durationMinutes = Math.max(
@@ -106,17 +139,37 @@ export class GoogleCalendarProvider implements SignalProvider {
       .map((a) => a.displayName ?? a.email)
       .filter((name): name is string => Boolean(name));
 
+    const matchedPerson = this.matchAttendeeToPerson(event.attendees, people);
+    const personId = matchedPerson?.id;
+
+    // No matched Person at all means Business Partner has no record of this
+    // contact whatsoever — first meeting by definition. A matched Person is
+    // only a "first meeting" if no earlier Calendar signal on file already
+    // connects the two, checked against real persisted history (not a
+    // provider-invented guess) — see the approved Implementation Plan,
+    // Phase B Item 5 Calendar gaps, 2026-07-15.
+    const isFirstMeetingWithPerson = personId
+      ? !(await hasPriorInteractionForPerson(
+          businessId,
+          personId,
+          'calendar',
+          'meeting_upcoming',
+          new Date(startTime),
+          event.id
+        ))
+      : true;
+
     return {
       domain: 'calendar',
       type: 'meeting_upcoming',
       occurredAt: new Date(startTime),
-      relatedEntities: {},
+      relatedEntities: { personId },
       payload: {
         title: event.summary ?? 'Untitled event',
         startTime,
         durationMinutes,
         attendees,
-        isFirstMeetingWithPerson: false,
+        isFirstMeetingWithPerson,
       },
       sourceProviderId: this.providerId,
       externalRef: event.id,
