@@ -9,10 +9,18 @@ import { DEMO_OWNER_EMAIL, DEMO_OWNER_ID } from './config';
  * `lib/supabase/server.ts` / `lib/supabase/client.ts` can return either
  * the real client or `demoAuthClient` below from the same `createClient()`
  * function with no change needed at any call site.
+ *
+ * 2026-07-15: `getUser()`'s return widened to include `user_metadata`, and
+ * `signUp()`'s `options` widened to accept `data` — both needed once
+ * Signup started passing `preferredName` through Supabase's existing
+ * metadata mechanism (Founder + CPO decision, Personal Greeting).
  */
 export interface AuthClient {
   auth: {
-    getUser(): Promise<{ data: { user: { id: string; email?: string } | null }; error: unknown }>;
+    getUser(): Promise<{
+      data: { user: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null };
+      error: unknown;
+    }>;
     signOut(): Promise<{ error: unknown }>;
     signInWithPassword(credentials: {
       email: string;
@@ -21,7 +29,7 @@ export interface AuthClient {
     signUp(credentials: {
       email: string;
       password: string;
-      options?: { emailRedirectTo?: string };
+      options?: { emailRedirectTo?: string; data?: Record<string, unknown> };
     }): Promise<{ data: unknown; error: { message: string } | null }>;
     exchangeCodeForSession(code: string): Promise<{ data: unknown; error: unknown }>;
     setSession(session: { access_token: string; refresh_token: string }): Promise<{ data: unknown; error: unknown }>;
