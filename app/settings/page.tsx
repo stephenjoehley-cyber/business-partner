@@ -8,6 +8,11 @@ import { DisconnectButton } from './DisconnectButton';
  * and a connect/disconnect action. Nothing else belongs here yet, per the
  * approved Product Audit's explicit exclusion of any broader integrations
  * page.
+ *
+ * 2026-07-15: not-connected copy updated to state why Business Partner is
+ * asking for access before the action itself, per the Founder's decision on
+ * the Phase B Item 5 Product Audit ("explanation first, action second" —
+ * Decision Backlog Q6).
  */
 export default async function SettingsPage({
   searchParams,
@@ -48,7 +53,7 @@ export default async function SettingsPage({
             ? needsReconnect
               ? 'Calendar needs to be reconnected.'
               : 'Connected. Business Partner is observing your schedule.'
-            : 'Not connected. Business Partner is ready to observe your schedule once connected.'}
+            : 'Connect your calendar so Business Partner can prepare you for upcoming meetings and help prioritise your day.'}
         </p>
 
         {searchParams.calendar === 'error' && (
