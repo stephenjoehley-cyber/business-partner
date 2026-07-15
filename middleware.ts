@@ -21,6 +21,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
+
+  // Public auth pages never need to know whether the visitor is logged in,
+  // and — critically for /auth/reset-password — skipping the Supabase call
+  // here avoids a session-refresh attempt that could clear a stale cookie
+  // and, with it, the PKCE code verifier the reset page still needs to read.
+  if (isPublicPath) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -46,9 +56,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
-
-  if (!user && !isPublicPath) {
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
