@@ -439,4 +439,23 @@ Added in the same migration as the baseline, `DateTime?`, nullable. Landed along
 Objective: gate `onboardingCompletedAt` on the inaugural Morning Brief genuinely being generated, not on form submission — Founder-specified sequence: Business Profile → Goals → People → `runDailyCycleForBusiness` succeeds → `onboardingCompletedAt` set → redirect. Also fixed two real bugs found during this work.
 
 ### 2026-07-16 — New `POST /api/onboarding/complete` route, separate from People submission
-`app/api/onboarding/complete/route.ts`. Calls `runDailyCycleForBusiness`, and
+`app/api/onboarding/complete/route.ts`. Calls `runDailyCycleForBusiness`, and only calls `completeOnboarding` if it succeeds (or has already run today, e.g. a retried call). Deliberately its own endpoint, not folded into `/api/onboarding/people`.
+**Why:** keeps a brief-generation failure retryable on its own — the owner is never at risk of resubmitting (and duplicating) People just to retry this step. Idempotent by construction: `runDailyCycleForBusiness` already no-ops for an existing same-day brief, and `completeOnboarding` only ever advances `onboardingCompletedAt` forward.
+**Cost if wrong:** none identified — a failed call leaves the owner correctly still in the wizard; nothing is marked complete on a real failure.
+
+### 2026-07-16 — Completion check changed from `goals.length > 0` to `onboardingCompletedAt`
+`app/onboarding/page.tsx`. The old check permanently skipped the optional People step for anyone who reached Goals but abandoned before People, since it only checked for the presence of Goals.
+**Why:** People is deliberately optional (existing product decision) — but "optional" should mean "the owner can choose to skip it," not "any abandonment before this step silently and permanently removes it." `onboardingCompletedAt` is only set after the full sequence succeeds, so it's the only accurate signal that onboarding genuinely finished.
+**Cost if wrong:** none identified — verified directly against the new field's semantics; no existing business had `onboardingCompletedAt` set incorrectly, since the field didn't exist until this same day's baseline migration.
+
+### 2026-07-16 — Validation error messages now reach the owner (bug fix)
+`app/onboarding/OnboardingWizard.tsx`. The client read only `data.error.formErrors`, but Zod's `.flatten()` puts field-level messages under `fieldErrors` — meaning specific, already-written validation messages never reached the owner; they saw only the generic fallback.
+**Why:** genuine bug, not a design gap — the server was already producing the right message, the client was reading the wrong field.
+**Cost if wrong:** none identified — this is a strict improvement; the fallback message is preserved for any error shape not covered by the more specific reads.
+
+### 2026-07-16 — Session-expiry recovery: 401 responses now offer a direct sign-in action
+`app/onboarding/OnboardingWizard.tsx`. A `401` from any onboarding step now surfaces `{ message, actionHref: '/login', actionLabel: 'Sign in again' }` instead of a generic error with no path forward.
+**Why:** a mid-onboarding session expiry previously left the owner stuck with a dead-end error and no indication that signing in again would fix it.
+**Cost if wrong:** none identified — additive; every other error shape falls through to the previous generic message unchanged.
+
+**Test/type status:** 174 tests passing (167 before this work; new coverage added in `tests/api/onboarding/complete.test.ts` and `tests/brain/repository.test.ts` for the new route and `completeOnboarding`). `npx tsc --noEmit` unchanged from the pre-existing sandbox-only Prisma-client-generation category.
