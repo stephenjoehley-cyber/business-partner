@@ -13,6 +13,14 @@ import { DisconnectButton } from './DisconnectButton';
  * asking for access before the action itself, per the Founder's decision on
  * the Phase B Item 5 Product Audit ("explanation first, action second" —
  * Decision Backlog Q6).
+ *
+ * 2026-07-16: added a plain link back to the Morning Brief — Settings
+ * previously had no navigation at all, a real dead end for anyone who
+ * arrives here directly (e.g., returning later just to disconnect).
+ * Discovered during Item 8's Founder Experience Review; see DECISIONS.md
+ * and Decision Backlog Q21 (application-wide navigation architecture,
+ * deferred — this is a local fix, not a resolution of that broader
+ * question).
  */
 export default async function SettingsPage({
   searchParams,
@@ -43,6 +51,10 @@ export default async function SettingsPage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 px-6">
+      <a href="/morning-brief" className="focus-ring text-sm text-ink-faint hover:text-ink">
+        Back to your Morning Brief
+      </a>
+
       <h1 className="font-body text-ink text-xl font-semibold">Settings</h1>
 
       <div className="rounded-lg border border-surface-border bg-surface-card p-6">
