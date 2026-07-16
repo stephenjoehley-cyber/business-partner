@@ -4,6 +4,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     business: {
       findMany: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
@@ -16,6 +17,7 @@ vi.mock('@/lib/demo/config', () => ({
 vi.mock('@/lib/demo/store', () => ({
   getDemoBusinessById: vi.fn(),
   addDemoPeople: vi.fn(),
+  completeDemoOnboarding: vi.fn(),
   createDemoBusinessProfile: vi.fn(),
   getDemoBusinessByOwner: vi.fn(),
   replaceDemoGoals: vi.fn(),
@@ -24,12 +26,14 @@ vi.mock('@/lib/demo/store', () => ({
 
 import { prisma } from '@/lib/prisma';
 import { isDemoMode } from '@/lib/demo/config';
-import { getDemoBusinessById } from '@/lib/demo/store';
-import { getAllBusinessIds } from '@/lib/brain/repository';
+import { completeDemoOnboarding, getDemoBusinessById } from '@/lib/demo/store';
+import { completeOnboarding, getAllBusinessIds } from '@/lib/brain/repository';
 
 const findManyMock = prisma.business.findMany as unknown as ReturnType<typeof vi.fn>;
+const updateMock = prisma.business.update as unknown as ReturnType<typeof vi.fn>;
 const isDemoModeMock = isDemoMode as unknown as ReturnType<typeof vi.fn>;
 const getDemoBusinessByIdMock = getDemoBusinessById as unknown as ReturnType<typeof vi.fn>;
+const completeDemoOnboardingMock = completeDemoOnboarding as unknown as ReturnType<typeof vi.fn>;
 
 describe('getAllBusinessIds', () => {
   beforeEach(() => {
@@ -74,5 +78,35 @@ describe('getAllBusinessIds', () => {
     const result = await getAllBusinessIds();
 
     expect(result).toEqual([]);
+  });
+});
+
+describe('completeOnboarding', () => {
+  beforeEach(() => {
+    updateMock.mockReset();
+    isDemoModeMock.mockReset();
+    completeDemoOnboardingMock.mockReset();
+  });
+
+  it('sets onboardingCompletedAt via Prisma when not in Demo Mode', async () => {
+    isDemoModeMock.mockReturnValue(false);
+    updateMock.mockResolvedValue({});
+
+    await completeOnboarding('biz-1');
+
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: 'biz-1' },
+      data: { onboardingCompletedAt: expect.any(Date) },
+    });
+    expect(completeDemoOnboardingMock).not.toHaveBeenCalled();
+  });
+
+  it('delegates to the demo store in Demo Mode, without touching Prisma', async () => {
+    isDemoModeMock.mockReturnValue(true);
+
+    await completeOnboarding('demo-business');
+
+    expect(completeDemoOnboardingMock).toHaveBeenCalledWith('demo-business');
+    expect(updateMock).not.toHaveBeenCalled();
   });
 });

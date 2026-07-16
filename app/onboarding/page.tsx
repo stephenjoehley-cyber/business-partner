@@ -12,9 +12,14 @@ export default async function OnboardingPage() {
 
   if (!user) redirect('/login');
 
-  // If onboarding was already completed, don't re-run it.
+  // If onboarding was already completed — meaning Business Partner has
+  // genuinely generated the inaugural Morning Brief, not merely that a
+  // form was submitted — don't re-run it. Using this field rather than
+  // `goals.length > 0` matters: People is deliberately optional, so an
+  // owner who completes Business Profile and Goals but abandons before
+  // reaching People must still be routed back into the wizard, not past it.
   const existingBusiness = await getBusinessByOwner(user.id);
-  if (existingBusiness && existingBusiness.goals.length > 0) {
+  if (existingBusiness?.onboardingCompletedAt) {
     redirect('/morning-brief');
   }
 

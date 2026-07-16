@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type { Business, Goal, Person } from '@prisma/client';
 import { BusinessProfileStep } from './steps/BusinessProfileStep';
 import { GoalsStep } from './steps/GoalsStep';
@@ -12,11 +13,28 @@ type BusinessWithRelations = (Business & { goals: Goal[]; people: Person[] }) | 
 
 const STEPS = ['Your business', 'Your goals', 'Key people'] as const;
 
+interface WizardError {
+  message: string;
+  actionHref?: string;
+  actionLabel?: string;
+}
+
+export function resumeStepIndex(business: BusinessWithRelations): number {
+  if (!business) return 0;
+  if (business.goals.length === 0) return 1;
+  return 2;
+}
+
 export function OnboardingWizard({ initialBusiness }: { initialBusiness: BusinessWithRelations }) {
   const router = useRouter();
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(() => resumeStepIndex(initialBusiness));
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<WizardError | null>(null);
+  // People has been saved but the inaugural Morning Brief hasn't been
+  // generated yet — a distinct state from the People form itself, so a
+  // failure here is retryable on its own without resubmitting People.
+  const [peopleSaved, setPeopleSaved] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
 
   async function submitProfile(values: BusinessProfileFormValues) {
     await postJSON('/api/onboarding/business', values);
@@ -30,25 +48,63 @@ export function OnboardingWizard({ initialBusiness }: { initialBusiness: Busines
 
   async function submitPeople(values: PersonFormValues[]) {
     await postJSON('/api/onboarding/people', values);
-    router.push('/morning-brief');
-    router.refresh();
+    setPeopleSaved(true);
+    await finalize();
   }
 
-  async function postJSON(url: string, body: unknown) {
+  // Onboarding is only complete once Business Partner has genuinely
+  // generated the inaugural Morning Brief (Founder decision, Item 7) —
+  // not merely because People was submitted. Safe to call again after a
+  // prior failure: nothing here re-touches Business Profile, Goals, or
+  // People.
+  async function finalize() {
+    setIsFinalizing(true);
+    try {
+      await postJSON('/api/onboarding/complete');
+      router.push('/morning-brief');
+      router.refresh();
+    } catch {
+      // error state already set by postJSON; stay on the finalize panel
+      // so the owner can retry directly.
+    } finally {
+      setIsFinalizing(false);
+    }
+  }
+
+  async function postJSON(url: string, body?: unknown): Promise<void> {
     setIsSubmitting(true);
     setError(null);
     try {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: body !== undefined ? JSON.stringify(body) : undefined,
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error?.formErrors?.[0] ?? data?.error ?? 'Something went wrong. Please try again.');
-      }
+      if (res.ok) return;
+
+      const data = await res.json().catch(() => null);
+      // Zod's `.flatten()` puts field-level messages under `fieldErrors`,
+      // not `formErrors` — reading only `formErrors` (the previous
+      // behaviour) meant these specific, already-written messages never
+      // reached the owner. Read fieldErrors first.
+      const fieldMessage: string | undefined = data?.error?.fieldErrors
+        ? (Object.values(data.error.fieldErrors) as string[][]).flat()[0]
+        : undefined;
+      const message =
+        fieldMessage ??
+        data?.error?.formErrors?.[0] ??
+        (typeof data?.error === 'string' ? data.error : undefined) ??
+        'Something went wrong. Please try again.';
+
+      setError(
+        res.status === 401 ? { message, actionHref: '/login', actionLabel: 'Sign in again' } : { message },
+      );
+      throw new Error(message);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      // Reached directly (without the block above) only on a genuine
+      // network-level failure — fetch() itself threw. Functional update
+      // leaves an already-set, more specific message untouched.
+      setError((current) => current ?? { message: 'Something went wrong. Please try again.' });
       throw e;
     } finally {
       setIsSubmitting(false);
@@ -73,7 +129,15 @@ export function OnboardingWizard({ initialBusiness }: { initialBusiness: Busines
 
       {error && (
         <p className="rounded border border-signal-attention/30 bg-signal-attention/10 px-4 py-3 text-sm text-signal-attention">
-          {error}
+          {error.message}
+          {error.actionHref && error.actionLabel && (
+            <>
+              {' '}
+              <Link href={error.actionHref} className="font-medium underline underline-offset-2">
+                {error.actionLabel}
+              </Link>
+            </>
+          )}
         </p>
       )}
 
@@ -101,8 +165,27 @@ export function OnboardingWizard({ initialBusiness }: { initialBusiness: Busines
           isSubmitting={isSubmitting}
         />
       )}
-      {stepIndex === 2 && (
+      {stepIndex === 2 && !peopleSaved && (
         <PeopleStep onSubmit={submitPeople} onBack={() => setStepIndex(1)} isSubmitting={isSubmitting} />
+      )}
+      {stepIndex === 2 && peopleSaved && (
+        <div className="flex flex-col items-start gap-4">
+          <h1 className="text-2xl font-semibold">Getting ready…</h1>
+          <p className="text-ink-faint">
+            {isFinalizing
+              ? "I'm putting together your first Morning Brief."
+              : "I wasn't able to finish just now."}
+          </p>
+          {!isFinalizing && (
+            <button
+              type="button"
+              onClick={finalize}
+              className="rounded bg-ink px-5 py-2.5 font-medium text-surface transition-opacity hover:opacity-90 focus-ring"
+            >
+              Try again
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

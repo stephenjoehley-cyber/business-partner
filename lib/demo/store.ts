@@ -33,6 +33,10 @@ let demoBusiness: Business = {
   website: 'https://meridiangearboxes.example',
   createdAt: new Date(),
   updatedAt: new Date(),
+  // Demo Mode bypasses onboarding entirely (seeded, zero-configuration) —
+  // pre-set so it's never routed into the real onboarding wizard by the
+  // same completion check a real account uses.
+  onboardingCompletedAt: new Date(),
 };
 
 let demoGoals: Goal[] = [
@@ -90,9 +94,18 @@ export function createDemoBusinessProfile(ownerId: string, input: BusinessProfil
     industry: input.industry,
     description: input.description ?? null,
     website: input.website ?? null,
+    onboardingCompletedAt: null,
     updatedAt: new Date(),
   };
   return demoBusiness;
+}
+
+/** Mirrors the real `completeOnboarding` — sets the field once the inaugural cycle has actually run. Never called via the demo UI (onboarding is bypassed), kept for completeness. */
+export function completeDemoOnboarding(businessId: string): void {
+  if (businessId !== demoBusiness.id) {
+    throw new Error(`Demo store has no business with id: ${businessId}`);
+  }
+  demoBusiness = { ...demoBusiness, onboardingCompletedAt: new Date() };
 }
 
 export function updateDemoBusinessProfile(businessId: string, input: Partial<BusinessProfileInput>): Business {

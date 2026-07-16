@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { isDemoMode, DEMO_BUSINESS_ID } from '@/lib/demo/config';
 import {
   addDemoPeople,
+  completeDemoOnboarding,
   createDemoBusinessProfile,
   getDemoBusinessById,
   getDemoBusinessByOwner,
@@ -126,6 +127,27 @@ export async function addPeople(businessId: string, people: PersonInput[]): Prom
       email: p.email,
       notes: p.notes,
     })),
+  });
+}
+
+/**
+ * Marks onboarding complete — called only after the inaugural Morning
+ * Brief has genuinely been generated (Phase B Item 7 Founder decision:
+ * the owner isn't finished onboarding because they submitted a form,
+ * they're finished because Business Partner is genuinely ready to begin
+ * working). Never called directly from a form-submission handler; the
+ * only caller is `/api/onboarding/complete`, after `runDailyCycleForBusiness`
+ * reports success.
+ */
+export async function completeOnboarding(businessId: string): Promise<void> {
+  if (isDemoMode()) {
+    completeDemoOnboarding(businessId);
+    return;
+  }
+
+  await prisma.business.update({
+    where: { id: businessId },
+    data: { onboardingCompletedAt: new Date() },
   });
 }
 
