@@ -6,17 +6,6 @@ interface AllClearCardProps {
   generatedAt: Date;
   /** Today's upcoming calendar signals, if any — shown alongside the all-clear message so the owner isn't left with a truly empty screen. Not part of the Cognitive Engine's reasoning; this is the raw, already-known schedule. */
   todaysAgenda: Signal[];
-  /**
-   * True for a real (non-Demo-Mode) business with no Calendar connected yet.
-   * Per the Founder's refinement (2026-07-14): the product problem isn't
-   * "there's no route to Settings" — it's that Business Partner isn't yet
-   * telling the owner what it needs to become more valuable. The
-   * explanation comes first; the action follows. This pattern is meant to
-   * scale to future integrations (Gmail, etc.) without changing shape —
-   * Business Partner remains the guide, Settings remains the management
-   * surface.
-   */
-  promptCalendarConnect: boolean;
 }
 
 /** A meeting's own scheduled time is useful, real information for an owner planning their day — unlike a "generated at" audit timestamp, this isn't the kind of machine precision Executive Time (Principle 5) warns against. Formatted without seconds, which is. */
@@ -30,7 +19,7 @@ function meetingTime(occurredAt: Date): string {
  * something to show. "Nothing urgent" is presented as useful information,
  * not as an empty or broken state.
  */
-export function AllClearCard({ message, generatedAt, todaysAgenda, promptCalendarConnect }: AllClearCardProps) {
+export function AllClearCard({ message, generatedAt, todaysAgenda }: AllClearCardProps) {
   return (
     <div className="rounded-lg border border-surface-border bg-surface-card p-8">
       <div className="flex items-start justify-between gap-4">
@@ -42,25 +31,7 @@ export function AllClearCard({ message, generatedAt, todaysAgenda, promptCalenda
 
       <h2 className="text-lg font-semibold leading-snug">All clear.</h2>
 
-      {promptCalendarConnect ? (
-        <>
-          <p className="mt-2 max-w-md text-ink-faint">
-            Business Memory is established. I&apos;ve learned about your business. The next thing I
-            need is access to your calendar so I can begin preparing your Morning Brief using your
-            real schedule.
-          </p>
-          <div className="mt-4">
-            <a
-              href="/api/integrations/google-calendar/connect"
-              className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
-            >
-              Connect Google Calendar
-            </a>
-          </div>
-        </>
-      ) : (
-        <p className="mt-2 max-w-md text-ink-faint">{message}</p>
-      )}
+      <p className="mt-2 max-w-md text-ink-faint">{message}</p>
 
       {todaysAgenda.length > 0 && (
         <div className="mt-6 border-t border-surface-border pt-4">
