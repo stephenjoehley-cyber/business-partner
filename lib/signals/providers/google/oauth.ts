@@ -22,6 +22,15 @@ export function getGoogleAuthUrl(state: string): string {
     response_type: 'code',
     scope: CALENDAR_SCOPE,
     access_type: 'offline',
+    // Google only issues a refresh_token the first time a given Google
+    // account grants consent to this app; a second authorization from the
+    // same account (e.g. after the owner's business record was recreated
+    // and its previously-saved refresh token no longer exists) otherwise
+    // returns an access token with no refresh token, and the callback has
+    // nothing to fall back on. `prompt: 'consent'` forces Google to show
+    // the consent screen and issue a fresh refresh_token every time,
+    // regardless of prior grants. See Decision Backlog Q16.
+    prompt: 'consent',
     state,
   });
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
