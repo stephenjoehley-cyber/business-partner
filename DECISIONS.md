@@ -491,3 +491,19 @@ Objective: address the first real trust checkpoint discovered during Phase B Ite
 **Cost if wrong:** none identified — pure, side-effect-free function; verified directly against non-sorted, single-item, and empty inputs.
 
 **Test/type status:** 182 tests passing (178 before this work; 4 new in `tests/morning-brief/businessMemoryReflection.test.ts`). `npx tsc --noEmit` unchanged at 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category.
+
+## Calendar-Connect Navigation Fix (discovered during Item 8's Founder Experience Review)
+
+Objective: fix a real dead end discovered while actually walking the Calendar-connect flow live, not just reading its output — after connecting Google Calendar, the owner landed on Settings with zero navigation of any kind (no header, no link back to Morning Brief), stranded except for the browser's back button.
+
+### 2026-07-16 — OAuth callback redirects to `/morning-brief` on success, not `/settings?calendar=connected`
+`app/api/integrations/google-calendar/callback/route.ts`. The error path is unchanged (`/settings?calendar=error` — Settings remains the right place to retry). Only the success path moved.
+**Why:** Settings should be a page an owner deliberately visits to manage a connection, not a forced waypoint after completing an action that was framed entirely in Morning Brief terms (the reflection card's own closing sentence: "...so I can begin putting that understanding to work"). Landing back on the Morning Brief, `BusinessMemoryReflection`'s existing "already connected" closing sentence (the `calendarConnected` branch, already built for Item 8) becomes the confirmation automatically — the connect button simply disappears, replaced by that sentence. No new confirmation copy was needed; reusing what already existed was the more relationship-consistent choice than adding a separate success banner.
+**Cost if wrong:** none identified — no test asserted the old redirect target (the callback route has no existing test coverage of its redirect destinations at all, consistent with its state before this change); verified directly by reading the route and confirmed live by the Founder.
+
+### 2026-07-16 — Settings page gains a plain "Back to your Morning Brief" link
+`app/settings/page.tsx`. Settings previously had no navigation of any kind, independent of the redirect fix above — a real gap for anyone who arrives there directly (e.g., returning later just to disconnect), not just via the Calendar-connect flow.
+**Why:** general navigation hygiene, not Calendar-specific — will matter more as Settings gains more content over time.
+**Cost if wrong:** none identified — purely additive.
+
+**Test/type status:** 182 tests passing, unchanged (this route has no dedicated test coverage before or after this change). `npx tsc --noEmit` unchanged at 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category. Verified live by the Founder as part of Item 8's Founder Experience Review.
