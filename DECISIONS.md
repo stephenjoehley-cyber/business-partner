@@ -459,3 +459,14 @@ Objective: gate `onboardingCompletedAt` on the inaugural Morning Brief genuinely
 **Cost if wrong:** none identified — additive; every other error shape falls through to the previous generic message unchanged.
 
 **Test/type status:** 174 tests passing (167 before this work; new coverage added in `tests/api/onboarding/complete.test.ts` and `tests/brain/repository.test.ts` for the new route and `completeOnboarding`). `npx tsc --noEmit` unchanged from the pre-existing sandbox-only Prisma-client-generation category.
+
+## Google Calendar OAuth Fix (Decision Backlog Q16, resolved)
+
+Objective: fix Google Calendar connection failing in production with `/settings?calendar=error`, discovered during a genuine fresh-account onboarding test (16 July 2026).
+
+### 2026-07-16 — `getGoogleAuthUrl` now requests `prompt: 'consent'`
+`lib/signals/providers/google/oauth.ts`. Root cause: Google only issues a `refresh_token` the first time a given Google account grants an app consent. The Founder's account had already authorized this app in an earlier test; when that test's Supabase user (and its cascaded business record, including the saved refresh token) was deleted and a fresh business was created under the same Google account, Google's subsequent authorization returned an access token but no refresh token — and the callback correctly, but unhelpfully, treated that as a failure (`if (!tokens.refreshToken && !existingRefreshToken)`). Diagnosed directly from the callback's own logic and confirmed against the exact sequence of events (delete → recreate → reconnect with the same, already-authorized Google account), not guessed.
+**Why:** `prompt: 'consent'` forces Google to show the consent screen and issue a fresh refresh token on every authorization, regardless of prior grants — the standard fix for this well-documented Google OAuth behavior. No change to scopes, credentials, or redirect URI was needed; this was never a configuration/drift problem.
+**Cost if wrong:** none identified — the owner now sees Google's consent screen on every connection attempt, including reconnections. This is a minor, expected UX step (one extra click confirming access), not a functional risk.
+
+**Test/type status:** 178 tests passing (174 before this work; 4 new in `tests/signals/providers/google/oauth.test.ts`, covering the `prompt=consent` param, `access_type=offline`, state passthrough, and the missing-env-var error).
