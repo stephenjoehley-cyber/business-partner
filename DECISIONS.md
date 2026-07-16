@@ -470,3 +470,24 @@ Objective: fix Google Calendar connection failing in production with `/settings?
 **Cost if wrong:** none identified — the owner now sees Google's consent screen on every connection attempt, including reconnections. This is a minor, expected UX step (one extra click confirming access), not a functional risk.
 
 **Test/type status:** 178 tests passing (174 before this work; 4 new in `tests/signals/providers/google/oauth.test.ts`, covering the `prompt=consent` param, `access_type=offline`, state passthrough, and the missing-env-var error).
+
+## Business Memory Reflection (Phase B, Item 8)
+
+Objective: address the first real trust checkpoint discovered during Phase B Item 7's Founder Experience Review — a real fresh-account onboarding test where the owner reached an honest `all_clear` Morning Brief with zero visible trace of the business name, industry, goals, or people they had just provided ("I gave it an industry, goals, people — none of that shows up anywhere on this page."). CPO diagnosis: the `all_clear` tier is honest about the *absence of insight*, but says nothing about the *presence of memory* — different claims. Fix: a deterministic, no-AI reflection of data already captured at onboarding, reviewed and approved via a full Product Audit before implementation, per Asset 018 §3.
+
+### 2026-07-16 — New `BusinessMemoryReflection` component, rendered above `AllClearCard`
+`app/morning-brief/BusinessMemoryReflection.tsx`. Reflects `Business.name`, `Business.industry`, `Goal[]` (ordered by priority), and `Person[]` — all already loaded by `MorningBriefPage` as part of the existing `BusinessWithRelations` object. No new database query, no new route, no new dependency, and entirely outside the Cognitive Engine / Narrative Layer (nothing here is tiered, scored, or reasoned about — pure display of already-decided, already-stored facts).
+**Why:** the smallest complete piece of customer value addressing the actual gap — CPO's explicit recommendation was to leave Asset 005 Minutes 2–5 (Decision Backlog Q13) untouched in favour of this smaller, more honest fix.
+**Cost if wrong:** none identified — additive only; removing it would simply return the `all_clear` state to its previous, still-functional behaviour.
+
+### 2026-07-16 — `AllClearCard` simplified, no longer owns the Calendar-connect explanation
+`app/morning-brief/AllClearCard.tsx`. The `promptCalendarConnect` prop and its special-cased branch are removed; `AllClearCard` now always renders the Cognitive Engine's own `message` unconditionally. The "why Calendar matters" explanation and the connect action itself moved into `BusinessMemoryReflection`'s closing sentence, which now owns that responsibility fully — avoiding two adjacent cards both explaining the same thing.
+**Why:** without this change, a business with Calendar not yet connected would have seen the same explanation duplicated in both cards. `AllClearCard`'s honest tier message ("No signals currently require executive attention.") and `BusinessMemoryReflection`'s memory/next-step message are different claims and both still render — this only removes the actual duplication.
+**Cost if wrong:** none identified — verified directly: the Cognitive Engine's `all_clear` message text (`lib/cognition/recommend.ts`) is a fixed string, independent of Calendar-connection state, so removing the special case doesn't lose any real information.
+
+### 2026-07-16 — Goal ordering extracted as `sortGoalsByPriority`, a standalone testable function
+`app/morning-brief/BusinessMemoryReflection.tsx`. Confirmed directly that `getBusinessByOwner`'s query has no `orderBy` — goals are not guaranteed to already arrive in priority order, contrary to an initial assumption during the audit. Sorting (lower `priority` value first, per the `Goal` model's own existing comment) is done explicitly, extracted into its own exported function rather than left inline, so it's directly unit-testable without rendering the component.
+**Why:** consistent with this project's existing testing pattern — no component in this codebase has direct render tests (UI is verified via the Founder Experience Review); adding a full React-testing setup (jsdom, Testing Library) for one component would be disproportionate. Extracting the one real piece of logic keeps test coverage proportional to actual risk.
+**Cost if wrong:** none identified — pure, side-effect-free function; verified directly against non-sorted, single-item, and empty inputs.
+
+**Test/type status:** 182 tests passing (178 before this work; 4 new in `tests/morning-brief/businessMemoryReflection.test.ts`). `npx tsc --noEmit` unchanged at 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category.
