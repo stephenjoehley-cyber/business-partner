@@ -59,7 +59,14 @@ export async function GET(request: Request) {
       lastError: null,
     });
 
-    const response = NextResponse.redirect(new URL('/settings?calendar=connected', request.url));
+    // Redirect to the Morning Brief, not Settings, on success — Settings
+    // is for deliberately managing a connection (checking status,
+    // disconnecting), not a forced waypoint after completing an action
+    // framed entirely in Morning Brief terms. BusinessMemoryReflection's
+    // existing "already connected" closing sentence (calendarConnected)
+    // already serves as the confirmation the moment the owner lands back
+    // here — no separate success message is needed.
+    const response = NextResponse.redirect(new URL('/morning-brief', request.url));
     response.cookies.delete(OAUTH_STATE_COOKIE);
     return response;
   } catch {
