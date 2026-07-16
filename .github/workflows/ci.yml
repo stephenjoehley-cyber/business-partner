@@ -1,0 +1,29 @@
+name: CI
+
+# Catches exactly the failure pattern seen repeatedly in deployment history:
+# a commit that doesn't type-check or pass tests. Runs on every push to
+# main, so a broken commit is flagged within about a minute — visible as a
+# red X directly on GitHub — rather than only being discovered later by
+# reading Vercel's build logs after the fact.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npx vitest run
