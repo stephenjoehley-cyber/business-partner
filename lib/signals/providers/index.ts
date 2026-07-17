@@ -3,11 +3,13 @@ import type { SignalDomain } from '../types';
 import { SeededCalendarProvider } from './seeded/calendar';
 import { SeededEmailProvider } from './seeded/email';
 import { GoogleCalendarProvider } from './google/calendar';
+import { GoogleGmailProvider } from './google/gmail';
 
 const PROVIDERS: Record<string, SignalProvider> = {
   'seeded-calendar': new SeededCalendarProvider(),
   'seeded-email': new SeededEmailProvider(),
   'google-calendar': new GoogleCalendarProvider(),
+  'google-gmail': new GoogleGmailProvider(),
 };
 
 export const DEFAULT_PROVIDER_ID: Partial<Record<SignalDomain, string>> = {
