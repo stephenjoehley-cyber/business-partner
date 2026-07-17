@@ -114,7 +114,7 @@ export default async function SettingsPage({
             {isConnected ? (
               <DisconnectButton />
             ) : (
-              
+            <a  
                 href="/api/integrations/google-calendar/connect"
                 className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
               >
