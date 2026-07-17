@@ -14,6 +14,12 @@ import { DEMO_OWNER_EMAIL, DEMO_OWNER_ID } from './config';
  * `signUp()`'s `options` widened to accept `data` — both needed once
  * Signup started passing `preferredName` through Supabase's existing
  * metadata mechanism (Founder + CPO decision, Personal Greeting).
+ *
+ * 2026-07-17: `updateUser()`'s attributes widened to also accept `data` —
+ * needed once Settings started letting an existing owner set or change
+ * Preferred Name retroactively (Decision Backlog Q9), the same
+ * `user_metadata` mechanism as signup, just reached from a different
+ * screen.
  */
 export interface AuthClient {
   auth: {
@@ -38,7 +44,10 @@ export interface AuthClient {
       email: string,
       options?: { redirectTo?: string }
     ): Promise<{ data: unknown; error: { message: string } | null }>;
-    updateUser(attributes: { password?: string }): Promise<{ data: unknown; error: { message: string } | null }>;
+    updateUser(attributes: {
+      password?: string;
+      data?: Record<string, unknown>;
+    }): Promise<{ data: unknown; error: { message: string } | null }>;
   };
 }
 
