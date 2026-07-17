@@ -569,3 +569,24 @@ CPO's explicit push-back, correctly: identifying the gap and immediately proposi
 **Process note, not a defect finding:** Q11 itself is unaffected by this — its approved scope never included Morning Brief navigation, and everything it committed to shipping was delivered and verified. This surfaced only because the Founder Experience Review walked the *complete* owner journey from signup rather than starting from a known URL. Adopted as a standing Engineering expectation going forward (Pre-Ship Walkthrough Checklist, point 8): walk the full journey from the natural customer entry point to any feature being reviewed, so a missing link like this surfaces during Engineering's own review next time, not the Founder's.
 
 **Test/type status:** 194 tests unchanged (a static navigation link plus a code comment — no new logic, consistent with this project's existing pattern of not writing render tests for presentational-only changes). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
+
+## Calendar Placement in the Customer Journey (Decision Backlog Q4, resolved)
+
+Objective: resolve Q4 — whether Google Calendar should move into the onboarding wizard itself, following the Operating Model's original customer-journey step order (Calendar offered before the first Morning Brief existed).
+
+### 2026-07-17 — Kept Calendar connection out of the onboarding wizard; no code change
+Product Audit considered moving Google Calendar into the onboarding wizard, as a literal reading of the Operating Model's original step order required. Founder Experience Reviews demonstrated that Business Partner creates greater trust by first demonstrating executive judgement before requesting deeper access to the business. Current placement (Business Memory Reflection on the Morning Brief, plus Settings) is correct and deliberate, not a gap.
+**Why:** the product has learned something the original Operating Model didn't assume — Business Partner should earn the right to request deeper access by demonstrating value first, not open the relationship with a request.
+**Cost if wrong:** low and reversible — an owner who would have connected Calendar sooner if asked earlier waits one extra Morning Brief cycle to see the offer; reversible by moving the CTA earlier again if evidence says otherwise.
+
+### 2026-07-17 — Operating Model §3 (Customer Journey) updated to reflect the evolved relationship model
+`Business Partner — SaaS Operating Model v1` (Google Doc), Customer Journey section: Calendar offer moved from step 4 to step 6, now presented only after the Morning Brief has demonstrated real value. A new closing paragraph names this as deliberate product philosophy — Business Partner earns the right to ask for deeper understanding by first demonstrating the value of the understanding it already has, extending the spirit of Progressive Trust (Asset 016, Principle 7) beyond a single Morning Brief to the relationship as a whole.
+**Why:** documents an evolution in product understanding deliberately, rather than letting the Operating Model quietly fall out of sync with how the product actually behaves.
+**Cost if wrong:** none identified — documentation change only.
+
+### 2026-07-17 — Decision Backlog Q22 opened: Progressive Access as a relationship principle
+Recorded as a foundational input to Asset 019 (Executive Relationship Journey) — the broader principle Q4 surfaced, extending beyond Calendar to any future integration or request for information.
+
+**Status:** Decision Backlog Q4 — Resolved. Decision Backlog Q22 — opened, Deferred (input to Asset 019).
+
+**Test/type status:** no code or test changes in this decision — Operating Model and Decision Backlog documentation only.
