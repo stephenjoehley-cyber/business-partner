@@ -5,16 +5,24 @@ vi.mock('@/lib/prisma', () => ({
     morningBrief: {
       create: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
 
 import { prisma } from '@/lib/prisma';
-import { getLatestMorningBrief, hasMorningBriefToday, saveMorningBrief, toResult } from '@/lib/cognition/repository';
+import {
+  getAllMorningBriefsForBusiness,
+  getLatestMorningBrief,
+  hasMorningBriefToday,
+  saveMorningBrief,
+  toResult,
+} from '@/lib/cognition/repository';
 import type { MorningBriefResult } from '@/lib/cognition/types';
 
 const createMock = prisma.morningBrief.create as unknown as ReturnType<typeof vi.fn>;
 const findFirstMock = prisma.morningBrief.findFirst as unknown as ReturnType<typeof vi.fn>;
+const findManyMock = prisma.morningBrief.findMany as unknown as ReturnType<typeof vi.fn>;
 
 const confidentBrief: MorningBriefResult = {
   tier: 'confident_recommendation',
@@ -220,5 +228,44 @@ describe('toResult', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
     ).toThrow('unknown tier');
+  });
+});
+
+describe('getAllMorningBriefsForBusiness', () => {
+  beforeEach(() => {
+    findManyMock.mockReset();
+  });
+
+  it('returns every brief for the business, oldest first, correctly typed by tier', async () => {
+    findManyMock.mockResolvedValue([
+      {
+        id: 'brief-1',
+        tier: 'all_clear',
+        recommendation: null,
+        reasoning: null,
+        recommendedAction: null,
+        confidence: null,
+        supportingSignalIds: [],
+        message: 'No signals currently require executive attention.',
+        generatedAt: new Date('2026-07-01T06:00:00.000Z'),
+      },
+    ]);
+
+    const result = await getAllMorningBriefsForBusiness('biz-1');
+
+    expect(findManyMock).toHaveBeenCalledWith({
+      where: { businessId: 'biz-1' },
+      orderBy: { generatedAt: 'asc' },
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].tier).toBe('all_clear');
+  });
+
+  it('returns an empty array when no briefs exist yet', async () => {
+    findManyMock.mockResolvedValue([]);
+
+    const result = await getAllMorningBriefsForBusiness('biz-1');
+
+    expect(result).toEqual([]);
   });
 });
