@@ -534,6 +534,19 @@ Founder decision, explicitly to keep this tightly scoped: no email provider, no 
 
 **Test/type status:** 194 tests passing (182 before this work; 12 new — `tests/api/account/export.test.ts`, `tests/api/account/delete.test.ts`, and two added to `tests/cognition/repository.test.ts` for `getAllMorningBriefsForBusiness`). `npx tsc --noEmit` unchanged at 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category (two new implicit-`any` errors surfaced during this work and were fixed immediately, not left in the baseline).
 
+## Deletion Sign-Out Bug (found during Q11's live Founder Experience Review)
+
+Objective: fix a real bug found by the Founder actually completing a deletion live — after confirming deletion, the owner landed on `/login?deleted=true` instead of the intended onboarding acknowledgment.
+
+### 2026-07-16 — Removed an erroneous `supabase.auth.signOut()` call from the delete handler
+`app/settings/DeleteBusinessSection.tsx`. Root cause: Option A's entire premise (Decision Backlog Q11) is that the owner's login stays active after deleting their business — the confirmation copy says so explicitly ("Your login will remain active..."). The implementation contradicted its own copy by signing the owner out immediately after deletion; since `/onboarding` is an authenticated route, the middleware correctly (if unhelpfully) redirected the now-signed-out owner to `/login` before the acknowledgment message ever had a chance to render.
+**Why:** this was a genuine implementation mistake, not a design trade-off — nothing in the approved audit or copy called for signing the owner out. Removing the call makes the code match what was actually designed and approved.
+**Cost if wrong:** none identified — the owner remains authenticated throughout, exactly as promised; only the Business row and its cascade are gone.
+
+**Test/type status:** 194 tests unchanged (this bug wasn't exercised by the existing delete-route tests, since they test the API route in isolation, not the client-side redirect behavior — the API route itself was always correct). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
+
+**Verified live by the Founder:** confirmed the full flow — fresh signup, onboarding, Morning Brief, Settings found unaided via the header link, export, delete confirmation, and (once this fix ships) the correct onboarding acknowledgment.
+
 **Status:** Decision Backlog Q11 — Resolved.
 
 ## Morning Brief → Settings Navigation Gap (discovered during Q11's Founder Experience Review)
