@@ -75,7 +75,7 @@ export default async function SettingsPage({
   const needsReconnect = Boolean(config?.lastError);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 px-6">
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 px-6 py-12">
       <a href="/morning-brief" className="focus-ring text-sm text-ink-faint hover:text-ink">
         Back to your Morning Brief
       </a>
