@@ -131,6 +131,25 @@ export async function getLatestMorningBrief(businessId: string): Promise<Morning
 }
 
 /**
+ * Every MorningBrief ever generated for a business, oldest first — used
+ * only by the data-export route (Decision Backlog Q11). Not used by any
+ * owner-facing screen; the Morning Brief page only ever needs the latest
+ * one (getLatestMorningBrief, above).
+ */
+export async function getAllMorningBriefsForBusiness(businessId: string): Promise<MorningBriefResult[]> {
+  if (isDemoMode()) {
+    const latest = getLatestDemoMorningBrief();
+    return latest ? [latest] : [];
+  }
+
+  const rows = await prisma.morningBrief.findMany({
+    where: { businessId },
+    orderBy: { generatedAt: 'asc' },
+  });
+  return rows.map(toResult);
+}
+
+/**
  * Whether a MorningBrief already exists for this business within the given
  * day (defaults to today, UTC). This is the Executive Orchestrator's
  * (Increment 7) idempotency check — the application-layer guarantee that
