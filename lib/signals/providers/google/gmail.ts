@@ -141,7 +141,16 @@ export class GoogleGmailProvider implements SignalProvider {
    * allow-list) — never the message body.
    */
   private async fetchThreads(accessToken: string): Promise<GmailThread[]> {
-    const listParams = new URLSearchParams({ maxResults: '50' });
+    // maxResults deliberately small — this pulls the whole owner's recent
+    // inbox activity once a day, not a full mailbox export, and each
+    // returned thread costs a separate API call plus a database upsert.
+    // Confirmed live, 17 July 2026: an earlier value of 50 produced
+    // enough concurrent Signal upserts (persistSignals runs them all via
+    // Promise.all) to exhaust the production database's connection pool
+    // (limit: 1) and time out. Not yet a fix to persistSignals itself —
+    // see Decision Backlog for that — this keeps Gmail's own footprint
+    // proportionate in the meantime.
+    const listParams = new URLSearchParams({ maxResults: '10' });
     listParams.append('labelIds', 'INBOX');
     listParams.append('labelIds', 'CATEGORY_PERSONAL');
 
