@@ -4,6 +4,7 @@ import { getConfiguredProviderId, getProviderConfigData } from '@/lib/signals/co
 import { DisconnectButton } from './DisconnectButton';
 import { ExportDataLink } from './ExportDataLink';
 import { DeleteBusinessSection } from './DeleteBusinessSection';
+import { PreferredNameSection } from './PreferredNameSection';
 
 /**
  * Settings — Phase B, Item 5. Google Calendar connect status and a
@@ -27,6 +28,16 @@ import { DeleteBusinessSection } from './DeleteBusinessSection';
  * Founder's explicit decision: deletes Business Memory only, never the
  * Supabase Auth identity — see app/api/account/delete/route.ts for the
  * full reasoning.
+ *
+ * 2026-07-17: added retroactive Preferred Name (Decision Backlog Q9) and
+ * reorganized this screen into three relationship-based groups — Personal,
+ * Connections, Your Business Data — rather than a flat stack of cards.
+ * Founder's framing: these groups reflect what actually belongs to the
+ * owner personally, what connects Business Partner to outside systems,
+ * and what belongs to the business itself — "Me → My Connections → My
+ * Business Data." No functional change to Calendar, Export, or Delete;
+ * this is information architecture only. Likely a precursor to whatever
+ * Asset 019 (Executive Relationship Journey) eventually formalizes here.
  */
 export default async function SettingsPage({
   searchParams,
@@ -39,6 +50,14 @@ export default async function SettingsPage({
   } = await supabase.auth.getUser();
 
   if (!user) return null; // middleware already redirects unauthenticated requests to /login
+
+  // Same read pattern as app/morning-brief/page.tsx — one shared source of
+  // truth for Preferred Name (Supabase user_metadata), never duplicated
+  // into Business Memory.
+  const preferredName =
+    typeof user.user_metadata?.preferredName === 'string' && user.user_metadata.preferredName.trim()
+      ? user.user_metadata.preferredName.trim()
+      : null;
 
   const business = await getBusinessByOwner(user.id);
   if (!business) return null; // middleware/onboarding flow already handles this case elsewhere
@@ -63,53 +82,67 @@ export default async function SettingsPage({
 
       <h1 className="font-body text-ink text-xl font-semibold">Settings</h1>
 
-      <div className="rounded-lg border border-surface-border bg-surface-card p-6">
-        <h2 className="font-body text-ink font-medium">Google Calendar</h2>
+      <section className="flex flex-col gap-4">
+        <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Personal</h2>
 
-        <p className="mt-2 text-sm text-ink-faint">
-          {isConnected
-            ? needsReconnect
-              ? 'Calendar needs to be reconnected.'
-              : 'Connected. Business Partner is observing your schedule.'
-            : 'Connect your calendar so Business Partner can prepare you for upcoming meetings and help prioritise your day.'}
-        </p>
+        <div className="rounded-lg border border-surface-border bg-surface-card p-6">
+          <PreferredNameSection initialPreferredName={preferredName} />
+        </div>
+      </section>
 
-        {searchParams.calendar === 'error' && (
+      <section className="flex flex-col gap-4">
+        <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Connections</h2>
+
+        <div className="rounded-lg border border-surface-border bg-surface-card p-6">
+          <h3 className="font-body text-ink font-medium">Google Calendar</h3>
+
           <p className="mt-2 text-sm text-ink-faint">
-            Something went wrong connecting Google Calendar. Please try again.
+            {isConnected
+              ? needsReconnect
+                ? 'Calendar needs to be reconnected.'
+                : 'Connected. Business Partner is observing your schedule.'
+              : 'Connect your calendar so Business Partner can prepare you for upcoming meetings and help prioritise your day.'}
           </p>
-        )}
 
-        <div className="mt-4">
-          {isConnected ? (
-            <DisconnectButton />
-          ) : (
-            <a
-              href="/api/integrations/google-calendar/connect"
-              className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
-            >
-              Connect Google Calendar
-            </a>
+          {searchParams.calendar === 'error' && (
+            <p className="mt-2 text-sm text-ink-faint">
+              Something went wrong connecting Google Calendar. Please try again.
+            </p>
           )}
+
+          <div className="mt-4">
+            {isConnected ? (
+              <DisconnectButton />
+            ) : (
+              
+                href="/api/integrations/google-calendar/connect"
+                className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+              >
+                Connect Google Calendar
+              </a>
+            )}
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="rounded-lg border border-surface-border bg-surface-card p-6">
-        <h2 className="font-body text-ink font-medium">Your business data</h2>
+      <section className="flex flex-col gap-4">
+        <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Your Business Data</h2>
 
-        <p className="mt-2 text-sm text-ink-faint">
-          Export a copy of everything Business Partner has learned about your business, or
-          permanently delete it.
-          <br />
-          If you choose to delete it, your business data will be removed permanently. Your login
-          stays active, so you&apos;re always welcome to start a new business here in the future.
-        </p>
+        <div className="rounded-lg border border-surface-border bg-surface-card p-6">
+          <p className="text-sm text-ink-faint">
+            Export a copy of everything Business Partner has learned about your business, or
+            permanently delete it.
+            <br />
+            If you choose to delete it, your business data will be removed permanently. Your login
+            stays active, so you&apos;re always welcome to start a new business here in the future.
+          </p>
 
-        <div className="mt-4 flex flex-col items-start gap-3">
-          <ExportDataLink />
-          <DeleteBusinessSection businessName={business.name} />
+          <div className="mt-4 flex flex-col items-start gap-3">
+            <ExportDataLink />
+            <DeleteBusinessSection businessName={business.name} />
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
