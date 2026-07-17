@@ -6,6 +6,7 @@ describe('getGoogleAuthUrl', () => {
     process.env.GOOGLE_OAUTH_CLIENT_ID = 'test-client-id';
     process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'test-client-secret';
     process.env.GOOGLE_OAUTH_REDIRECT_URI = 'https://example.com/api/integrations/google-calendar/callback';
+    process.env.GOOGLE_OAUTH_GMAIL_REDIRECT_URI = 'https://example.com/api/integrations/gmail/callback';
   });
 
   it('always requests prompt=consent, so Google issues a fresh refresh token even on repeat authorization (Decision Backlog Q16)', () => {
@@ -30,5 +31,24 @@ describe('getGoogleAuthUrl', () => {
       'Google OAuth client environment variables are not fully configured.'
     );
     process.env.GOOGLE_OAUTH_CLIENT_ID = original;
+  });
+
+  it("defaults to the Calendar scope and Calendar's registered redirect URI when no integration is specified", () => {
+    const url = new URL(getGoogleAuthUrl('some-state'));
+    expect(url.searchParams.get('scope')).toBe('https://www.googleapis.com/auth/calendar.readonly');
+    expect(url.searchParams.get('redirect_uri')).toBe(
+      'https://example.com/api/integrations/google-calendar/callback'
+    );
+  });
+
+  it('requests the gmail.metadata scope and Gmail\'s own registered redirect URI when integration is "gmail" (Gmail Product Audit, Decision Backlog Q23)', () => {
+    const url = new URL(getGoogleAuthUrl('some-state', 'gmail'));
+    expect(url.searchParams.get('scope')).toBe('https://www.googleapis.com/auth/gmail.metadata');
+    expect(url.searchParams.get('redirect_uri')).toBe('https://example.com/api/integrations/gmail/callback');
+  });
+
+  it('never requests the broader gmail.readonly scope for Gmail — Level 1 never reads message content', () => {
+    const url = new URL(getGoogleAuthUrl('some-state', 'gmail'));
+    expect(url.searchParams.get('scope')).not.toContain('gmail.readonly');
   });
 });
