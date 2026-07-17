@@ -6,6 +6,19 @@ import { verifyOAuthState, OAUTH_STATE_COOKIE } from '@/lib/signals/providers/go
 import { encryptToken } from '@/lib/signals/providers/google/tokenStorage';
 import { getProviderConfigData, setProviderConfigData } from '@/lib/signals/config-repository';
 
+/**
+ * Forces this route to always run per-request rather than being
+ * considered for static optimization at build time. Every route in
+ * this app depends on request-specific state (session, cookies, query
+ * params, or POST bodies), so none of them are ever safe to
+ * statically prerender — added after a real production build failure
+ * (2026-07-17): Next.js attempted to export the Google Calendar
+ * callback route at build time, where GOOGLE_TOKEN_ENCRYPTION_KEY and
+ * a real request context don't exist, and the build failed outright.
+ * See DECISIONS.md.
+ */
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
