@@ -391,6 +391,47 @@ Two fields added to the shared interface Demo Mode and the real Supabase client 
 **Why:** the interface is deliberately the exact list of Supabase auth surface any call site uses; Preferred Name introduced two genuinely new call sites (`getUser().data.user.user_metadata`, `signUp()`'s `options.data`).
 **Cost if wrong:** none — pure type-contract additions; Demo Mode's stub already ignores its `signUp` parameters entirely, so no behavioural change there.
 
+## Retroactive Preferred Name in Settings (Decision Backlog Q9, resolved)
+
+Objective: resolve Q9 — Preferred Name was only captured at signup; any existing account had no way to set or change it, and would see the business-name greeting fallback indefinitely.
+
+### 2026-07-17 — Added a Preferred Name field to Settings, under a new "Personal" group
+`app/settings/PreferredNameSection.tsx`, `lib/settings/preferredName.ts`. Reads and writes the same Supabase `user_metadata.preferredName` field `app/(auth)/signup/page.tsx` and `app/morning-brief/page.tsx` already use — no new storage location, no new API route. `supabase.auth.updateUser({ data: {...} })` only ever touches the calling user's own session, so no new credential was needed either (unlike Q11's Option A/B question).
+**Why:** completes the Personal Greeting philosophy (Founder + CPO decision) for every owner, regardless of when their account was created.
+**Cost if wrong:** none identified — additive only; saving a blank field reverts to the existing business-name fallback, exactly as before this feature existed.
+
+### 2026-07-17 — `AuthClient.updateUser()` widened to accept `data`
+`lib/demo/authStub.ts`. Same widening pattern already used for `getUser()`/`signUp()` when Preferred Name was first introduced (2026-07-15). `demoAuthClient.updateUser()` needs no logic change — Settings is already unreachable in Demo Mode (middleware), so this stub method is never actually exercised there.
+
+### 2026-07-17 — Settings reorganized into Personal / Connections / Your Business Data
+`app/settings/page.tsx`. Founder's framing: these groups reflect what belongs to the owner personally, what connects Business Partner to outside systems, and what belongs to the business itself — no functional change to Calendar, Export, or Delete, information architecture only. Likely a precursor to whatever Asset 019 (Executive Relationship Journey) eventually formalizes here.
+
+**Status:** Decision Backlog Q9 — Resolved.
+
+**Test/type status:** 199 tests passing (194 before this work; 5 new — `tests/settings/preferredName.test.ts`). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
+
+## Production Build Failure — API Routes Statically Exported at Build Time (found deploying Q9)
+
+Objective: fix a real production build failure discovered deploying Q9 — Next.js attempted to statically export `/api/integrations/google-calendar/connect` at build time, where `GOOGLE_TOKEN_ENCRYPTION_KEY` and a real request context don't exist, and the build failed outright.
+
+### 2026-07-17 — Added `export const dynamic = 'force-dynamic'` to all 11 API routes
+Not just the two Calendar routes that happened to trigger the failure — every route in `app/api/` depends on request-specific state (session, cookies, query params, or POST bodies), so none of them were ever safe to statically prerender. Previous deployments had simply never hit this: enough of the build cache was reused each time that Next.js never attempted to export these routes. Adding new files during Q9's implementation invalidated more of the cache than usual, and Next.js tried exporting a route it never had before.
+**Why:** this was a latent, pre-existing gap across the whole app, not something Q9 introduced — fixing only the two routes that happened to fail this time would have left every other route exposed to the same failure the next time cache invalidation shifted differently.
+**Cost if wrong:** none identified — `force-dynamic` only disables an optimization these routes could never safely use anyway; no behavior change for any real request.
+
+**Test/type status:** 199 tests unchanged (no logic changed, only a build-time rendering directive added). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
+
+## Settings Layout — Top Padding Instead of Vertical Centering (found live, immediately after Q9's reorganization)
+
+Objective: fix a real layout defect found live by the Founder — after Settings grew to three groups (Personal, Connections, Your Business Data), the page's vertical-centering layout (`justify-center`) meant the top of the page (the "Back to your Morning Brief" link) sat flush against the browser edge with no breathing room, since centering an overflowing flex container pins the overflow to the middle rather than adding space at the top.
+
+### 2026-07-17 — Replaced `justify-center` with `py-12` on Settings' root `<main>`
+`app/settings/page.tsx`. Top-anchored padding is correct regardless of how tall this screen grows in the future, unlike centering, which only worked by coincidence while Settings was short enough to fit one viewport.
+**Why:** a genuine layout defect, not a design preference — verified live by the Founder before and after the fix.
+**Cost if wrong:** none identified — pure layout change, no logic affected.
+
+**Test/type status:** 199 tests unchanged (presentational-only change, consistent with this project's existing pattern of not writing render tests for these). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
+
 **Test/type status:** 167 tests passing, unchanged from the Calendar work above — no new tests added for this change; existing `tests/demo/authStub.test.ts` (7 tests) re-verified passing after the interface widening. `npx tsc --noEmit` shows no new errors beyond the same 19 pre-existing, sandbox-only category.
 ## Phase B Item 6 — Business Memory Persistence Verification
 
