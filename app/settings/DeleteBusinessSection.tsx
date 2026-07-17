@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 
 interface DeleteBusinessSectionProps {
   businessName: string;
@@ -10,7 +9,6 @@ interface DeleteBusinessSectionProps {
 
 export function DeleteBusinessSection({ businessName }: DeleteBusinessSectionProps) {
   const router = useRouter();
-  const supabase = createClient();
   const [confirming, setConfirming] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,7 +20,14 @@ export function DeleteBusinessSection({ businessName }: DeleteBusinessSectionPro
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ feedback: feedback.trim() || undefined }),
     });
-    await supabase.auth.signOut();
+    // Deliberately no signOut() call here — Option A's entire point
+    // (Decision Backlog Q11) is that the owner's login stays active
+    // after deleting their business. Signing out would force an
+    // unnecessary re-login and contradicts the copy shown just above
+    // this button ("Your login will remain active..."). The owner is
+    // still authenticated; only the Business row is gone, so onboarding
+    // (an authenticated route) renders normally, showing the one-time
+    // acknowledgment.
     router.push('/onboarding?deleted=true');
   }
 
