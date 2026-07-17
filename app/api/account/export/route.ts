@@ -6,6 +6,19 @@ import { getAllMorningBriefsForBusiness } from '@/lib/cognition/repository';
 import { isDemoMode } from '@/lib/demo/config';
 
 /**
+ * Forces this route to always run per-request rather than being
+ * considered for static optimization at build time. Every route in
+ * this app depends on request-specific state (session, cookies, query
+ * params, or POST bodies), so none of them are ever safe to
+ * statically prerender — added after a real production build failure
+ * (2026-07-17): Next.js attempted to export the Google Calendar
+ * callback route at build time, where GOOGLE_TOKEN_ENCRYPTION_KEY and
+ * a real request context don't exist, and the build failed outright.
+ * See DECISIONS.md.
+ */
+export const dynamic = 'force-dynamic';
+
+/**
  * Data export (Decision Backlog Q11, Operating Model §4 — the business
  * owner owns their data, Business Partner is a processor of it).
  *
