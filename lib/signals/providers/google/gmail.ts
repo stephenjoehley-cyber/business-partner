@@ -73,7 +73,7 @@ export class GoogleGmailProvider implements SignalProvider {
     try {
       const accessToken = await this.getValidAccessToken(business.id, stored);
       const ownerEmail = await this.fetchOwnerEmailAddress(accessToken);
-      const threads = await this.fetchThreads(accessToken, window);
+      const threads = await this.fetchThreads(accessToken);
 
       const signals: DraftSignal<EmailSignalPayload>[] = [];
       for (const thread of threads) {
@@ -132,12 +132,18 @@ export class GoogleGmailProvider implements SignalProvider {
    * Restricted to the inbox's primary category, deliberately — a
    * promotional or social message has no honest "awaiting your reply"
    * meaning, and surfacing one as if it did would be a false structural
-   * claim, not just noise. Only headers are requested (format=metadata,
-   * with an explicit header allow-list) — never the message body.
+   * claim, not just noise. Uses `labelIds`, not the `q` search parameter
+   * — confirmed directly against Google's own API reference (17 July
+   * 2026, after a real production 403): `q` is explicitly disallowed
+   * under the gmail.metadata scope, `labelIds` is not. Time-window
+   * filtering is therefore done in toDraftSignal instead of server-side.
+   * Only headers are requested (format=metadata, with an explicit header
+   * allow-list) — never the message body.
    */
-  private async fetchThreads(accessToken: string, window: TimeWindow): Promise<GmailThread[]> {
-    const afterSeconds = Math.floor(window.from.getTime() / 1000);
-    const listParams = new URLSearchParams({ q: `in:inbox category:primary after:${afterSeconds}` });
+  private async fetchThreads(accessToken: string): Promise<GmailThread[]> {
+    const listParams = new URLSearchParams({ maxResults: '50' });
+    listParams.append('labelIds', 'INBOX');
+    listParams.append('labelIds', 'CATEGORY_PERSONAL');
 
     const listResponse = await fetch(`${GMAIL_API_BASE}/threads?${listParams.toString()}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -208,6 +214,15 @@ export class GoogleGmailProvider implements SignalProvider {
     const receivedAt = lastMessage.internalDate
       ? new Date(Number(lastMessage.internalDate))
       : new Date(this.getHeader(lastMessage, 'Date') ?? window.to);
+
+    // Server-side date filtering isn't available under gmail.metadata
+    // (the `q` parameter that would do it is disallowed for this scope —
+    // confirmed directly, 17 July 2026), so the time window is enforced
+    // here instead, in code.
+    if (receivedAt.getTime() < window.from.getTime()) {
+      return null;
+    }
+
     const daysSinceReceived = Math.max(
       0,
       Math.floor((window.to.getTime() - receivedAt.getTime()) / (1000 * 60 * 60 * 24))
