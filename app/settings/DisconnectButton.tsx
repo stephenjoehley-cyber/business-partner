@@ -3,13 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export function DisconnectButton() {
+/**
+ * Generic disconnect action for any live Signal Provider — widened
+ * 17 July 2026 (was hardcoded to Google Calendar's disconnect route) so
+ * Gmail can reuse it rather than duplicating this component.
+ */
+export function DisconnectButton({ endpoint }: { endpoint: string }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleDisconnect() {
     setIsSubmitting(true);
-    await fetch('/api/integrations/google-calendar/disconnect', { method: 'POST' });
+    await fetch(endpoint, { method: 'POST' });
     router.refresh();
   }
 
