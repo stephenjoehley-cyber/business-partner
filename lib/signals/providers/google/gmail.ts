@@ -236,7 +236,18 @@ export class GoogleGmailProvider implements SignalProvider {
       ? new Date(Number(lastMessage.internalDate))
       : new Date(this.getHeader(lastMessage, 'Date') ?? now);
 
+    // A real, honest structural fact ("you never replied") stops being a
+    // useful executive signal once it's old enough — at real-world
+    // volume (confirmed live, 17 July 2026: ~100 emails/day), a 5-month-
+    // old unanswered thread is noise, not something worth the owner's
+    // attention today. 14 days is a deliberate, generous cutoff — long
+    // enough to still catch a genuinely dropped commitment, short enough
+    // that ancient dead threads don't resurface indefinitely.
+    const STALENESS_CUTOFF_DAYS = 14;
     const daysSinceReceived = Math.max(0, Math.floor((now.getTime() - receivedAt.getTime()) / (1000 * 60 * 60 * 24)));
+    if (daysSinceReceived > STALENESS_CUTOFF_DAYS) {
+      return null;
+    }
 
     const matchedPerson = this.matchCorrespondentToPerson(fromEmail, people);
     const subject = this.getHeader(lastMessage, 'Subject') ?? '(no subject)';
