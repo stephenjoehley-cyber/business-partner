@@ -246,7 +246,7 @@ describe('GoogleGmailProvider', () => {
     expect(detailUrl).toContain('metadataHeaders=Subject');
   });
 
-  it('restricts the thread query to the inbox primary category, so promotional/social mail is never treated as awaiting reply', async () => {
+  it('restricts the thread listing to the inbox primary category via labelIds, never the disallowed q parameter under gmail.metadata scope', async () => {
     getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
     const fetchMock = mockProfileAndThreads({ threads: [] }, []);
 
@@ -254,8 +254,20 @@ describe('GoogleGmailProvider', () => {
 
     const listCall = fetchMock.mock.calls.find((call) => (call[0] as string).includes('/threads?'));
     const listUrl = listCall?.[0] as string;
-    // URLSearchParams encodes spaces as '+' and colons as '%3A' — replace
-    // '+' with a space first, then decode the percent-escapes.
-    expect(decodeURIComponent(listUrl.replace(/\+/g, ' '))).toContain('in:inbox category:primary');
+    expect(listUrl).toContain('labelIds=INBOX');
+    expect(listUrl).toContain('labelIds=CATEGORY_PERSONAL');
+    expect(listUrl).not.toContain('q=');
+  });
+
+  it('excludes a thread whose last message falls before the requested time window, now that filtering happens in code rather than via Gmail\'s q parameter', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    const beforeWindow = new Date(window.from.getTime() - 24 * 60 * 60 * 1000);
+    mockProfileAndThreads({ threads: [{ id: 'thread-too-old' }] }, [
+      { id: 'thread-too-old', messages: [inboundMessage({ internalDate: String(beforeWindow.getTime()) })] },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toEqual([]);
   });
 });
