@@ -185,7 +185,7 @@ describe('GoogleGmailProvider', () => {
 
   it('marks a thread overdue once 2+ days have passed, matching the seeded provider\'s own threshold', async () => {
     getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
-    const threeDaysAgo = new Date(window.to.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     mockProfileAndThreads({ threads: [{ id: 'thread-overdue' }] }, [
       { id: 'thread-overdue', messages: [inboundMessage({ internalDate: String(threeDaysAgo.getTime()) })] },
     ]);
@@ -259,15 +259,20 @@ describe('GoogleGmailProvider', () => {
     expect(listUrl).not.toContain('q=');
   });
 
-  it('excludes a thread whose last message falls before the requested time window, now that filtering happens in code rather than via Gmail\'s q parameter', async () => {
+  it('includes a genuinely old, still-unanswered email rather than excluding it — the pipeline\'s forward-looking window (built for Calendar) must never suppress real backward-looking email history', async () => {
     getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
-    const beforeWindow = new Date(window.from.getTime() - 24 * 60 * 60 * 1000);
-    mockProfileAndThreads({ threads: [{ id: 'thread-too-old' }] }, [
-      { id: 'thread-too-old', messages: [inboundMessage({ internalDate: String(beforeWindow.getTime()) })] },
+    // 10 days old — well before window.from, and before window entirely.
+    // A real unanswered email is always in the past; rejecting it for
+    // being "before the window" (an earlier version of this provider did
+    // exactly that) would silently exclude every real email, always.
+    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+    mockProfileAndThreads({ threads: [{ id: 'thread-old-but-real' }] }, [
+      { id: 'thread-old-but-real', messages: [inboundMessage({ internalDate: String(tenDaysAgo.getTime()) })] },
     ]);
 
     const signals = await provider.fetchSignals(contextWithJane, window);
 
-    expect(signals).toEqual([]);
+    expect(signals).toHaveLength(1);
+    expect(signals[0].type).toBe('email_awaiting_reply_overdue');
   });
 });
