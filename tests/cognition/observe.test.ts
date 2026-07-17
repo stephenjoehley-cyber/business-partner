@@ -32,14 +32,24 @@ describe('observe', () => {
     expect(observe([signal], NOW)).toEqual([]);
   });
 
-  it('never time-filters email signals — an unanswered email stays relevant', () => {
+  it('keeps email signals within the 14-day staleness cutoff', () => {
     const signal = makeSignal({
       id: 'sig-2',
       domain: 'email',
       type: 'email_awaiting_reply_overdue',
-      occurredAt: new Date('2026-07-01T00:00:00.000Z'),
+      occurredAt: new Date('2026-07-01T00:00:00.000Z'), // 12 days before NOW
     });
     expect(observe([signal], NOW)).toEqual([signal]);
+  });
+
+  it('drops email signals older than the 14-day staleness cutoff — found live, 17 July 2026: a 165-day-old unanswered email kept resurfacing as the Morning Brief\'s top pick, since generateMorningBrief reads every signal ever persisted with no date filter', () => {
+    const signal = makeSignal({
+      id: 'sig-3',
+      domain: 'email',
+      type: 'email_awaiting_reply_overdue',
+      occurredAt: new Date('2026-06-01T00:00:00.000Z'), // 42 days before NOW
+    });
+    expect(observe([signal], NOW)).toEqual([]);
   });
 
   it('returns an empty array unchanged', () => {
