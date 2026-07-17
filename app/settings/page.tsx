@@ -38,11 +38,17 @@ import { PreferredNameSection } from './PreferredNameSection';
  * Business Data." No functional change to Calendar, Export, or Delete;
  * this is information architecture only. Likely a precursor to whatever
  * Asset 019 (Executive Relationship Journey) eventually formalizes here.
+ *
+ * 2026-07-17: added a Gmail card under Connections (Decision Backlog Q23,
+ * Gmail Product Audit) — Level 1 Communication Intelligence, following
+ * the exact same connect/disconnect/error pattern as Calendar.
+ * DisconnectButton widened to take an explicit endpoint, rather than
+ * duplicated, since both cards now share it.
  */
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: { calendar?: string };
+  searchParams: { calendar?: string; gmail?: string };
 }) {
   const supabase = createClient();
   const {
@@ -62,17 +68,25 @@ export default async function SettingsPage({
   const business = await getBusinessByOwner(user.id);
   if (!business) return null; // middleware/onboarding flow already handles this case elsewhere
 
-  const configuredProviderId = await getConfiguredProviderId(business.id, 'calendar');
-  const isConnected = configuredProviderId === 'google-calendar';
+  const configuredCalendarProviderId = await getConfiguredProviderId(business.id, 'calendar');
+  const isCalendarConnected = configuredCalendarProviderId === 'google-calendar';
 
-  const config = isConnected
+  const calendarConfig = isCalendarConnected
     ? ((await getProviderConfigData(business.id, 'calendar')) as { lastError?: string | null } | null)
+    : null;
+
+  const configuredEmailProviderId = await getConfiguredProviderId(business.id, 'email');
+  const isGmailConnected = configuredEmailProviderId === 'google-gmail';
+
+  const gmailConfig = isGmailConnected
+    ? ((await getProviderConfigData(business.id, 'email')) as { lastError?: string | null } | null)
     : null;
 
   // lastError is read only to decide which calm, generic status to show —
   // its actual technical content is never rendered, per the Founder's
   // requirement that the stored error stays internal.
-  const needsReconnect = Boolean(config?.lastError);
+  const calendarNeedsReconnect = Boolean(calendarConfig?.lastError);
+  const gmailNeedsReconnect = Boolean(gmailConfig?.lastError);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 px-6 py-12">
@@ -97,8 +111,8 @@ export default async function SettingsPage({
           <h3 className="font-body text-ink font-medium">Google Calendar</h3>
 
           <p className="mt-2 text-sm text-ink-faint">
-            {isConnected
-              ? needsReconnect
+            {isCalendarConnected
+              ? calendarNeedsReconnect
                 ? 'Calendar needs to be reconnected.'
                 : 'Connected. Business Partner is observing your schedule.'
               : 'Connect your calendar so Business Partner can prepare you for upcoming meetings and help prioritise your day.'}
@@ -111,14 +125,45 @@ export default async function SettingsPage({
           )}
 
           <div className="mt-4">
-            {isConnected ? (
-              <DisconnectButton />
+            {isCalendarConnected ? (
+              <DisconnectButton endpoint="/api/integrations/google-calendar/disconnect" />
             ) : (
-            <a  
+              
                 href="/api/integrations/google-calendar/connect"
                 className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
               >
                 Connect Google Calendar
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-surface-border bg-surface-card p-6">
+          <h3 className="font-body text-ink font-medium">Gmail</h3>
+
+          <p className="mt-2 text-sm text-ink-faint">
+            {isGmailConnected
+              ? gmailNeedsReconnect
+                ? 'Gmail needs to be reconnected.'
+                : 'Connected. Business Partner is observing which emails are still waiting on a reply from you.'
+              : 'Connect your inbox so Business Partner can see which emails are still waiting on a reply from you.'}
+          </p>
+
+          {searchParams.gmail === 'error' && (
+            <p className="mt-2 text-sm text-ink-faint">
+              Something went wrong connecting Gmail. Please try again.
+            </p>
+          )}
+
+          <div className="mt-4">
+            {isGmailConnected ? (
+              <DisconnectButton endpoint="/api/integrations/gmail/disconnect" />
+            ) : (
+              
+                href="/api/integrations/gmail/connect"
+                className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+              >
+                Connect Gmail
               </a>
             )}
           </div>
