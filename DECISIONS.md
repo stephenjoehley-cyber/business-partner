@@ -507,3 +507,31 @@ Objective: fix a real dead end discovered while actually walking the Calendar-co
 **Cost if wrong:** none identified — purely additive.
 
 **Test/type status:** 182 tests passing, unchanged (this route has no dedicated test coverage before or after this change). `npx tsc --noEmit` unchanged at 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category. Verified live by the Founder as part of Item 8's Founder Experience Review.
+
+## Data Deletion & Export (Decision Backlog Q11, resolved)
+
+Objective: give the business owner a real, working way to exercise the data ownership already promised in Operating Model §4/§7 — export a copy of everything Business Partner has learned, or permanently delete it. The schema has been cascade-ready since Increment 1; this item builds the actual feature.
+
+### 2026-07-16 — Option A approved: Business Memory deletion only, not Auth identity
+Checked directly: only `NEXT_PUBLIC_SUPABASE_ANON_KEY` exists anywhere in this codebase. Deleting the Supabase Auth identity itself would require introducing `SUPABASE_SERVICE_ROLE_KEY` — a materially larger credential surface. Founder decision: Option A for v1 — delete the `Business` row and everything cascaded from it (Goal, Person, Signal, SignalProviderConfig, MorningBrief), leave the Auth login intact. An owner who deletes can sign back in and start a new business from a clean slate.
+**Why:** fully satisfies the Operating Model's actual commitment (the *data* is deleted, not archived) without expanding the credential surface before there's commercial pressure requiring it.
+**Cost if wrong:** none identified — if full identity deletion is ever needed, it's a deliberate, separate future decision, not something this choice forecloses.
+
+### 2026-07-16 — New `GET /api/account/export` and `POST /api/account/delete` routes
+Export returns a JSON file (Business, Goals, People, Signals, MorningBriefs) via a new `getAllMorningBriefsForBusiness` repository function (no prior function returned every brief for a business — only the latest). Deliberately excludes `SignalProviderConfig`'s encrypted OAuth tokens — Business Partner's own integration secrets, not the owner's business data, and exporting them (even encrypted) serves no legitimate purpose while adding risk. Delete uses a single `prisma.business.delete()` — already atomic, since Postgres executes the cascade as part of one DELETE statement, not a multi-step operation. Both routes explicitly refuse to operate in Demo Mode.
+**Why:** reuses the existing `getBusinessByOwner`-scoped tenant-isolation pattern used everywhere else in the codebase — no new permission model needed.
+**Cost if wrong:** none identified — both routes are additive; no existing route or shared interface changed shape.
+
+### 2026-07-16 — Deletion notification: structured console log, not a new email provider
+Founder decision, explicitly to keep this tightly scoped: no email provider, no SMTP, no new persistence, no admin surface. A `BusinessDeleted` event (business name, ID, timestamp, and any optional owner feedback) is logged as a single structured JSON line, captured automatically by Vercel's Runtime Logs. Deliberately shaped as a named business event now, not a debug message, so it could feed a real notification or analytics pipeline later without changing its shape.
+**Why:** proportionate to where Business Partner is today (low deletion volume, founder-led operations) — if volume ever grows enough that passive log-checking stops being realistic, that's the evidence needed to introduce a real notification mechanism deliberately, not prematurely.
+**Cost if wrong:** none identified — purely additive; nothing prevents adding real notifications later without touching this event's shape.
+
+### 2026-07-16 — Settings gains a "Your business data" section; onboarding acknowledges deletion once
+`app/settings/page.tsx` (export link + delete confirmation flow), `app/onboarding/page.tsx` (one-time acknowledgment banner via `?deleted=true`, shown once immediately after a deletion, not a permanent onboarding fixture). Copy drafted separately and reviewed by Founder/CPO before implementation, per the standing rule — see chat record, not reproduced here.
+**Why:** per the Pre-Ship Walkthrough Checklist's point 7 (relationship continuity) — landing back at onboarding without any acknowledgment would repeat the same "did you hear me" gap Business Memory Reflection (Item 8) was built to close.
+**Cost if wrong:** none identified — additive UI only.
+
+**Test/type status:** 194 tests passing (182 before this work; 12 new — `tests/api/account/export.test.ts`, `tests/api/account/delete.test.ts`, and two added to `tests/cognition/repository.test.ts` for `getAllMorningBriefsForBusiness`). `npx tsc --noEmit` unchanged at 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category (two new implicit-`any` errors surfaced during this work and were fixed immediately, not left in the baseline).
+
+**Status:** Decision Backlog Q11 — Resolved.
