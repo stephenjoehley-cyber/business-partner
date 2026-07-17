@@ -2,12 +2,12 @@ import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { getConfiguredProviderId, getProviderConfigData } from '@/lib/signals/config-repository';
 import { DisconnectButton } from './DisconnectButton';
+import { ExportDataLink } from './ExportDataLink';
+import { DeleteBusinessSection } from './DeleteBusinessSection';
 
 /**
- * Settings — Phase B, Item 5. A single card: Google Calendar connect status
- * and a connect/disconnect action. Nothing else belongs here yet, per the
- * approved Product Audit's explicit exclusion of any broader integrations
- * page.
+ * Settings — Phase B, Item 5. Google Calendar connect status and a
+ * connect/disconnect action.
  *
  * 2026-07-15: not-connected copy updated to state why Business Partner is
  * asking for access before the action itself, per the Founder's decision on
@@ -21,6 +21,12 @@ import { DisconnectButton } from './DisconnectButton';
  * and Decision Backlog Q21 (application-wide navigation architecture,
  * deferred — this is a local fix, not a resolution of that broader
  * question).
+ *
+ * 2026-07-16: added data export/deletion (Decision Backlog Q11, Operating
+ * Model §4/§7 — the business owner owns their data). Option A, per the
+ * Founder's explicit decision: deletes Business Memory only, never the
+ * Supabase Auth identity — see app/api/account/delete/route.ts for the
+ * full reasoning.
  */
 export default async function SettingsPage({
   searchParams,
@@ -85,6 +91,23 @@ export default async function SettingsPage({
               Connect Google Calendar
             </a>
           )}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-surface-border bg-surface-card p-6">
+        <h2 className="font-body text-ink font-medium">Your business data</h2>
+
+        <p className="mt-2 text-sm text-ink-faint">
+          Export a copy of everything Business Partner has learned about your business, or
+          permanently delete it.
+          <br />
+          If you choose to delete it, your business data will be removed permanently. Your login
+          stays active, so you&apos;re always welcome to start a new business here in the future.
+        </p>
+
+        <div className="mt-4 flex flex-col items-start gap-3">
+          <ExportDataLink />
+          <DeleteBusinessSection businessName={business.name} />
         </div>
       </div>
     </main>
