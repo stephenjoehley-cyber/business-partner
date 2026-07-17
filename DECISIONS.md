@@ -370,6 +370,8 @@ Found directly by the Founder deliberately creating two real test meetings with 
 **Why:** the original implementation used `Promise.all` over all events, computing each `isFirstMeetingWithPerson` independently and concurrently — correct against the database, blind to concurrent siblings.
 **Cost if wrong:** none identified — verified directly against the real scenario that exposed it (two real Calendar events, same attendee, same fetch), not just a synthetic test.
 
+**Test/type status:** 167 tests passing (155 before this work; 12 new — 6 in `tests/signals/providers/google/calendar.test.ts` covering attendee matching, first-meeting detection, and the same-batch regression; 5 in `tests/signals/repository.test.ts` covering `hasPriorInteractionForPerson` directly, both real and Demo Mode branches; 1 additional regression test added after the same-batch fix). 5 pre-existing, sandbox-only failures in `tests/demo/repositoryIntegration.test.ts` remain, confirmed unrelated by re-running the identical suite against unmodified `main`. `npx tsc --noEmit` shows 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category as before (17 baseline + 2 new, both "no exported member 'Person'" in the two files that now import it directly) — none reference genuine logic in the files changed here.
+
 ## Personal Greeting (Preferred Name)
 
 Objective: greet the person using Business Partner, not the business they work for — Founder + CPO decision, 2026-07-15, reasoned directly from the Constitution and Executive Presence Specification's "exceptional colleague" standard, and from the Operating Model's future multi-user roadmap (§1, v3): a business-name greeting is already impersonal and becomes actively wrong once more than one person can share a business workspace.
@@ -389,7 +391,7 @@ Two fields added to the shared interface Demo Mode and the real Supabase client 
 **Why:** the interface is deliberately the exact list of Supabase auth surface any call site uses; Preferred Name introduced two genuinely new call sites (`getUser().data.user.user_metadata`, `signUp()`'s `options.data`).
 **Cost if wrong:** none — pure type-contract additions; Demo Mode's stub already ignores its `signUp` parameters entirely, so no behavioural change there.
 
-**Test/type status:** 167 tests passing (155 before this work; 12 new — 6 in `tests/signals/providers/google/calendar.test.ts` covering attendee matching, first-meeting detection, and the same-batch regression; 5 in `tests/signals/repository.test.ts` covering `hasPriorInteractionForPerson` directly, both real and Demo Mode branches; 1 additional regression test added after the same-batch fix). 5 pre-existing, sandbox-only failures in `tests/demo/repositoryIntegration.test.ts` remain, confirmed unrelated by re-running the identical suite against unmodified `main`. `npx tsc --noEmit` shows 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category as before (17 baseline + 2 new, both "no exported member 'Person'" in the two files that now import it directly) — none reference genuine logic in the files changed here.
+**Test/type status:** 167 tests passing, unchanged from the Calendar work above — no new tests added for this change; existing `tests/demo/authStub.test.ts` (7 tests) re-verified passing after the interface widening. `npx tsc --noEmit` shows no new errors beyond the same 19 pre-existing, sandbox-only category.
 
 ## Phase B Item 6 — Business Memory Persistence Verification
 
@@ -630,5 +632,3 @@ Objective: fix a real layout defect found live by the Founder — after Settings
 **Cost if wrong:** none identified — pure layout change, no logic affected.
 
 **Test/type status:** 199 tests unchanged (presentational-only change, consistent with this project's existing pattern of not writing render tests for these). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
-
-**Test/type status:** 167 tests passing, unchanged from the Calendar work above — no new tests added for this change; existing `tests/demo/authStub.test.ts` (7 tests) re-verified passing after the interface widening. `npx tsc --noEmit` shows no new errors beyond the same 19 pre-existing, sandbox-only category.
