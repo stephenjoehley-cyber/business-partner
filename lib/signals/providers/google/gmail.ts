@@ -77,7 +77,7 @@ export class GoogleGmailProvider implements SignalProvider {
 
       const signals: DraftSignal<EmailSignalPayload>[] = [];
       for (const thread of threads) {
-        const signal = this.toDraftSignal(thread, ownerEmail, people, window);
+        const signal = this.toDraftSignal(thread, ownerEmail, people);
         if (signal) signals.push(signal);
       }
 
@@ -194,12 +194,23 @@ export class GoogleGmailProvider implements SignalProvider {
    * Threads where the owner sent the last message are correctly excluded
    * entirely (this is watching for the owner's own action items, not
    * everyone else's).
+   *
+   * Deliberately does not take the pipeline's TimeWindow at all —
+   * confirmed live, 17 July 2026: the default window
+   * (generateSignalsForBusiness) is `{ from: now, to: now + 3 days }`,
+   * built for Calendar's forward-looking "meetings coming up" semantics.
+   * Email's "awaiting reply" is inherently backward-looking — a real
+   * unanswered email is always in the past relative to "now," so
+   * rejecting anything before `window.from` (as an earlier version of
+   * this method did) silently excluded every real email, always. Gmail's
+   * own `threads.list` response (most-recently-active first, maxResults
+   * capped) already bounds this to a sensible recent set without an
+   * explicit date filter.
    */
   private toDraftSignal(
     thread: GmailThread,
     ownerEmail: string,
-    people: Person[],
-    window: TimeWindow
+    people: Person[]
   ): DraftSignal<EmailSignalPayload> | null {
     const messages = thread.messages ?? [];
     if (messages.length === 0) return null;
@@ -211,22 +222,12 @@ export class GoogleGmailProvider implements SignalProvider {
       return null;
     }
 
+    const now = new Date();
     const receivedAt = lastMessage.internalDate
       ? new Date(Number(lastMessage.internalDate))
-      : new Date(this.getHeader(lastMessage, 'Date') ?? window.to);
+      : new Date(this.getHeader(lastMessage, 'Date') ?? now);
 
-    // Server-side date filtering isn't available under gmail.metadata
-    // (the `q` parameter that would do it is disallowed for this scope —
-    // confirmed directly, 17 July 2026), so the time window is enforced
-    // here instead, in code.
-    if (receivedAt.getTime() < window.from.getTime()) {
-      return null;
-    }
-
-    const daysSinceReceived = Math.max(
-      0,
-      Math.floor((window.to.getTime() - receivedAt.getTime()) / (1000 * 60 * 60 * 24))
-    );
+    const daysSinceReceived = Math.max(0, Math.floor((now.getTime() - receivedAt.getTime()) / (1000 * 60 * 60 * 24)));
 
     const matchedPerson = this.matchCorrespondentToPerson(fromEmail, people);
     const subject = this.getHeader(lastMessage, 'Subject') ?? '(no subject)';
