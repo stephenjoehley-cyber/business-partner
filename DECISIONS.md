@@ -632,3 +632,53 @@ Objective: fix a real layout defect found live by the Founder — after Settings
 **Cost if wrong:** none identified — pure layout change, no logic affected.
 
 **Test/type status:** 199 tests unchanged (presentational-only change, consistent with this project's existing pattern of not writing render tests for these). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
+
+## Gmail Signal Provider — Level 1 Communication Intelligence (Decision Backlog Q23, Gmail Product Audit)
+
+Objective: implement the first live Communication Provider, following the pattern established by GoogleCalendarProvider — structural facts only (sender, recipient, subject, timestamp, reply status), no message content, per the Founder/CPO's Option C framing (facts vs. observations, not deterministic vs. probabilistic).
+
+### 2026-07-17 — `GoogleGmailProvider` added (`lib/signals/providers/google/gmail.ts`), OAuth generalized to support a second Google integration
+`lib/signals/providers/google/oauth.ts` widened (backward-compatible by default parameter) to support Gmail's own scope and redirect URI alongside Calendar's, unchanged. New routes: `/api/integrations/gmail/connect`, `/callback`, `/disconnect`, mirroring Calendar's exactly. Registered in the Signal Provider Registry.
+**Why:** `gmail.metadata` scope chosen deliberately over `gmail.readonly` — both are classified as *restricted* scopes under Google's own verification model (confirmed directly against Google's official scope list), so metadata carries no lesser production-verification cost while genuinely exposing less of the owner's mailbox (headers only, never message bodies).
+**Cost if wrong:** none identified for the architecture; see the Production Release Gate below for the real, separate commercial cost this domain carries regardless of which scope is used.
+
+### 2026-07-17 — Production Release Gate established, not a full production launch
+Development and Founder-account testing may proceed via Google's Testing/test-user mechanism; public availability to any real, non-test-user owner is explicitly blocked until five items are confirmed and the Founder has explicitly accepted the ongoing commercial burden: Google's applicable verification pathway, whether server-side signal storage triggers the required security assessment, its current cost, its timeline, and explicit sign-off. Documented directly in `gmail.ts`'s own doc comment, not only here.
+**Why:** restricted-scope verification requires a recurring, paid third-party security assessment (CASA) — a genuine bootstrapped-startup commercial decision, not an engineering one, and one that shouldn't be made implicitly by shipping code.
+
+### 2026-07-17 — Real production bugs found and fixed the same day, via live testing with a real connected Gmail account
+Four, in sequence, each only discoverable by actually testing live (none were caught by unit tests, which mock the Gmail API entirely):
+1. **403 on `threads.list`**: the `q` search parameter (used for `in:inbox category:primary after:...`) is explicitly disallowed under `gmail.metadata` scope, confirmed directly against Google's own API reference. Fixed by switching to `labelIds` (`INBOX`, `CATEGORY_PERSONAL`), which is permitted, and moving time-window filtering into application code.
+2. **Zero signals despite a successful connection**: the pipeline's default `TimeWindow` (`generateSignalsForBusiness`) is `{ from: now, to: now + 3 days }` — built for Calendar's forward-looking "meetings coming up" semantics. An initial fix still rejected any email received before `window.from`, which silently excluded *every* real email, always, since a real unanswered email is inherently in the past. Fixed by anchoring `daysSinceReceived` to actual current time and removing the forward-looking window check entirely for this domain.
+3. **Database connection-pool exhaustion (`P2024`, 15+ concurrent upserts against a 1-connection pool)**: `persistSignals` (shared with Calendar) runs every signal upsert concurrently via `Promise.all`, with no limit — always fragile, but never previously exposed since signal volume was always small. Gmail's initial `maxResults: 50` was the first time this volume was ever hit. Fixed at the Gmail-specific source (`maxResults` reduced to 10) rather than changing the shared `persistSignals` function, which also serves Calendar and deserves its own decision — see Decision Backlog Q24, opened below.
+4. **5-month-old unanswered threads surfacing as today's top recommendation**: honest and structurally true, but useless at real-world volume (~100 emails/day, per the Founder). Added a 14-day staleness cutoff — generous enough to still catch a genuinely dropped commitment, short enough that ancient dead threads stop resurfacing.
+
+**Test/type status:** 214 tests passing (199 before this work — 15 new, all in `tests/signals/providers/google/gmail.test.ts` and extending `tests/signals/providers/google/oauth.test.ts`). `npx tsc --noEmit` shows 21 errors — 19 pre-existing sandbox-only category, plus 2 new (`gmail.ts` and `gmail.test.ts` importing `Person` from `@prisma/client`), the same category already documented for Calendar's equivalent files.
+
+## CRON_SECRET Was Empty — Daily Orchestrator Had Never Actually Run (found live, 17 July 2026)
+
+Objective: root-cause the Founder's repeated, correct observation that a Calendar meeting's "coming up in N days" phrasing never decremented day over day, despite the underlying interpreter logic (`lib/cognition/interpreters/calendar.ts`) correctly recomputing this fresh from `new Date()` on every run.
+
+### 2026-07-17 — Root cause confirmed directly: `CRON_SECRET` was never set to a real value
+`/api/cron/daily-cycle` requires `Authorization: Bearer $CRON_SECRET`; an empty `CRON_SECRET` means this check (`if (!process.env.CRON_SECRET || ...)`) has failed on every single automated invocation since the route was built — Vercel's scheduler has been calling it every morning and receiving a silent 401, every time. Since `getLatestMorningBrief` only ever returns the most recently *generated* brief, and no new one was ever created, the owner has been looking at the same frozen brief indefinitely — explaining the exact symptom reported three times.
+**Why:** confirmed, not assumed — set a new `CRON_SECRET` value, redeployed, and manually invoked `/api/cron/daily-cycle` with the correct header directly; it succeeded (`{"totalBusinesses":10,"ran":8,"skipped":2,"failed":0}`), where it had returned 401 before.
+**Cost if wrong:** none — this is a credential value, not application logic; setting it doesn't change any code path, only unblocks the existing, already-correct authentication check.
+
+**Status:** Resolved. The daily cycle should now genuinely run each morning going forward; full confirmation is tomorrow's Morning Brief showing a correctly decremented day-count, not just today's manual test succeeding.
+
+## Orphaned Test Businesses Cleaned Up (found live, 17 July 2026)
+
+Objective: the manual cron invocation above surfaced `totalBusinesses: 10`, unexpectedly — contradicting an earlier assumption (based on Supabase Auth's Users list showing only 2 real accounts) that only one real business existed in production.
+
+### 2026-07-17 — Root cause: deleting a user via Supabase's Auth dashboard does not cascade to application tables
+Confirmed directly in the `Business` table: 8 rows had `ownerId` values matching no real Auth user at all — leftovers from test accounts deleted directly in Supabase's Auth panel in the past, which only removes the Auth identity, not the app's own `Business` row (and its cascade). The app's own `/api/account/delete` route (Q11) correctly deletes both; deleting via Supabase directly bypasses it entirely.
+**Why it matters going forward:** any future test-account cleanup during development must go through the app's own deletion flow, or through Supabase's Table Editor directly for both `auth.users` and `Business` — never Supabase Auth alone.
+**Cost if wrong:** none identified — the 8 orphaned rows were confirmed unmatched to any real Auth user before deletion; `Goal`, `Person`, `Signal`, `MorningBrief`, and `SignalProviderConfig` all cascade from `Business` at the database level, so no manual cleanup of those tables was needed.
+
+**Status:** Resolved — 2 real businesses remain, both confirmed to match the 2 real Auth users.
+
+---
+
+## Decision Backlog — new entry
+
+**Q24 — `persistSignals` runs all signal upserts concurrently against a 1-connection database pool.** Why it surfaced: 17 July 2026, Gmail's real thread volume was the first time this was ever large enough to exceed it (`PrismaClientKnownRequestError`, connection pool timeout). Fixed for now by keeping Gmail's own volume proportionate (`maxResults: 10`), not by changing the shared function, since `persistSignals` also serves Calendar and any future domain — a proportionate fix (batching, sequential persistence, or raising the connection limit) deserves its own decision. Assigned to: unassigned — revisit when signal volume grows again (more integrations, a busier Gmail account, or Executive Actions). Status: Deferred Resolution: —
