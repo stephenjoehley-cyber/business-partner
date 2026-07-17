@@ -4,7 +4,11 @@ import { getBusinessByOwner } from '@/lib/brain/repository';
 import { OnboardingWizard } from './OnboardingWizard';
 import { SignOutButton } from '@/app/morning-brief/SignOutButton';
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: { deleted?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -28,6 +32,22 @@ export default async function OnboardingPage() {
       <div className="mb-6 flex justify-end">
         <SignOutButton />
       </div>
+
+      {/*
+        Shown once, immediately after a business deletion (Decision
+        Backlog Q11) — not a permanent onboarding fixture. Acknowledges
+        what changed rather than silently reusing onboarding's normal
+        first-visit copy as if nothing happened (Pre-Ship Walkthrough
+        Checklist, point 7 — relationship continuity visible).
+      */}
+      {searchParams.deleted === 'true' && (
+        <p className="mb-6 text-sm text-ink-faint">
+          Your previous business has been deleted.
+          <br />
+          Whenever you&apos;re ready, let&apos;s start again.
+        </p>
+      )}
+
       <OnboardingWizard initialBusiness={existingBusiness} />
     </main>
   );
