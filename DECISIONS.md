@@ -535,3 +535,24 @@ Founder decision, explicitly to keep this tightly scoped: no email provider, no 
 **Test/type status:** 194 tests passing (182 before this work; 12 new — `tests/api/account/export.test.ts`, `tests/api/account/delete.test.ts`, and two added to `tests/cognition/repository.test.ts` for `getAllMorningBriefsForBusiness`). `npx tsc --noEmit` unchanged at 19 errors, all the same pre-existing, sandbox-only Prisma-client-generation category (two new implicit-`any` errors surfaced during this work and were fixed immediately, not left in the baseline).
 
 **Status:** Decision Backlog Q11 — Resolved.
+
+## Morning Brief → Settings Navigation Gap (discovered during Q11's Founder Experience Review)
+
+Objective: fix a real, total navigation gap discovered when the Founder walked the complete owner journey (signup → onboarding → Morning Brief → attempt to find Settings) rather than starting from a known URL — there was genuinely no link from Morning Brief to Settings anywhere in the product; a real owner could not discover Settings, export, or delete existed at all.
+
+### 2026-07-16 — Deliberate design review before implementing, not a default
+CPO's explicit push-back, correctly: identifying the gap and immediately proposing "add a link" would be instinct, not product judgement. A proper review was done against Asset 018 §8 (Debt Definitions) and Asset 016 (Executive Presence Specification) before choosing an approach.
+**Reasoning:** Asset 018 names the exact failure mode found — "Experience Debt... Navigation that depends on discovery rather than guidance." The fix for "depends on discovery" is removing the need to discover it at all, not finding a cleverer place to hide it — ruling out an icon-only control or collapsed menu, both of which are still discovery with better production values. A plain, always-visible text link is the one option that actually satisfies "guidance." Checked against Asset 016 Principle 6 (One Thought At A Time): the test is "did the owner's eye go anywhere else first," not "is there only one element on the screen" — the existing "Sign out" link already occupies this exact header position at this exact visual weight without having been flagged as competing for attention during Business Memory Reflection's own review; adding "Settings" at the identical weight and position reuses an already-validated pattern rather than introducing a new one.
+**Why not the Conversation Engine's aspirational path** (owners eventually navigating by asking, not clicking) — real, but not built yet; deferring a present, total gap until conversational navigation exists would leave real owners stuck indefinitely.
+
+### 2026-07-16 — Founder/CPO design principle established: the executive header's permanent role
+"The header is the permanent home for persistent account-level actions that should always be available but should never compete with the Morning Brief itself." Recorded directly as a code comment in `app/morning-brief/page.tsx`, not just here, so it's discoverable at the point future engineering would need it. Settings placed before Sign out — a navigation destination within Business Partner precedes an exit from it.
+**Why:** turns today's specific decision into a lasting design rule rather than a one-off fix — the next persistent account-level action (whatever it turns out to be) has a settled home and ordering logic to follow, rather than requiring this same review again.
+
+### 2026-07-16 — Plain "Settings" link added to the Morning Brief header
+`app/morning-brief/page.tsx`, next to the existing Sign out link, following the reasoning above. Not shown in Demo Mode, consistent with Settings itself being unreachable there (middleware already redirects every Demo Mode request away from `/settings`).
+**Cost if wrong:** none identified — purely additive; no existing route or interface changed.
+
+**Process note, not a defect finding:** Q11 itself is unaffected by this — its approved scope never included Morning Brief navigation, and everything it committed to shipping was delivered and verified. This surfaced only because the Founder Experience Review walked the *complete* owner journey from signup rather than starting from a known URL. Adopted as a standing Engineering expectation going forward (Pre-Ship Walkthrough Checklist, point 8): walk the full journey from the natural customer entry point to any feature being reviewed, so a missing link like this surfaces during Engineering's own review next time, not the Founder's.
+
+**Test/type status:** 194 tests unchanged (a static navigation link plus a code comment — no new logic, consistent with this project's existing pattern of not writing render tests for presentational-only changes). `npx tsc --noEmit` unchanged at 19 errors, all pre-existing sandbox-only category.
