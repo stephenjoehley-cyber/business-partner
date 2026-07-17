@@ -94,7 +94,24 @@ export default async function MorningBriefPage() {
             {greetingForTime()}, {greetingName}.
           </h1>
         </div>
-        {demoMode ? <DemoModeBadge /> : <SignOutButton />}
+        {/*
+          The header is the permanent home for persistent account-level
+          actions that should always be available but never compete with
+          the Morning Brief itself (Founder/CPO principle, 2026-07-16,
+          established while fixing the Settings-discoverability gap).
+          Settings before Sign out — a navigation destination within
+          Business Partner precedes an exit from it.
+        */}
+        {demoMode ? (
+          <DemoModeBadge />
+        ) : (
+          <div className="flex items-center gap-4">
+            <a href="/settings" className="focus-ring text-sm text-ink-faint hover:text-ink">
+              Settings
+            </a>
+            <SignOutButton />
+          </div>
+        )}
       </header>
 
       {!latestBrief && (
