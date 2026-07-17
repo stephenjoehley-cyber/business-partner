@@ -4,6 +4,19 @@ import { completeOnboarding, getBusinessByOwner } from '@/lib/brain/repository';
 import { runDailyCycleForBusiness } from '@/lib/orchestrator/dailyCycle';
 
 /**
+ * Forces this route to always run per-request rather than being
+ * considered for static optimization at build time. Every route in
+ * this app depends on request-specific state (session, cookies, query
+ * params, or POST bodies), so none of them are ever safe to
+ * statically prerender — added after a real production build failure
+ * (2026-07-17): Next.js attempted to export the Google Calendar
+ * callback route at build time, where GOOGLE_TOKEN_ENCRYPTION_KEY and
+ * a real request context don't exist, and the build failed outright.
+ * See DECISIONS.md.
+ */
+export const dynamic = 'force-dynamic';
+
+/**
  * The final onboarding step — Phase B Item 7.
  *
  * Deliberately separate from `/api/onboarding/people`: onboarding is
