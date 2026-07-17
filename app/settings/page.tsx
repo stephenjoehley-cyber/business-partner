@@ -128,7 +128,7 @@ export default async function SettingsPage({
             {isCalendarConnected ? (
               <DisconnectButton endpoint="/api/integrations/google-calendar/disconnect" />
             ) : (
-              
+              <a
                 href="/api/integrations/google-calendar/connect"
                 className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
               >
@@ -159,7 +159,7 @@ export default async function SettingsPage({
             {isGmailConnected ? (
               <DisconnectButton endpoint="/api/integrations/gmail/disconnect" />
             ) : (
-              
+              <a
                 href="/api/integrations/gmail/connect"
                 className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
               >
