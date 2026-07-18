@@ -53,8 +53,23 @@ body {
   @apply font-editorial text-ink text-3xl font-semibold;
 }
 
+/*
+  2026-07-18 (D1.2 Addendum): .focus-ring was applying `ring-2 ring-brass
+  ring-offset-2` unconditionally — not scoped to any focus state — since
+  before this class existed in this file's history. Every element using
+  it (21 files: every button, link, and form control in the product) has
+  had a permanent brass ring at all times, not a focus indicator. This is
+  what produced the "logo inside a framed rectangle" defect the Founder
+  Experience Review found — the AppLogo link used this same class. Fixed
+  at the source so all 21+ existing consumers are corrected at once, not
+  just the logo.
+*/
 .focus-ring {
-  @apply outline-none ring-2 ring-brass ring-offset-2 ring-offset-surface;
+  @apply outline-none;
+}
+
+.focus-ring:focus-visible {
+  @apply ring-2 ring-brass ring-offset-2 ring-offset-surface;
 }
 
 /* Respect reduced-motion preferences throughout the app */
