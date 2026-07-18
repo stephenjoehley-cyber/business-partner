@@ -729,3 +729,16 @@ Settings rows, forms, lists, and other operational content remain typographicall
 **Cost if wrong:** Low — Lucide is a small, tree-shakeable dependency; icon usage is scoped narrowly enough that removing or expanding it later touches only the navigation component, not the wider application.
 
 **Test/type status:** No impact yet — no Lucide dependency has been installed. To be confirmed once introduced in D1.1.
+
+## Navigation Shell Scope — Real Destinations Only, No "Coming Soon" Nav Items (D1.1 Open Question A)
+
+Objective: record the Founder-approved resolution of Open Question A from the D1.1 Product Audit — whether the Executive Foundation's persistent navigation shows only real product destinations or includes not-yet-built areas marked "coming soon."
+
+### 2026-07-18 — Navigation shows Morning Brief and Settings only; no placeholder destinations
+The persistent navigation shell is introduced in D1.1, but displays only genuine product destinations: Morning Brief and Settings. Insights, Customers, Projects, Tasks, Conversations, and Documents do not appear in navigation until they are real. There is no "coming soon" treatment for navigation items — that pattern is reserved for capability disclosure within an existing page (as Settings already does for "Workspace"), which is a fundamentally different case from navigation, since navigation defines the product's information architecture rather than disclosing a future feature of a page the owner is already on.
+
+**Why:** Asset 021 §13.1 is explicit: "Only real destinations should appear... empty future sections must not be exposed merely to suggest product breadth." Navigation asserting a broader product than exists today is precisely the truthfulness violation that clause exists to prevent. The shell becomes genuinely reusable from D1.1 onward — as each future area (Insights, Customers, etc.) becomes real, it enters the navigation naturally, with no rework needed to remove a placeholder.
+
+**Cost if wrong:** Low and easily corrected — adding a nav item later, once a destination is real, is a small, additive change to the shared shell component; no architectural rework required.
+
+**Test/type status:** No impact yet — the navigation shell has not been implemented. To be confirmed once built in D1.1.
