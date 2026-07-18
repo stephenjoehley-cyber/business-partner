@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import { Nav } from './Nav';
 import { MobileNav } from './MobileNav';
 import { AppLogo } from './AppLogo';
@@ -22,7 +21,7 @@ interface AppShellProps {
 export function AppShell({ accountSlot, contextualPanel, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-surface">
-      <a
+      
         href="#main-content"
         className="focus-ring sr-only rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
       >
@@ -30,9 +29,7 @@ export function AppShell({ accountSlot, contextualPanel, children }: AppShellPro
       </a>
 
       <div className="flex items-center justify-between border-b border-surface-border px-4 py-3 md:hidden">
-        <Link href="/morning-brief" className="focus-ring inline-block" aria-label="Business Partner — go to Morning Brief">
-          <AppLogo size="mobile" />
-        </Link>
+        <AppLogo variant="horizontal" size="sm" href="/morning-brief" priority />
         <MobileNav accountSlot={accountSlot} />
       </div>
 
@@ -40,23 +37,15 @@ export function AppShell({ accountSlot, contextualPanel, children }: AppShellPro
         <aside className="hidden w-56 shrink-0 flex-col justify-between md:flex">
           <div className="flex flex-col">
             {/*
-              Brand Zone above the Navigation Zone (Founder/CPO spec,
-              2026-07-18): 24px separation before Nav begins. The
-              pl-[42px] offset aligns the logo's left edge with where Nav
-              item *labels* start (link's own px-3 + 18px icon + gap-3),
-              not the icon column — a deliberate, documented constant
-              tied to Nav's current icon/gap sizing, not an arbitrary
-              value. Worth a live visual check once deployed; I can't
-              verify pixel alignment without a browser in this
-              environment.
+              Brand Zone above the Navigation Zone (D1.2 Addendum,
+              2026-07-18): 24px separation before Nav begins, logo
+              aligned with the main navigation content edge — i.e. Nav's
+              own left edge, not a computed icon-column offset (the
+              earlier pl-[42px] approach is dropped; it depended on
+              Nav's exact icon/gap sizing and I couldn't verify it
+              visually anyway).
             */}
-            <Link
-              href="/morning-brief"
-              className="focus-ring inline-block pl-[42px]"
-              aria-label="Business Partner — go to Morning Brief"
-            >
-              <AppLogo size="desktop" />
-            </Link>
+            <AppLogo variant="horizontal" size="md" href="/morning-brief" priority />
             <div className="mt-6">
               <Nav />
             </div>
