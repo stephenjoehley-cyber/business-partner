@@ -697,3 +697,18 @@ Fraunces was selected after engineering assessment (legibility, required weights
 **Cost if wrong:** Low and reversible — a font-loading and design-token change, isolated to `app/layout.tsx`, `app/globals.css`, and `tailwind.config.ts`. No data, schema, or business-logic impact.
 
 **Test/type status:** No test or type impact expected — font and token additions only. To be confirmed against actual `vitest`/`tsc` output once implemented in D1.1.
+
+## Component Library — Radix Primitives Adopted Selectively (behaviour only, not presentation)
+
+Objective: record the Founder-approved decision on component library strategy ahead of Increment D1.1, following the Executive Design Programme's (Asset 020/021) permission to use Radix "selectively" for accessibility-critical behaviour.
+
+### 2026-07-18 — Radix primitives approved; shadcn/ui declined for now
+Radix primitives may be introduced selectively where they provide clear engineering benefit for accessibility or interaction behaviour — dialogs, focus management, keyboard navigation, escape handling. shadcn/ui is not adopted at this stage: the Programme permits it, but it isn't required, and beginning with unstyled Radix avoids inheriting or having to override another design system's visual defaults. Every Radix primitive is wrapped in a Business Partner component so the rest of the application depends only on our own abstractions, never directly on Radix, wherever practical. Visual presentation — tokens, typography, spacing, shared components — remains entirely Business Partner's own.
+
+**Governing principle (permanent):** Engineering libraries may provide behaviour. Business Partner alone provides presentation.
+
+**Why:** Business Partner's competitive advantage is executive judgement and product philosophy, not reinvented accessibility primitives. Radix solves genuinely hard, well-understood problems (focus trapping/restoration, keyboard behaviour, dialog accessibility) that Asset 021 §15 requires us to get right; hand-building them is effort spent on solved problems rather than product value.
+
+**Cost if wrong:** Low — Radix is a small, additive dependency confined to a wrapper layer. If a future primitive proves unnecessary or wrong, it can be replaced without touching design tokens or the visual layer, since presentation never depends on Radix directly.
+
+**Test/type status:** No impact yet — no Radix dependency has been installed. To be confirmed once introduced in D1.1.
