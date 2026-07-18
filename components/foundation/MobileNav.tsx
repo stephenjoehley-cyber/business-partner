@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { Nav } from './Nav';
 import { AppLogo } from './AppLogo';
@@ -39,14 +38,7 @@ export function MobileNav({ accountSlot }: { accountSlot: ReactNode }) {
         >
           <div className="flex items-center justify-between">
             <Dialog.Title asChild>
-              <Link
-                href="/morning-brief"
-                onClick={() => setOpen(false)}
-                className="focus-ring inline-block"
-                aria-label="Business Partner — go to Morning Brief"
-              >
-                <AppLogo size="mobile" />
-              </Link>
+              <AppLogo variant="horizontal" size="sm" href="/morning-brief" onClick={() => setOpen(false)} />
             </Dialog.Title>
             <Dialog.Close asChild>
               <button type="button" aria-label="Close navigation" className="focus-ring rounded-md p-2 text-ink">
@@ -64,4 +56,3 @@ export function MobileNav({ accountSlot }: { accountSlot: ReactNode }) {
     </Dialog.Root>
   );
 }
-
