@@ -742,3 +742,20 @@ The persistent navigation shell is introduced in D1.1, but displays only genuine
 **Cost if wrong:** Low and easily corrected — adding a nav item later, once a destination is real, is a small, additive change to the shared shell component; no architectural rework required.
 
 **Test/type status:** No impact yet — the navigation shell has not been implemented. To be confirmed once built in D1.1.
+
+## Contextual Panel — First-Class Executive Foundation Component, In Scope for D1.1 (Open Question B)
+
+Objective: record the Founder-approved resolution of Open Question B from the D1.1 Product Audit — whether the mockup's supporting right-hand panel is in scope for D1.1, and what it fundamentally is.
+
+### 2026-07-18 — Contextual panel approved as a Foundation component, not a Settings component
+The contextual panel is in scope for D1.1. It is built as a first-class Executive Foundation component — a reusable pattern that Settings is merely the first expression of, not a Settings-specific sidebar. Morning Brief, future executive workspaces, onboarding, and other authenticated experiences should be able to inherit the same pattern without redesigning it.
+
+The panel's purpose is quiet executive orientation, not information repetition, marketing, or restating the page's own content. It should answer: why does this page matter, how does it fit the wider Business Partner experience, and what should the owner understand without interrupting the primary task. It remains deliberately lightweight and secondary to the primary reading column, populated only with genuinely useful context — never filled merely because space is available.
+
+**Governing framing:** this is Business Partner's secondary voice — the quiet place where the product orients, reassures, and educates without competing with the primary task. That is what makes it foundational rather than page-specific.
+
+**Why:** Asset 021 describes the Executive Workspace as a relationship between primary content and supporting executive context, not merely a collection of independent pages. D1.1 is the opportunity to prove that relationship in production, in a way later screens inherit rather than reinvent.
+
+**Cost if wrong:** Moderate — building this as a genuinely reusable component (rather than Settings-specific markup) is more upfront engineering effort than a one-off sidebar. If the pattern proves wrong once a second real screen uses it, the cost is revising one shared component, not multiple page-specific implementations.
+
+**Test/type status:** No impact yet — not yet implemented. To be confirmed once built in D1.1.
