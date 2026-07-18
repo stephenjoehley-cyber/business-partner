@@ -833,3 +833,21 @@ New: `components/foundation/AppShell.tsx`, `Nav.tsx`, `MobileNav.tsx` (the one R
 **Test/type status:** 219 tests passing (215 before this increment — 4 new, `tests/ui/nav.test.ts`). `npx tsc --noEmit` shows the same pre-existing, sandbox-only Prisma-client-type category already documented for prior increments (Prisma engine binary download blocked in this sandbox's network allowlist) — zero new errors from any file touched in D1.1. `npx next build` could not be fully verified in this sandbox: Google Fonts fetching (`fonts.googleapis.com`) is blocked by the sandbox's network allowlist, which fails identically for the pre-existing Inter and IBM Plex Mono loads, not specifically for the new Fraunces load — a sandbox limitation, not a defect; will resolve on Vercel's build, which has full internet access.
 
 **Status:** Implementation complete, awaiting Founder Experience Review (Asset 021 §22.3) in the deployed product — the working test of "prepared, calm, confident, respected, focused," not this document.
+
+## AppLogo Correction — Undersized Artwork and Permanent-Ring Defect Fixed (D1.2 Addendum)
+
+Objective: correct the two defects the Founder Experience Review found in the first AppLogo implementation, at the shared-component level, before the Public Entry Experience reused it anywhere else.
+
+### 2026-07-18 — Root causes diagnosed and fixed
+Two separate defects, both misdiagnosed at first glance as "the logo is too small":
+
+1. **Source asset padding.** The original `business-partner-logo.png` had roughly 25% internal white-space padding around the visible mark (content bounding box 1248×435 within a 1530×587 canvas). A CSS height of 32px therefore rendered the actual visible artwork at roughly 24px, not 32px. Fixed by cropping two new assets tight to their true visual bounds — `public/brand/business-partner-horizontal.png` (full lock-up) and `public/brand/business-partner-mark.png` (hexagon only) — with the white background converted to transparency. The artwork itself was not redrawn, recoloured, or reinterpreted, only cropped and matted, per the addendum's explicit instruction.
+2. **`.focus-ring` applying its ring permanently, not on focus.** The actual root cause of the "logo inside a bordered rectangle" complaint: `.focus-ring` (`app/globals.css`) applied `ring-2 ring-brass ring-offset-2` unconditionally, with no `:focus`/`:focus-visible` scoping — a pre-existing defect predating D1.1, affecting all 21 other files using this class (every button, link, and form control in the product), not something introduced by the logo work. Fixed by scoping the ring to `:focus-visible` only. This corrects the defect everywhere it existed, not only around the logo.
+
+**AppLogo's contract corrected** to `{ variant: 'horizontal' | 'mark', size: 'sm' | 'md' | 'lg', href?, onClick?, priority?, className? }` — sm/md/lg map to 25/30/32px visible height exactly as specified, computed from the new assets' true aspect ratios (extracted into `lib/ui/logo.ts` for testability). Presentational by default; `href` opts into link behaviour, so a future non-authenticated consumer (e.g. the homepage footer mark) isn't forced into a navigation role it doesn't need.
+
+**Why:** a foundation-level defect, caught in one place (the logo), would otherwise have been silently reproduced across every future route consuming `AppLogo` — exactly what this correction was ordered to prevent before homepage implementation began.
+
+**Cost if wrong:** Low — asset and CSS-scoping changes only, no logic or data changes. If the crop margins need adjustment, it's a repeat of the same cropping step, not a redesign.
+
+**Test/type status:** 233 tests passing (219 before this and the D1.2 work — 6 new in `tests/ui/logo.test.ts`, plus D1.2's own new tests below). `npx tsc --noEmit` shows no new errors beyond the pre-existing, documented Prisma sandbox category.
