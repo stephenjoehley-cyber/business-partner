@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { OnboardingWizard } from './OnboardingWizard';
-import { SignOutButton } from '@/app/morning-brief/SignOutButton';
+import { SignOutButton } from '@/components/foundation/SignOutButton';
 
 export default async function OnboardingPage({
   searchParams,

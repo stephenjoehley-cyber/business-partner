@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /*
-  Design system notes (Blueprint Section 10 — UI Architecture)
+  Design system notes (Blueprint Section 10 — UI Architecture; Asset 021 —
+  Executive Foundation and Reference Implementation Standard)
 
   Business Partner should feel like a calm, dependable executive colleague —
   not a chatbot, not a generic dashboard. The palette avoids the common
@@ -15,10 +16,23 @@
   Signature element: the confidence marker on the Morning Brief (see
   MorningBriefCard) — a small brass tick-mark styled like a ledger stamp,
   used nowhere else, so it stays meaningful.
+
+  2026-07-18 (D1.1, Asset 021): a second, editorial typeface (Fraunces) is
+  reintroduced — deliberately, not decoratively — for designated executive
+  and editorial roles only: page titles, Morning Brief headlines, major
+  editorial statements. This supersedes the earlier Inter-only decision;
+  see DECISIONS.md. Typography roles are assigned semantically via the
+  `.text-editorial-*` utilities below, not by HTML heading tag — an <h2>
+  used as a quiet section label (e.g. Settings' "Connections") stays
+  Interface typography (Asset 021 §5.2 names "settings" and "labels"
+  explicitly), while an <h1> used as a page title takes the editorial role.
+  A `danger` colour family also exists (tailwind.config.ts), deliberately
+  distinct from `signal.attention` — see DECISIONS.md for the reasoning.
 */
 
 :root {
   --font-body: 'Inter', sans-serif;
+  --font-editorial: 'Fraunces', serif;
   --font-mono: 'IBM Plex Mono', monospace;
 }
 
@@ -26,8 +40,17 @@ body {
   @apply bg-surface text-ink font-body antialiased;
 }
 
-h1, h2, h3 {
-  @apply font-body text-ink;
+/*
+  Semantic typography roles (Asset 021 §5, §19). Applied deliberately per
+  element, not implied by heading tag — restraint is the point: these
+  should remain rare relative to ordinary Interface typography.
+*/
+.text-editorial-title {
+  @apply font-editorial text-ink text-2xl font-semibold;
+}
+
+.text-editorial-headline {
+  @apply font-editorial text-ink text-3xl font-semibold;
 }
 
 .focus-ring {

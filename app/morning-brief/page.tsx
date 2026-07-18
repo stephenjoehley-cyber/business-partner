@@ -9,7 +9,8 @@ import { buildNarrativeInput } from '@/lib/narrative/fromMorningBrief';
 import { greetingForTime, isSameDay } from '@/lib/ui/time';
 import { isDemoMode } from '@/lib/demo/config';
 import { ensureDemoSeeded } from '@/lib/demo/seed';
-import { SignOutButton } from './SignOutButton';
+import { AppShell } from '@/components/foundation/AppShell';
+import { AccountBlock } from '@/components/foundation/AccountBlock';
 import { RecommendationTrigger } from './RecommendationTrigger';
 import { MorningBriefCard } from './MorningBriefCard';
 import { AllClearCard } from './AllClearCard';
@@ -84,37 +85,32 @@ export default async function MorningBriefPage() {
     (await getConfiguredProviderId(business.id, 'calendar')) === 'google-calendar';
 
   return (
-    <main className="mx-auto min-h-screen max-w-2xl px-6 py-16">
-      {demoMode && <DemoModeBanner />}
-
-      <header className="mb-12 flex items-center justify-between">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Business Partner</p>
-          <h1 className="text-xl font-semibold">
-            {greetingForTime()}, {greetingName}.
-          </h1>
-        </div>
-        {/*
-          The header is the permanent home for persistent account-level
-          actions that should always be available but never compete with
-          the Morning Brief itself (Founder/CPO principle, 2026-07-16,
-          established while fixing the Settings-discoverability gap).
-          Settings before Sign out — a navigation destination within
-          Business Partner precedes an exit from it.
-        */}
-        {demoMode ? (
+    <AppShell
+      accountSlot={
+        demoMode ? (
           <DemoModeBadge />
         ) : (
-          <div className="flex items-center gap-4">
-            <a href="/settings" className="focus-ring text-sm text-ink-faint hover:text-ink">
-              Settings
-            </a>
-            <SignOutButton />
-          </div>
-        )}
-      </header>
+          <AccountBlock name={greetingName} businessName={business.name} />
+        )
+      }
+    >
+      <div className="mx-auto max-w-2xl">
+        {demoMode && <DemoModeBanner />}
 
-      {!latestBrief && (
+        {/*
+          2026-07-18 (D1.1): the standalone header (wordmark label,
+          Settings link, SignOutButton) is removed — AppShell's persistent
+          Nav and AccountBlock now cover both, consistently, on every page
+          it wraps, rather than one hand-maintained link per page. The
+          greeting itself stays as real page content, not chrome, and now
+          takes the editorial headline role Asset 021 §5.1 names
+          explicitly for Morning Brief headlines.
+        */}
+        <h1 className="text-editorial-headline mb-12">
+          {greetingForTime()}, {greetingName}.
+        </h1>
+
+        {!latestBrief && (
         /*
           Honest empty state (Constitution Principle 10 / Blueprint Section
           9): no MorningBrief exists yet because no cycle has run. This is
@@ -166,6 +162,7 @@ export default async function MorningBriefPage() {
           supportingSignals={supportingSignals}
         />
       )}
-    </main>
+      </div>
+    </AppShell>
   );
 }

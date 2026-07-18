@@ -24,9 +24,21 @@ const config: Config = {
           steady: '#2F5D62',
           attention: '#B5651D',
         },
+        // A deliberately separate family from `signal` — attention means
+        // "this deserves consideration," danger means "this action may
+        // cause serious or irreversible consequences." A muted oxblood/
+        // brick, not signal.attention's orange, so the two remain
+        // distinguishable in meaning as well as appearance. Founder
+        // decision, 2026-07-18 (D1.1 Implementation Plan refinements).
+        danger: {
+          DEFAULT: '#8C3A2E',
+          deep: '#6B2C22',
+          surface: '#F7ECEA',
+        },
       },
       fontFamily: {
         body: ['var(--font-body)', 'sans-serif'],
+        editorial: ['var(--font-editorial)', 'serif'],
         mono: ['var(--font-mono)', 'monospace'],
       },
       borderRadius: {
