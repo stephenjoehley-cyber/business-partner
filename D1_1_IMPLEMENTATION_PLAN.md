@@ -123,3 +123,39 @@ Manual verification before presenting as ready: keyboard-only pass through both 
 ---
 
 Awaiting your approval before implementation begins. Section 6 is the one place I'd like explicit confirmation rather than silent agreement, since it's a scope call, not just an engineering detail.
+
+# D1.1 Implementation Plan — Addendum (Founder Refinements, 2026-07-18)
+
+Append this to the end of `D1_1_IMPLEMENTATION_PLAN.md`. Supersedes §2 and §4's `ContextualPanel` contract as originally proposed; confirms §6.
+
+---
+
+## §2 (revised) — Danger Token Values, Finalized
+
+Not derived from `signal.attention`. A separate, deliberate family:
+
+```ts
+danger: {
+  DEFAULT: '#8C3A2E',  // muted oxblood/brick — text, icon, border emphasis
+  deep: '#6B2C22',     // hover/active state for filled danger actions
+  surface: '#F7ECEA',  // quiet danger-tinted surface, not a saturated red
+},
+```
+
+Mirrors the existing `brass` family's `DEFAULT`/`deep` pattern and `surface`'s role-based naming. Distinguishable from `signal.attention` (`#B5651D`, a burnt orange) in both hue and role: attention says "consider this," danger says "this may be serious or irreversible." All risk meaning is still expressed in language (the existing, preserved `DeleteBusinessSection` copy), never colour alone.
+
+## §4 (revised) — ContextualPanel Contract
+
+```ts
+{
+  heading?: string;      // optional, must orient rather than repeat the page title
+  orientation: string;   // one short paragraph
+  children?: ReactNode;  // sparse supplementary content only
+}
+```
+
+Rules, as specified: heading is optional; must not repeat the page title; orients or reassures rather than introducing a competing subject; orientation stays short; supplementary content stays sparse; the panel renders gracefully with only `orientation` supplied.
+
+## §6 (confirmed, not assumed)
+
+Both points confirmed as proposed: current flat Settings IA retained (Personal / Connections / Your Business Data / Danger Zone — no sub-pages for Notifications, Security & Access, or Workspace); Morning Brief adopts `AppShell` as the minimum shared shell, with its existing substantive content and hierarchy otherwise untouched.
