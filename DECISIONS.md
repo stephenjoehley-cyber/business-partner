@@ -759,3 +759,18 @@ The panel's purpose is quiet executive orientation, not information repetition, 
 **Cost if wrong:** Moderate — building this as a genuinely reusable component (rather than Settings-specific markup) is more upfront engineering effort than a one-off sidebar. If the pattern proves wrong once a second real screen uses it, the cost is revising one shared component, not multiple page-specific implementations.
 
 **Test/type status:** No impact yet — not yet implemented. To be confirmed once built in D1.1.
+
+## Danger Zone — Existing Copy Preserved, Visual Treatment Only Changes (Open Question C)
+
+Objective: record the Founder-approved resolution of Open Question C from the D1.1 Product Audit — whether `DeleteBusinessSection`'s existing copy is preserved or revised alongside its new visual treatment.
+
+### 2026-07-18 — Copy preserved; only visual hierarchy changes
+The existing confirmation flow, explanatory copy, and feedback invitation in `DeleteBusinessSection` are preserved exactly as written. D1.1 introduces the new semantic danger treatment and separates the Danger Zone from routine account management (Export, Connections) through layout, spacing, and semantic styling — not through stronger or more dramatic language.
+
+**Governing principle (permanent):** Visual hierarchy should communicate risk before editorial tone is asked to do so. When the design is doing its job properly, the copy does not need to become more forceful.
+
+**Why:** the audit's finding was about visual hierarchy — the Danger Zone doesn't yet look sufficiently different from routine actions — not about the language, which already reflects Business Partner's editorial philosophy (Asset 017) and remains consistent with Asset 021: it explains consequences clearly, reassures the owner about what happens next, and invites feedback rather than treating deletion as a purely technical operation. The owner should feel Business Partner is being careful, not dramatic.
+
+**Cost if wrong:** Low — a presentation-only change confined to `DeleteBusinessSection`'s markup and a new danger colour token; no change to the confirmation flow, copy, or underlying deletion logic (`app/api/account/delete/route.ts` untouched).
+
+**Test/type status:** No impact expected — presentational change only, consistent with this project's existing pattern of not writing render tests for these. To be confirmed once implemented in D1.1.
