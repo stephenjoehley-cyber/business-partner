@@ -22,7 +22,7 @@ export function AppShell({ accountSlot, contextualPanel, children }: AppShellPro
   return (
     <div className="min-h-screen bg-surface">
       
-        href="#main-content"
+        <a href="#main-content"
         className="focus-ring sr-only rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
       >
         Skip to content
