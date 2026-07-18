@@ -851,3 +851,28 @@ Two separate defects, both misdiagnosed at first glance as "the logo is too smal
 **Cost if wrong:** Low — asset and CSS-scoping changes only, no logic or data changes. If the crop margins need adjustment, it's a repeat of the same cropping step, not a redesign.
 
 **Test/type status:** 233 tests passing (219 before this and the D1.2 work — 6 new in `tests/ui/logo.test.ts`, plus D1.2's own new tests below). `npx tsc --noEmit` shows no new errors beyond the pre-existing, documented Prisma sandbox category.
+
+## Increment D1.2 — Public Entry Experience (Delivered)
+
+Objective: implement the public homepage at `/`, plus visual continuity across `/login` and `/signup`, per the D1.2 Production Implementation Contract, proceeding autonomously under the Founder Attention Protocol.
+
+### 2026-07-18 — Implemented and verified
+**Repository audit finding acted on:** `/` previously had no public content at all — it was a pure redirect gate for every visitor, authenticated or not. This was flagged before implementation began (see the earlier repository-truth note) and confirmed the homepage work was genuinely new routing logic, not a restyle. `app/page.tsx` now serves the real homepage to signed-out visitors and preserves the exact existing redirect logic for signed-in owners, unchanged.
+
+**New:** `components/public/{Homepage,PublicHeader,PublicFooter,HeroSection,OwnerProblemSection,ProductRoleSection,GettingStartedSection,DifferenceSection,TrustSection,FinalInvitation}.tsx` (seven sections + header/footer, each fixed-copy, no page-builder/configuration abstraction, per Contract §18); `components/auth/AuthShell.tsx`; `lib/ui/publicRoutes.ts`; `lib/auth/errors.ts`. **Modified:** `app/page.tsx`, `app/(auth)/login/page.tsx` and `app/(auth)/signup/page.tsx` (restructured from client-only pages into Server Components carrying `metadata`, with interactive logic extracted unchanged into `LoginForm.tsx`/`SignupForm.tsx` — a structural move, not a logic change, required because Next.js doesn't allow `metadata` exports in files with `'use client'`).
+
+**Truthfulness verified before use, not assumed:** the "How the Relationship Begins" and "Trust and Control" sections' copy was checked against actual production behaviour (onboarding steps, Settings' Connections section, `/api/account/export`, `/api/account/delete`) before implementation, per Contract §11.3/§13.3 — no adjustment was needed, the Contract's proposed copy already matched repository truth.
+
+**A real defect fixed, not just presentation:** both `/login` and `/signup` previously surfaced Supabase's raw error messages directly (`signInError.message`). `lib/auth/errors.ts` now maps known cases to calm, human phrasing with a safe generic fallback for anything unmapped — not a blanket replacement, since collapsing every error into one message would hide genuinely different problems (wrong password vs. unconfirmed email).
+
+**Scope boundary respected:** `/forgot-password` was deliberately left untouched — the Contract names only login and signup for visual continuity, and expanding to a route it doesn't mention would be scope creep, even though it has the same raw-error defect. Worth a follow-up, not folded in here.
+
+**Metadata added:** homepage title/description/Open Graph per Contract §21; `/login` and `/signup` get their specified titles plus `robots: { index: false, follow: false }`, since no prior indexing convention existed to follow.
+
+**Cost if wrong:** Low across the board — new, additive components plus a routing and metadata change; no schema or business-logic changes.
+
+**Test/type status:** 233 tests passing (219 before this work — 6 in `tests/ui/logo.test.ts` from the addendum correction, 3 in `tests/ui/publicRoutes.test.ts`, 5 in `tests/auth/errors.test.ts`). `npx tsc --noEmit` shows no new errors beyond the pre-existing, documented Prisma sandbox category. `npx next build` could not be fully verified in this sandbox — Google Fonts fetching is blocked by the sandbox's network allowlist, failing identically for the pre-existing Inter/IBM Plex Mono loads and the newer Fraunces load alike, confirming this is an environment limitation, not a defect in this delivery specifically. Will resolve on Vercel's build.
+
+**Not verified in this environment, by necessity:** the full visual QA matrix (§26.3 — device widths, 200% zoom, keyboard pass) requires a browser, which this environment doesn't have. This is the same limitation already documented for D1.1; the Founder Experience Review remains the actual verification for this ground, consistent with the Contract's own acknowledgment that screenshots assist but don't replace live verification.
+
+**Status:** Implementation complete. Awaiting Founder Experience Review against the eight questions in Contract §28.
