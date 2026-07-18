@@ -5,9 +5,9 @@ export type AppLogoSize = 'sm' | 'md' | 'lg';
 // rendered height of the actual artwork, not a canvas size. Both assets
 // are pre-cropped tight to their visible bounds.
 export const APP_LOGO_HEIGHTS: Record<AppLogoSize, number> = {
-  sm: 25,
-  md: 30,
-  lg: 32,
+  sm: 40,
+  md: 50,
+  lg: 60,
 };
 
 export const APP_LOGO_ASSETS: Record<AppLogoVariant, { src: string; aspectRatio: number }> = {
