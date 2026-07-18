@@ -20,7 +20,13 @@ export function Nav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Primary" className="flex flex-col gap-1">
+    <nav aria-label="Primary" className="flex flex-col gap-3">
+      {/*
+        gap-3 = 12px (Tailwind's existing default spacing scale, not a
+        new token) — Founder Experience Review finding: at the previous
+        gap-1 (4px), adjacent items' hover/focus states visually merged.
+        12px per item lets each destination read as independent.
+      */}
       {NAV_ITEMS.map((item) => {
         const isActive = isNavItemActive(item.href, pathname);
         const Icon = ICONS[item.href as keyof typeof ICONS];
