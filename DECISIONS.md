@@ -681,4 +681,19 @@ Confirmed directly in the `Business` table: 8 rows had `ownerId` values matching
 
 ## Decision Backlog — new entry
 
-**Q24 — `persistSignals` runs all signal upserts concurrently against a 1-connection database pool.** Why it surfaced: 17 July 2026, Gmail's real thread volume was the first time this was ever large enough to exceed it (`PrismaClientKnownRequestError`, connection pool timeout). Fixed for now by keeping Gmail's own volume proportionate (`maxResults: 10`), not by changing the shared function, since `persistSignals` also serves Calendar and any future domain — a proportionate fix (batching, sequential persistence, or raising the connection limit) deserves its own decision. Assigned to: unassigned — revisit when signal volume grows again (more integrations, a busier Gmail account, or Executive Actions). Status: Deferred Resolution: —
+**Q24 — `persistSignals` runs all signal upserts concurrently against a 1-connection database pool.** Why it surfaced: 17 July 2026, Gmail's real thread volume was the first time this was ever large enough to exceed it (`PrismaClientKnownRequestError`, connection pool timeout). Fixed for now by keeping Gmail's own volume proportionate (`maxResults: 10`), not by changing the shared function, since `persistSignals` also serves Calendar and any future domain — a proportionate fix (batching, sequential persistence, or raising the connection limit) deserves its own decision. Assigned to: unassigned — revisit when signal volume grows again (more integrations, a busier Gmail account, or Executive Actions). Status: Deferred Resolution:
+
+## Typography — Dual-Type System Reinstated, Superseding Inter-Only Decision (Asset 021)
+
+Objective: record the Founder's explicit re-decision on typography ahead of Increment D1.1 (Executive Foundation and Settings Reference Implementation), reversing the earlier "Inter-only" Design System decision now that Asset 020/021 establish a governed standard for serif use.
+
+### 2026-07-18 — Typography decision superseded
+The previous Inter-only standard (Fraunces removed entirely) is replaced by the Asset 021 dual-type system. Inter remains the operational interface typeface for navigation, controls, forms, metadata, evidence and status language. A single editorial serif — Fraunces — is reintroduced, permitted only for designated executive and editorial roles: page titles, Morning Brief headlines, significant recommendations, and major editorial statements. This is a Founder-approved evolution of the design system, not an accidental regression.
+
+**Why:** The original Inter-only decision was correct for the product at that stage — serif use had not yet been governed by a coherent design philosophy and risked becoming an inconsistent decorative choice. Asset 021 now supplies that governance: the serif's authority depends on restraint, and its use is scoped explicitly rather than left to individual screens' judgement.
+
+Fraunces was selected after engineering assessment (legibility, required weights, rendering, loading cost, compatibility with Inter) found no material technical or visual reason to prefer an alternative. Implementation loads 1–2 static weight instances via `next/font/google` — mirroring the existing Inter/IBM Plex Mono self-hosting pattern already in `app/layout.tsx` — rather than the full variable range, keeping payload proportionate to the serif's intentionally rare usage.
+
+**Cost if wrong:** Low and reversible — a font-loading and design-token change, isolated to `app/layout.tsx`, `app/globals.css`, and `tailwind.config.ts`. No data, schema, or business-logic impact.
+
+**Test/type status:** No test or type impact expected — font and token additions only. To be confirmed against actual `vitest`/`tsc` output once implemented in D1.1.
