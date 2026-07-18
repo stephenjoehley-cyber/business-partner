@@ -876,3 +876,20 @@ Objective: implement the public homepage at `/`, plus visual continuity across `
 **Not verified in this environment, by necessity:** the full visual QA matrix (§26.3 — device widths, 200% zoom, keyboard pass) requires a browser, which this environment doesn't have. This is the same limitation already documented for D1.1; the Founder Experience Review remains the actual verification for this ground, consistent with the Contract's own acknowledgment that screenshots assist but don't replace live verification.
 
 **Status:** Implementation complete. Awaiting Founder Experience Review against the eight questions in Contract §28.
+
+## Deployment Failures Traced to a False Verification Process (found live, 18 July 2026)
+
+Objective: root-cause repeated Vercel deployment failures during D1.2 delivery, after several rounds of "verification" incorrectly reported the repository as correct.
+
+### 2026-07-18 — Root cause: git reset --hard does not remove untracked files, so local leftovers were checked instead of the real GitHub state
+Verification of the D1.2 delivery was repeatedly done by running `git fetch origin main && git reset --hard origin/main` inside a working directory that had been used earlier to originally author the new files locally. `git reset --hard` resets *tracked* files to match the target commit but does not delete files that were never committed — so the original local copies of every new file (`components/public/*`, `components/auth/AuthShell.tsx`, `lib/ui/logo.ts`, `lib/auth/errors.ts`, `LoginForm.tsx`, `SignupForm.tsx`, two logo assets, three test files) remained on disk as untracked files throughout. Every subsequent check of file contents was silently reading those leftovers, not GitHub's actual tracked state — so the checks reported success even though the original "Upload files" step had never actually added any of the 21 new files to the repository at all, only the 7 files that overwrote already-existing tracked files (via direct paste-into-GitHub's-editor) had genuinely landed.
+
+**Confirmed via a completely fresh `git clone` into a new directory** — the only reliable way to see a repository's true state — which correctly showed all 21 new files absent, matching Vercel's real build error (`Module not found: Can't resolve '@/lib/ui/logo'`, etc.).
+
+**Why it matters going forward:** any future verification of "what's actually on GitHub" must use a fresh clone into a clean directory, never a reused local working folder that may contain untracked leftovers from earlier local authoring. This is now the standing method.
+
+**Corrected:** the 21 missing files were repackaged and re-uploaded; a fresh clone confirms all are present; `npx tsc --noEmit` and `npx vitest run` (233 tests) pass against that fresh clone; a diagnostic build (fonts stripped locally only, not committed) confirms webpack compilation succeeds, with only the pre-existing, documented Prisma-sandbox type category remaining. The actual Vercel deployment for the corrected commit is confirmed **Ready**.
+
+**Cost if wrong:** None going forward — this is a verification-method correction, not a product or architecture change. The cost already paid was time: several rounds of the Founder manually pasting files and receiving failure emails, caused by my own false "verified" reports rather than a genuine defect in the delivered code each time.
+
+**Status:** Resolved. D1.2 is confirmed live and building successfully on Vercel.
