@@ -20,6 +20,13 @@ interface AppShellProps {
 export function AppShell({ accountSlot, contextualPanel, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-surface">
+      <a
+        href="#main-content"
+        className="focus-ring sr-only rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+      >
+        Skip to content
+      </a>
+
       <div className="flex items-center justify-between border-b border-surface-border px-4 py-3 md:hidden">
         <span className="text-sm font-medium text-ink">Business Partner</span>
         <MobileNav accountSlot={accountSlot} />
@@ -32,7 +39,7 @@ export function AppShell({ accountSlot, contextualPanel, children }: AppShellPro
         </aside>
 
         <div className="flex flex-1 flex-col gap-8 lg:flex-row">
-          <main className="min-w-0 flex-1">{children}</main>
+          <main id="main-content" className="min-w-0 flex-1">{children}</main>
           {contextualPanel && <div className="lg:w-72 lg:shrink-0">{contextualPanel}</div>}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { getConfiguredProviderId, getProviderConfigData } from '@/lib/signals/config-repository';
@@ -30,6 +31,11 @@ import { PreferredNameSection } from './PreferredNameSection';
  * Delete Business — DeleteBusinessSection is untouched; only DangerPanel
  * wraps it differently.
  */
+export const metadata: Metadata = {
+  title: 'Settings | Business Partner',
+  description: 'Manage the business information and preferences Business Partner uses to support you.',
+};
+
 export default async function SettingsPage({
   searchParams,
 }: {
