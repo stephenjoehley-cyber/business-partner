@@ -810,3 +810,26 @@ Rules, as specified: heading is optional; must not repeat the page title; orient
 ## §6 (confirmed, not assumed)
 
 Both points confirmed as proposed: current flat Settings IA retained (Personal / Connections / Your Business Data / Danger Zone — no sub-pages for Notifications, Security & Access, or Workspace); Morning Brief adopts `AppShell` as the minimum shared shell, with its existing substantive content and hierarchy otherwise untouched.
+
+## Increment D1.1 — Executive Foundation & Settings Reference Implementation (Delivered)
+
+Objective: implement the Executive Foundation's first production expression — shared authenticated shell, persistent truthful navigation, dual typography, semantic Settings components, and a reusable contextual panel — per the approved Implementation Plan and its Founder refinements.
+
+### 2026-07-18 — Implemented and verified
+New: `components/foundation/AppShell.tsx`, `Nav.tsx`, `MobileNav.tsx` (the one Radix usage — mobile drawer only), `AccountBlock.tsx`, `PageIntro.tsx`, `ContextualPanel.tsx`, `SignOutButton.tsx` (relocated from `app/morning-brief/`); `app/settings/SettingSection.tsx`, `ConnectionCard.tsx`, `DangerPanel.tsx`; `lib/ui/nav.ts` (pure nav-item logic, extracted for testability). Modified: `tailwind.config.ts` (editorial font role, `danger` colour family), `app/globals.css` (semantic typography utilities replacing the blanket `h1,h2,h3` rule; monospace/uppercase Settings labels removed), `app/layout.tsx` (Fraunces at two static weights), `app/settings/page.tsx` (rebuilt on the Foundation), `app/morning-brief/page.tsx` (adopts `AppShell`; old inline header nav removed as a direct integration defect — see below), `app/onboarding/page.tsx` (import path only, `SignOutButton`'s new location), `package.json`/`package-lock.json` (`lucide-react`, `@radix-ui/react-dialog`).
+
+**Danger token values** (Founder-specified, not derived from `signal.attention`): `danger.DEFAULT #8C3A2E`, `danger.deep #6B2C22`, `danger.surface #F7ECEA`.
+
+**ContextualPanel's final contract**: `{ heading?: string; orientation: string; children?: ReactNode }`, per the Founder's refinement — narrow enough to resist drift, permissive enough for the approved reference's "Your preferences. Your business." heading.
+
+**A direct integration defect corrected, per the Founder's own instruction that Morning Brief's substantive content stay untouched "unless a direct integration defect must be corrected":** Morning Brief's existing inline header (a "Business Partner" wordmark label, a `Settings` link, and its own `SignOutButton`) duplicated what `AppShell`'s persistent `Nav` and `AccountBlock` now provide on every authenticated page. Leaving both would have meant two navigation systems, and Settings appearing twice — removed as duplication, not as a redesign. The greeting headline itself (real page content, not chrome) is unchanged in substance and now takes the editorial headline role Asset 021 §5.1 names explicitly for Morning Brief headlines, per the Founder's instruction that Morning Brief inherit "the new Foundation typography... where naturally inherited."
+
+**A testing-infrastructure finding, adjusted from the original plan:** the repository has zero render/component-testing infrastructure (`vitest.config.ts` runs with `environment: 'node'`, no jsdom, no Testing Library) — consistent with this project's existing, deliberate convention of not writing render tests. Rather than introduce new test infrastructure mid-increment, `lib/ui/nav.ts`'s active-state logic was extracted as a pure function and tested directly (`tests/ui/nav.test.ts`, 4 tests); `MobileNav`'s focus-trap and dismissal behaviour rely on Radix's own upstream-tested implementation and are verified manually (keyboard pass, per the Pre-Ship Walkthrough Checklist) rather than via a new render-test harness.
+
+**Why the mobile navigation drawer is the only Radix usage in D1.1, as scoped:** the existing Danger Zone confirmation stays an inline expand/collapse, per the copy-preservation decision — no modal, so no Radix Dialog needed there. The mobile drawer is the one place in this increment's real scope requiring focus-trap/dismiss behaviour Radix exists to solve correctly.
+
+**Cost if wrong:** Low across the board — all changes are additive components plus two page-level integrations; no schema, API route, or business-logic changes anywhere in this increment.
+
+**Test/type status:** 219 tests passing (215 before this increment — 4 new, `tests/ui/nav.test.ts`). `npx tsc --noEmit` shows the same pre-existing, sandbox-only Prisma-client-type category already documented for prior increments (Prisma engine binary download blocked in this sandbox's network allowlist) — zero new errors from any file touched in D1.1. `npx next build` could not be fully verified in this sandbox: Google Fonts fetching (`fonts.googleapis.com`) is blocked by the sandbox's network allowlist, which fails identically for the pre-existing Inter and IBM Plex Mono loads, not specifically for the new Fraunces load — a sandbox limitation, not a defect; will resolve on Vercel's build, which has full internet access.
+
+**Status:** Implementation complete, awaiting Founder Experience Review (Asset 021 §22.3) in the deployed product — the working test of "prepared, calm, confident, respected, focused," not this document.
