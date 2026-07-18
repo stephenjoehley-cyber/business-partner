@@ -712,3 +712,20 @@ Radix primitives may be introduced selectively where they provide clear engineer
 **Cost if wrong:** Low — Radix is a small, additive dependency confined to a wrapper layer. If a future primitive proves unnecessary or wrong, it can be replaced without touching design tokens or the visual layer, since presentation never depends on Radix directly.
 
 **Test/type status:** No impact yet — no Radix dependency has been installed. To be confirmed once introduced in D1.1.
+
+## Icons — Lucide Adopted, Primary Navigation Only
+
+Objective: record the Founder-approved decision on the icon system ahead of Increment D1.1, resolving the third and final precedent-setting question raised during Executive Design Programme assessment (Assets 020/021).
+
+### 2026-07-18 — Lucide adopted as standard icon library; scope limited to primary navigation
+Lucide is adopted as Business Partner's standard icon library. Icons are introduced initially for primary navigation only — Morning Brief, Insights, Customers, Projects, Tasks, Conversations, Documents, Settings — where rapid recognition and compact orientation genuinely earn their place as the product's navigation grows. Navigation icons remain visually restrained and subordinate to their labels.
+
+Settings rows, forms, lists, and other operational content remain typographically led. An icon is not added merely because a row exists; it is added only where it conveys genuinely useful information that text alone cannot provide (disclosure indicators, search, external links, expandable sections, specific semantic states are anticipated future exceptions). Any expansion of icon usage beyond primary navigation is a conscious product decision, not an implementation convenience.
+
+**Governing principle (permanent):** Typography carries meaning. Icons support orientation.
+
+**Why:** Asset 021 does not discourage icons — it discourages gratuitous ones. Primary navigation is precisely where an icon improves orientation rather than decorating. Settings rows are read, not scanned; an accompanying icon there adds little information while risking the exact design drift Asset 021 §23 warns against — icons becoming an expected pattern that spreads unexamined through the product.
+
+**Cost if wrong:** Low — Lucide is a small, tree-shakeable dependency; icon usage is scoped narrowly enough that removing or expanding it later touches only the navigation component, not the wider application.
+
+**Test/type status:** No impact yet — no Lucide dependency has been installed. To be confirmed once introduced in D1.1.
