@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isDemoMode } from '@/lib/demo/config';
 
-const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback', '/forgot-password', '/auth/reset-password'];
+const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback', '/forgot-password', '/auth/reset-password', '/brand'];
 const DEMO_REDIRECT_PATHS = ['/login', '/signup', '/onboarding', '/settings', '/forgot-password', '/auth/reset-password'];
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
@@ -27,6 +27,15 @@ export async function middleware(request: NextRequest) {
   // itself (app/page.tsx) already handles showing public content to
   // signed-out visitors and redirecting signed-in ones onward; the
   // middleware just needs to stop intercepting it before that logic runs.
+  //
+  // '/brand' is in PUBLIC_PATHS (2026-07-18, found live): static assets
+  // under public/ are matched by this middleware just like page routes —
+  // a request for /brand/business-partner-horizontal.png was being
+  // redirected to /login exactly like an unauthenticated page visit
+  // would be, and a redirect isn't a valid image response, so the logo
+  // silently failed to render anywhere on signed-out pages (homepage,
+  // login, signup). Any future public/ asset folder needs the same
+  // treatment, or it will fail the same way.
   const isPublicPath =
     request.nextUrl.pathname === '/' || PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 
