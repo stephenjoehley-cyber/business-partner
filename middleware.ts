@@ -21,7 +21,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const isPublicPath = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
+  // '/' is checked as an exact match, not added to PUBLIC_PATHS below —
+  // that list is matched with startsWith, and '/' would then match every
+  // path in the app, defeating auth protection entirely. The homepage
+  // itself (app/page.tsx) already handles showing public content to
+  // signed-out visitors and redirecting signed-in ones onward; the
+  // middleware just needs to stop intercepting it before that logic runs.
+  const isPublicPath =
+    request.nextUrl.pathname === '/' || PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 
   // Public auth pages never need to know whether the visitor is logged in,
   // and — critically for /auth/reset-password — skipping the Supabase call
