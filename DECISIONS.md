@@ -1035,3 +1035,19 @@ The Travelpayouts "Three ideas worth stealing from TBEX 2026" signal was ingeste
 **Test/type status:** 297 tests passing (296 before this work — 1 new, covering the `system@` pattern). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed. This closes out the automated-sender/bulk-mail chain of findings from 19 July 2026 — Level 1 email signals should no longer produce false "reply to this" recommendations for system-generated or bulk mail, whether newly ingested or already persisted (where retroactively fixable).
+
+## Two Real Defects Found in the First Post-Cleanup Morning Brief (Delivered)
+
+Objective: fix two genuine issues surfaced the moment the automated-sender/bulk-mail cleanup let a real Calendar recommendation reach the Morning Brief for the first time.
+
+### 2026-07-19 — Grammatically broken "your today meeting" / "your tomorrow meeting"
+`recommendedAction` read "Prepare briefing notes for your today meeting with a new contact" — `relativeDayPhrase` returns "today"/"tomorrow"/"in N days," and the template (`your ${when} meeting`) was ungrammatical for all three. Fixed by reordering to `your meeting with ${who}, ${when}`, which reads correctly regardless of which phrase is substituted.
+
+### 2026-07-19 — Two genuinely distinct meetings looked like a duplicate bug
+Two "Also relevant" entries both read "A first meeting with hello@mzansichat.co.za, coming up tomorrow" — indistinguishable. Investigated directly with a temporary diagnostic route rather than assumed: confirmed these are two real, separate calendar events ("Test Monday" at 10:30, "Test Meeting" at 13:00, different external references), not a duplicate-ingestion bug. Root cause: `describeSignalPlainly`'s first-meeting branch omitted the event title entirely, while the non-first-meeting branch right next to it already included one — so two real, distinct events produced byte-identical evidence-list text. Fixed by including the title in the first-meeting branch too, matching the existing pattern.
+
+**Cost if wrong:** None for either — pure text/template fixes, no logic or data changes.
+
+**Test/type status:** 299 tests passing (297 before this work). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed.
