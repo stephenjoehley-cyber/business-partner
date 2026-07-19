@@ -160,6 +160,7 @@ export default async function MorningBriefPage() {
           confidence={latestBrief.confidence}
           generatedAt={latestBrief.generatedAt}
           supportingSignals={supportingSignals}
+          continuityNote={latestBrief.continuityNote}
         />
       )}
       </div>

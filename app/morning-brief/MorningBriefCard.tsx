@@ -15,6 +15,8 @@ interface MorningBriefCardProps {
   generatedAt: Date;
   /** The complete traceable signal list this brief was reasoned from. Always the deterministic ground truth — never touched by the Narrative Layer. */
   supportingSignals: Signal[];
+  /** Executive Presence Increment 1 — Demonstrating Understanding (per the Executive Presence Audit, 19 July 2026) — an already-finished, deterministic sentence from the Cognitive Engine (see lib/cognition/continuity.ts). Rendered directly, never passed through the Narrative Layer — there's nothing here for it to translate. Undefined whenever nothing has changed since the previous brief. */
+  continuityNote?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ export function MorningBriefCard({
   confidence,
   generatedAt,
   supportingSignals,
+  continuityNote,
 }: MorningBriefCardProps) {
   const isConfident = tier === 'confident_recommendation';
   const register = confidenceRegisterFor(tier, confidence);
@@ -73,6 +76,10 @@ export function MorningBriefCard({
       <h2 className="text-lg font-semibold leading-snug">{headline}</h2>
 
       <p className="mt-3 max-w-xl text-ink-faint">{whyItMatters}</p>
+
+      {continuityNote && (
+        <p className="mt-3 max-w-xl text-sm text-ink-faint italic">{continuityNote}</p>
+      )}
 
       {isConfident && actionText && (
         <div className="mt-6 rounded border border-brass/40 bg-brass/5 px-4 py-3">

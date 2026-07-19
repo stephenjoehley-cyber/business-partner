@@ -10,17 +10,19 @@ vi.mock('@/lib/signals/repository', () => ({
 
 vi.mock('@/lib/cognition/repository', () => ({
   saveMorningBrief: vi.fn(),
+  getLatestMorningBrief: vi.fn(),
 }));
 
 import { getBusinessById } from '@/lib/brain/repository';
 import { getSignalsForBusiness } from '@/lib/signals/repository';
-import { saveMorningBrief } from '@/lib/cognition/repository';
+import { saveMorningBrief, getLatestMorningBrief } from '@/lib/cognition/repository';
 import { generateMorningBrief } from '@/lib/cognition/pipeline';
 import type { Signal } from '@/lib/signals/types';
 
 const getBusinessByIdMock = getBusinessById as unknown as ReturnType<typeof vi.fn>;
 const getSignalsForBusinessMock = getSignalsForBusiness as unknown as ReturnType<typeof vi.fn>;
 const saveMorningBriefMock = saveMorningBrief as unknown as ReturnType<typeof vi.fn>;
+const getLatestMorningBriefMock = getLatestMorningBrief as unknown as ReturnType<typeof vi.fn>;
 
 const BUSINESS = {
   id: 'biz-1',
@@ -58,6 +60,8 @@ describe('generateMorningBrief', () => {
     getSignalsForBusinessMock.mockReset();
     saveMorningBriefMock.mockReset();
     saveMorningBriefMock.mockResolvedValue({ id: 'brief-1' });
+    getLatestMorningBriefMock.mockReset();
+    getLatestMorningBriefMock.mockResolvedValue(null);
   });
 
   it('throws when the business does not exist', async () => {
@@ -103,6 +107,83 @@ describe('generateMorningBrief', () => {
     expect(result.tier).toBe('confident_recommendation');
     if (result.tier === 'confident_recommendation') {
       expect(result.supportingSignalIds[0]).toBe(staleEmail.id);
+    }
+  });
+
+  it('attaches a continuityNote when a goal was added after the previous brief — Executive Presence Increment 1', async () => {
+    const businessWithNewGoal = {
+      ...BUSINESS,
+      goals: [
+        {
+          id: 'g1',
+          businessId: 'biz-1',
+          description: 'Win our first client',
+          priority: 1,
+          createdAt: new Date('2026-07-19T00:00:00.000Z'),
+        },
+      ],
+    };
+    getBusinessByIdMock.mockResolvedValue(businessWithNewGoal);
+    getSignalsForBusinessMock.mockResolvedValue([makeEmailSignal(3)]);
+    getLatestMorningBriefMock.mockResolvedValue({
+      tier: 'all_clear',
+      message: 'No signals currently require executive attention.',
+      generatedAt: new Date('2026-07-18T06:00:00.000Z'),
+    });
+
+    const result = await generateMorningBrief('biz-1');
+
+    expect(result.tier).toBe('confident_recommendation');
+    if (result.tier === 'confident_recommendation') {
+      expect(result.continuityNote).toContain('a new goal');
+    }
+  });
+
+  it('never attaches a continuityNote to an all_clear brief — Business Memory Reflection already covers that tier fully', async () => {
+    const businessWithNewGoal = {
+      ...BUSINESS,
+      goals: [
+        {
+          id: 'g1',
+          businessId: 'biz-1',
+          description: 'Win our first client',
+          priority: 1,
+          createdAt: new Date('2026-07-19T00:00:00.000Z'),
+        },
+      ],
+    };
+    getBusinessByIdMock.mockResolvedValue(businessWithNewGoal);
+    getSignalsForBusinessMock.mockResolvedValue([]);
+    getLatestMorningBriefMock.mockResolvedValue({
+      tier: 'all_clear',
+      message: 'No signals currently require executive attention.',
+      generatedAt: new Date('2026-07-18T06:00:00.000Z'),
+    });
+
+    const result = await generateMorningBrief('biz-1');
+
+    expect(result.tier).toBe('all_clear');
+    expect('continuityNote' in result).toBe(false);
+  });
+
+  it('omits continuityNote entirely when nothing has changed since the previous brief', async () => {
+    getBusinessByIdMock.mockResolvedValue(BUSINESS);
+    getSignalsForBusinessMock.mockResolvedValue([makeEmailSignal(3)]);
+    getLatestMorningBriefMock.mockResolvedValue({
+      tier: 'confident_recommendation',
+      executiveSummary: 'Previous summary',
+      reasoning: 'Previous reasoning',
+      recommendedAction: 'Previous action',
+      confidence: 0.9,
+      supportingSignalIds: ['sig-old'],
+      generatedAt: new Date('2026-07-19T05:00:00.000Z'), // after BUSINESS's goals/people were created
+    });
+
+    const result = await generateMorningBrief('biz-1');
+
+    expect(result.tier).toBe('confident_recommendation');
+    if (result.tier === 'confident_recommendation') {
+      expect(result.continuityNote).toBeUndefined();
     }
   });
 });

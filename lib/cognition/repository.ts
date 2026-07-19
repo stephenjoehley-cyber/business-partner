@@ -39,6 +39,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         confidence: result.confidence,
         supportingSignalIds: result.supportingSignalIds,
         message: null,
+        continuityNote: result.continuityNote ?? null,
       };
     case 'low_confidence_insight':
       return {
@@ -49,6 +50,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         confidence: result.confidence,
         supportingSignalIds: result.supportingSignalIds,
         message: null,
+        continuityNote: result.continuityNote ?? null,
       };
     case 'all_clear':
       return {
@@ -59,6 +61,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         confidence: null,
         supportingSignalIds: [],
         message: result.message,
+        continuityNote: null,
       };
   }
 }
@@ -83,6 +86,7 @@ export function toResult(row: MorningBriefRow): MorningBriefResult {
       recommendedAction: row.recommendedAction,
       confidence: row.confidence,
       supportingSignalIds: row.supportingSignalIds,
+      continuityNote: row.continuityNote ?? undefined,
       generatedAt,
     };
   }
@@ -97,6 +101,7 @@ export function toResult(row: MorningBriefRow): MorningBriefResult {
       reasoning: row.reasoning,
       confidence: row.confidence,
       supportingSignalIds: row.supportingSignalIds,
+      continuityNote: row.continuityNote ?? undefined,
       generatedAt,
     };
   }

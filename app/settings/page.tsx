@@ -6,6 +6,7 @@ import { ExportDataLink } from './ExportDataLink';
 import { DeleteBusinessSection } from './DeleteBusinessSection';
 import { PreferredNameSection } from './PreferredNameSection';
 import { HelpUnderstandSection } from './HelpUnderstandSection';
+import { asOfPhrase } from '@/lib/ui/time';
 
 /**
  * Settings — Phase B, Item 5. Google Calendar connect status and a
@@ -84,14 +85,20 @@ export default async function SettingsPage({
   const isCalendarConnected = configuredCalendarProviderId === 'google-calendar';
 
   const calendarConfig = isCalendarConnected
-    ? ((await getProviderConfigData(business.id, 'calendar')) as { lastError?: string | null } | null)
+    ? ((await getProviderConfigData(business.id, 'calendar')) as {
+        lastError?: string | null;
+        lastSyncedAt?: string | null;
+      } | null)
     : null;
 
   const configuredEmailProviderId = await getConfiguredProviderId(business.id, 'email');
   const isGmailConnected = configuredEmailProviderId === 'google-gmail';
 
   const gmailConfig = isGmailConnected
-    ? ((await getProviderConfigData(business.id, 'email')) as { lastError?: string | null } | null)
+    ? ((await getProviderConfigData(business.id, 'email')) as {
+        lastError?: string | null;
+        lastSyncedAt?: string | null;
+      } | null)
     : null;
 
   // lastError is read only to decide which calm, generic status to show —
@@ -99,6 +106,22 @@ export default async function SettingsPage({
   // requirement that the stored error stays internal.
   const calendarNeedsReconnect = Boolean(calendarConfig?.lastError);
   const gmailNeedsReconnect = Boolean(gmailConfig?.lastError);
+
+  // Executive Presence Increment 1 — Demonstrating Understanding (per the
+  // Executive Presence Audit, 19 July 2026) — lastSyncedAt has been
+  // computed and stored since the day Calendar first went live, and was
+  // never once shown to an owner. "Connected" alone is a static claim;
+  // naming when Business Partner last actually checked is what makes it
+  // a demonstration of current understanding rather than a status label.
+  // Executive Time phrasing (asOfPhrase), never a raw timestamp.
+  const calendarLastCheckedPhrase =
+    isCalendarConnected && !calendarNeedsReconnect && calendarConfig?.lastSyncedAt
+      ? asOfPhrase(new Date(calendarConfig.lastSyncedAt))
+      : null;
+  const gmailLastCheckedPhrase =
+    isGmailConnected && !gmailNeedsReconnect && gmailConfig?.lastSyncedAt
+      ? asOfPhrase(new Date(gmailConfig.lastSyncedAt))
+      : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 px-6 py-12">
@@ -142,7 +165,9 @@ export default async function SettingsPage({
             {isCalendarConnected
               ? calendarNeedsReconnect
                 ? 'Calendar needs to be reconnected.'
-                : 'Connected. Business Partner is observing your schedule.'
+                : calendarLastCheckedPhrase
+                  ? `Connected. Business Partner last checked ${calendarLastCheckedPhrase.replace('As of ', '')}.`
+                  : 'Connected. Business Partner is observing your schedule.'
               : 'Connect your calendar so Business Partner can prepare you for upcoming meetings and help prioritise your day.'}
           </p>
 
@@ -172,7 +197,9 @@ export default async function SettingsPage({
             {isGmailConnected
               ? gmailNeedsReconnect
                 ? 'Gmail needs to be reconnected.'
-                : 'Connected. Business Partner is observing which emails are still waiting on a reply from you.'
+                : gmailLastCheckedPhrase
+                  ? `Connected. Business Partner last checked ${gmailLastCheckedPhrase.replace('As of ', '')}.`
+                  : 'Connected. Business Partner is observing which emails are still waiting on a reply from you.'
               : 'Connect your inbox so Business Partner can see which emails are still waiting on a reply from you.'}
           </p>
 

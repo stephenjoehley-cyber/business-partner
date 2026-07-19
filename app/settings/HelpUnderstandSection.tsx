@@ -35,6 +35,16 @@ interface PersonSummary {
  * before Business Partner earns the right to refresh invisibly. A later
  * phase may make this automatic, at which point this button's job is
  * done.
+ *
+ * 2026-07-19: Executive Presence Increment 1 — Demonstrating
+ * Understanding (per the Executive Presence Audit, 19 July 2026). Save
+ * confirmations reworded from a bare "Saved." to "Saved. I'll take this
+ * into account in future recommendations." — acknowledging
+ * understanding, not just successful persistence. Deliberately
+ * timeless, not tied to a specific moment ("tomorrow's reasoning") per
+ * the Founder's explicit correction — the next relevant signal might
+ * not arrive for days, and the sentence needs to remain true regardless
+ * of when that turns out to be.
  */
 export function HelpUnderstandSection({
   initialGoals,
@@ -160,7 +170,9 @@ export function HelpUnderstandSection({
           >
             {isSavingGoal ? 'Saving…' : 'Add goal'}
           </button>
-          {goalStatus === 'saved' && <p className="text-sm text-ink-faint">Saved.</p>}
+          {goalStatus === 'saved' && (
+            <p className="text-sm text-ink-faint">Saved. I&apos;ll take this into account in future recommendations.</p>
+          )}
           {goalStatus === 'error' && (
             <p className="text-sm text-signal-attention">Something went wrong — please try again.</p>
           )}
@@ -232,7 +244,9 @@ export function HelpUnderstandSection({
           >
             {isSavingPerson ? 'Saving…' : 'Add person'}
           </button>
-          {personStatus === 'saved' && <p className="text-sm text-ink-faint">Saved.</p>}
+          {personStatus === 'saved' && (
+            <p className="text-sm text-ink-faint">Saved. I&apos;ll take this into account in future recommendations.</p>
+          )}
           {personStatus === 'error' && (
             <p className="text-sm text-signal-attention">Something went wrong — please try again.</p>
           )}

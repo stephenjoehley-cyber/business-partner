@@ -4,7 +4,8 @@ import { observe } from './observe';
 import { understand } from './understand';
 import { prioritise } from './prioritise';
 import { recommend } from './recommend';
-import { saveMorningBrief } from './repository';
+import { saveMorningBrief, getLatestMorningBrief } from './repository';
+import { buildContinuityNote } from './continuity';
 import type { MorningBriefResult } from './types';
 
 /**
@@ -31,6 +32,10 @@ export async function generateMorningBrief(businessId: string): Promise<MorningB
     throw new Error(`No business found for id: ${businessId}`);
   }
 
+  // Captured before generating the new brief, deliberately — this is
+  // "since we last spoke," not "since a moment ago." See continuity.ts.
+  const previousBrief = await getLatestMorningBrief(businessId);
+
   const allSignals = await getSignalsForBusiness(businessId);
   const observations = observe(allSignals);
 
@@ -42,6 +47,19 @@ export async function generateMorningBrief(businessId: string): Promise<MorningB
   const prioritised = prioritise(understood);
   const morningBrief = recommend(prioritised);
 
-  await saveMorningBrief(businessId, morningBrief);
-  return morningBrief;
+  // Executive Presence Increment 1 — Demonstrating Understanding (per the
+  // Executive Presence Audit, 19 July 2026) — never attached to
+  // all_clear, which already has Business Memory Reflection dedicated to
+  // exactly this purpose; adding it there too would say the same thing
+  // twice.
+  const withContinuity: MorningBriefResult =
+    morningBrief.tier === 'all_clear'
+      ? morningBrief
+      : {
+          ...morningBrief,
+          continuityNote: buildContinuityNote(business.goals, business.people, previousBrief?.generatedAt ?? null),
+        };
+
+  await saveMorningBrief(businessId, withContinuity);
+  return withContinuity;
 }

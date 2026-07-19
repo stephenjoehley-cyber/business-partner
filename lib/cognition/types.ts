@@ -99,6 +99,8 @@ export type MorningBriefResult =
       confidence: number;
       /** Every Signal id that contributed, in order of relevance. Always non-empty — traceability is what makes this tier trustworthy. */
       supportingSignalIds: string[];
+      /** Executive Presence Increment 1 — Demonstrating Understanding (per the Executive Presence Audit, 19 July 2026) — a timeless, truthful acknowledgment of what's been added to Business Memory since the previous brief (e.g. "Since we last spoke, you've added a new goal."). Never a promise tied to a specific future moment. Undefined whenever nothing genuinely changed, or this is the business's first brief. */
+      continuityNote?: string;
       generatedAt: Date;
     }
   | {
@@ -108,6 +110,7 @@ export type MorningBriefResult =
       reasoning: string;
       confidence: number;
       supportingSignalIds: string[];
+      continuityNote?: string;
       generatedAt: Date;
     }
   | {
