@@ -956,3 +956,31 @@ Objective: complete the Goal/Person management capability alongside deletion, pe
 **Status:** Delivered and deployed. Together with deletion, Continuous Executive Learning now supports add, edit, and delete for both Goals and People.
 
 **Still open, not yet actioned:** the delete-error-handling gap found while investigating the Francios deletion — if a Person or Goal ever has a genuine database-level dependency blocking its removal (e.g. a linked Signal via `Signal.personId`'s `onDelete: NoAction`), the delete currently fails silently in the UI with no message at all. Worth a small fix (surface an error state) whenever it's next convenient.
+
+## Executive Attention Decays by Significance, Not Age Alone (Delivered)
+
+Objective: implement the Founder + CPO product decision arising directly from a real Morning Brief — "Executive attention is not preserved by age alone. A signal's persistence must be proportional to its business significance." Every Morning Brief must be a fresh executive assessment of the business as it exists today; persistence is earned each generation, never assumed.
+
+### 2026-07-19 — Root cause of the recurring "stale email" complaint
+The Founder asked directly whether there was an actual argument for the 14-day staleness cutoff added on 17 July. Honest answer: no — it was a reasonable-sounding round number, not a considered decision. Investigating further revealed the deeper issue: every email shared one urgency curve regardless of whether it was actually significant — rising for 5 days, holding at maximum for the next 9, then falling off a cliff at day 14. A 5-day-old email and a 13-day-old one scored identically urgent right up until the older one simply vanished.
+
+### 2026-07-19 — Replaced with three significance-based decay curves
+`lib/cognition/interpreters/email.ts` now derives a `Significance` tier (`high` / `medium` / `low`) from the exact same `isKnown`/`matchedGoals` values already computed — not a new concept, a reuse of existing signal:
+
+- **High** (known relationship *and* touches a stated goal) — rises over 5 days, then holds indefinitely. "Genuinely important unresolved commitments may persist substantially longer."
+- **Medium** (known *or* goal-touching, not both) — rises over 5 days, then decays to zero over the following 15. "Medium-significance business correspondence should decay more gradually."
+- **Low** (neither) — rises over 2 days, then decays to zero by day 7. "Low-significance operational noise should decay quickly... should become less important every morning until it quietly disappears."
+
+Deliberately simple, deterministic, piecewise-linear curves — no new capability, same engineering discipline as everything else in this interpreter. Recomputed fresh on every single generation; nothing is cached or assumed from a prior day.
+
+### 2026-07-19 — The two flat 14-day cutoffs are now technical safety nets only, not judgments
+Both `lib/cognition/observe.ts`'s `EMAIL_STALENESS_CUTOFF_DAYS` and the Gmail provider's ingestion-time `STALENESS_CUTOFF_DAYS` (both 17 July) made the actual relevance call at a fixed age, blind to significance. Relaxed both to a generous 90-day bound, renamed to reflect their real remaining purpose (bounding how much history gets ingested/re-interpreted as data volume grows) — the real judgment now lives entirely in the interpreter's decay curves.
+
+### Why this was not treated as reopening the Executive Priority Model inquiry
+The CPO drew a clear distinction: the paused inquiry is about *how important* something is; this is about *whether it still deserves attention today*. Related, but not the same question — and the product principle was clear enough to act on directly without reopening the broader, deliberately-paused discussion.
+
+**Cost if wrong:** Low — purely a scoring-curve change within one interpreter; no schema, no new capability, easily adjustable if the curve shapes prove wrong in practice (that's expected to be observed, not something to get exactly right on the first attempt).
+
+**Test/type status:** 290 tests passing (285 before this work — 5 net new: 3 replacing the old saturating-urgency test in `tests/cognition/interpreters.test.ts` covering all three tiers, 1 net new in `tests/cognition/observe.test.ts`, 2 net new in `tests/signals/providers/google/gmail.test.ts` covering the new 90-day ingestion safety net, which had no direct test coverage at all after an earlier recovery). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed. Real observation of how these curves behave against live data is the next input this should be revisited from — not further theory.
