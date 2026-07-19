@@ -63,6 +63,26 @@ function makeCalendarSignal(
 }
 
 describe('email interpreter', () => {
+  it('never produces a confident recommendation to reply to an automated sender address, even if it was already persisted before the provider-level fix existed — found live, 19 July 2026: Business Partner recommended "Reply to noreply@mail.app.supabase.io about Reset your password"', () => {
+    const context = makeContext();
+    const result = interpretSignal(
+      makeEmailSignal({
+        relatedEntities: {}, // unmatched — fromName is the raw address
+        payload: { ...makeEmailSignal().payload, fromName: 'noreply@mail.app.supabase.io', subject: 'Reset your password' },
+      }),
+      context
+    );
+
+    expect(result.dimensions.confidence).toBeLessThan(0.6); // below CONFIDENCE_THRESHOLD
+    expect(result.dimensions.urgency).toBe(0);
+  });
+
+  it('does not treat a known, matched person as automated even if their display name happens to be unusual', () => {
+    const context = makeContext(); // Jane Cooper, matched
+    const result = interpretSignal(makeEmailSignal(), context); // relatedEntities.personId set by default
+    expect(result.dimensions.confidence).toBeGreaterThanOrEqual(0.6);
+  });
+
   it('rises then decays to zero for low significance (unknown sender, no goal match) — "should decay quickly... quietly disappear," per the 19 July 2026 product decision', () => {
     const context = makeContext({ goals: [] });
     const day0 = interpretSignal(

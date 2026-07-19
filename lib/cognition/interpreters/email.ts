@@ -78,6 +78,43 @@ function urgencyForSignificance(significance: Significance, daysSince: number): 
   }
 }
 
+/**
+ * Found live, 19 July 2026 — the provider-level exclusion (Gmail
+ * provider, see DECISIONS.md) only stops NEW signals like this from
+ * being created; it does nothing for the two already sitting in the
+ * database from before that fix existed. Refreshing re-fetches from
+ * Gmail and adds anything new — it doesn't retroactively re-validate
+ * what's already been ingested. This is the same shape of gap as the
+ * 165-day-old-email and duplicate-Person bugs found earlier: new
+ * ingestion-time logic doesn't rewrite history.
+ *
+ * The interpreter is the one place, per that same lesson, where every
+ * signal — old or freshly ingested — genuinely gets re-evaluated on
+ * every single generation. Re-checking here catches the noreply@ case
+ * retroactively: for an unmatched sender, payload.fromName is literally
+ * their raw email address (set at ingestion — see gmail.ts), so the
+ * same pattern check applies. This can't retroactively catch bulk mail
+ * identified by a List-Unsubscribe header, since that header itself was
+ * never stored in the payload — a signal already ingested that way will
+ * fade out naturally via its own low-significance decay curve instead.
+ */
+const AUTOMATED_SENDER_PATTERNS = [
+  'noreply',
+  'no-reply',
+  'no_reply',
+  'donotreply',
+  'do-not-reply',
+  'notifications',
+  'notification',
+  'mailer-daemon',
+  'postmaster',
+] as const;
+
+function looksAutomated(fromNameOrEmail: string): boolean {
+  const localPart = fromNameOrEmail.split('@')[0]?.toLowerCase() ?? '';
+  return AUTOMATED_SENDER_PATTERNS.some((pattern) => localPart.includes(pattern));
+}
+
 function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSignal {
   const payload = signal.payload as EmailSignalPayload;
   const personId = signal.relatedEntities.personId;
@@ -86,20 +123,29 @@ function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSi
   const daysSince = payload.daysSinceReceived;
   const who = person?.name ?? payload.fromName;
 
+  // An unmatched automated address is never really "awaiting a reply" —
+  // recommending one is a false claim, not just low priority. Confidence
+  // is forced low enough that recommend() can never produce a
+  // confident_recommendation from this (CONFIDENCE_THRESHOLD is 0.6) —
+  // the low_confidence_insight tier has no recommendedAction field at
+  // all, so the false "Reply to..." directive becomes structurally
+  // impossible regardless of how this scores on every other dimension.
+  const isAutomated = !isKnown && looksAutomated(payload.fromName);
+
   const matchedGoals = matchGoalsForSignal(context.goals, EMAIL_GOAL_KEYWORDS, payload.subject);
   const significance = significanceFor(isKnown, matchedGoals.length > 0);
-  const urgency = urgencyForSignificance(significance, daysSince);
+  const urgency = isAutomated ? 0 : urgencyForSignificance(significance, daysSince);
 
   // A known customer or prospect matters more than an unidentified sender —
   // relationship risk is concrete for someone already on file.
-  const businessImpact = isKnown ? 0.75 : 0.5;
+  const businessImpact = isAutomated ? 0.1 : isKnown ? 0.75 : 0.5;
 
-  const strategicImportance = matchedGoals.length > 0 ? 0.7 : 0.4;
+  const strategicImportance = isAutomated ? 0 : matchedGoals.length > 0 ? 0.7 : 0.4;
 
   // Less certain this specific message matters if we don't recognise the
   // sender — could be a low-value cold enquiry rather than a relationship
   // to protect.
-  const confidence = isKnown ? 0.9 : 0.75;
+  const confidence = isAutomated ? 0.1 : isKnown ? 0.9 : 0.75;
 
   const summary =
     daysSince >= 2
@@ -108,11 +154,13 @@ function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSi
 
   const reasoningParts: string[] = [
     `"${payload.subject}" was received ${pluralDays(daysSince)} ago and still requires a reply.`,
-    isKnown
-      ? `${who} is a known ${person!.relationship} — an unanswered message from someone on file carries more relationship risk than a generic enquiry.`
-      : `${who} is not yet on file as a known contact, so this is treated as a new enquiry rather than an existing relationship.`,
+    isAutomated
+      ? `${who} appears to be an automated notification address, not a person who could receive a reply.`
+      : isKnown
+        ? `${who} is a known ${person!.relationship} — an unanswered message from someone on file carries more relationship risk than a generic enquiry.`
+        : `${who} is not yet on file as a known contact, so this is treated as a new enquiry rather than an existing relationship.`,
   ];
-  if (matchedGoals.length > 0) {
+  if (matchedGoals.length > 0 && !isAutomated) {
     reasoningParts.push(`This also touches a stated goal: "${matchedGoals[0].description}".`);
   }
 
@@ -121,7 +169,7 @@ function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSi
       summary,
       relatedPersonName: person?.name,
       isKnownRelationship: isKnown,
-      relatedGoalDescriptions: matchedGoals.map((g) => g.description),
+      relatedGoalDescriptions: isAutomated ? [] : matchedGoals.map((g) => g.description),
     },
     dimensions: {
       businessImpact,
