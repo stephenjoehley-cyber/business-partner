@@ -45,7 +45,25 @@ export function recommend(prioritised: PrioritisedInsight[]): MorningBriefResult
         .map((candidate) => candidate.insight.signal.id)
     : [];
 
-  const supportingSignalIds = [winner.insight.signal.id, ...relatedSignalIds];
+  // Found live, 18/19 July 2026: when the winning signal has no related
+  // person (a genuinely common case — an unknown sender, an unknown
+  // meeting attendee), relatedSignalIds was empty, and the owner saw
+  // literally nothing else — not because nothing else existed, but
+  // because "supporting evidence" only ever looked at the same-person
+  // slice. A real business had 12 other genuine signals (calendar
+  // meetings, other emails) completely invisible as a result. Evidence
+  // before persuasion (Executive Design Authority Brief) means the owner
+  // should always be able to see that Business Partner is tracking more
+  // than just the one thing it's leading with — so a small, fixed number
+  // of other top-priority signals are always included here too,
+  // regardless of person, deduplicated against relatedSignalIds.
+  const OTHER_SIGNALS_ALWAYS_SHOWN = 2;
+  const additionalSignalIds = rest
+    .filter((candidate) => !relatedSignalIds.includes(candidate.insight.signal.id))
+    .slice(0, OTHER_SIGNALS_ALWAYS_SHOWN)
+    .map((candidate) => candidate.insight.signal.id);
+
+  const supportingSignalIds = [winner.insight.signal.id, ...relatedSignalIds, ...additionalSignalIds];
   const confidence = winner.dimensions.confidence;
 
   if (confidence >= CONFIDENCE_THRESHOLD) {
