@@ -1051,3 +1051,24 @@ Two "Also relevant" entries both read "A first meeting with hello@mzansichat.co.
 **Test/type status:** 299 tests passing (297 before this work). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed.
+
+## Recommendations 1 and 2 (Founder + CPO, 19 July 2026) — Delivered, With a Real Process Lesson
+
+Objective: implement both recommendations approved from the customer-journey review — a truthful email-domain hint for unmatched contacts, and an optional `Person.company` field.
+
+### Recommendation 1 — email domain hint (delivered)
+`lib/shared/emailDomain.ts` — `companyDomainHint`, returning the literal domain (e.g. "mzansichat.co.za") for a real organisational email address, and explicitly `undefined` for generic consumer providers (gmail.com, yahoo.com, outlook.com, icloud.com, etc.) or a genuine display name. Per the CPO's explicit Executive Honesty correction: **never a guessed or capitalised company name** — only the literal, grounded domain. Wired into both the calendar interpreter and `describeSignalPlainly`, so it applies consistently to the winning recommendation and to supporting evidence alike.
+
+### Recommendation 2 — Person.company (delivered)
+Schema (`Person.company`, nullable) and its migration were committed and applied to production first, then the application code. Per the CPO's framing: this is Business Memory the owner provides, not something extracted from Calendar or Gmail (neither has a company field at all) — and per the CPO's explicit categorisation ("Onboarding establishes identity. Continuous Executive Learning builds understanding."), deliberately added only to Settings' add/edit Person capability, not to onboarding's People step.
+
+### A real process failure during this work, worth recording plainly
+A significant part of Recommendation 2's actual plumbing — `lib/brain/repository.ts`, `lib/brain/validation.ts`, `lib/demo/store.ts`, and both Settings UI files — was built correctly but sat as **uncommitted local changes that were never actually pushed to GitHub**, discovered only when a later, unrelated commit (wiring `company` into the interpreters) triggered a real Vercel build failure: the seeded demo `Person` record was missing the now-required (though nullable) `company` field, since Vercel's real Prisma Client generation caught what this sandbox's own stale, network-restricted Prisma Client could not.
+
+**Root cause of the process failure:** confirming a file's contents by checking the local sandbox working directory is not the same as confirming it has been committed and pushed. `grep`-ing a local file for evidence of prior work is not equivalent to `git log`/`git status` verification against the actual remote repository. This is the same category of mistake as the earlier `git reset --hard` incidents that discarded uncommitted work, except in this direction — work assumed to be safely committed when it never was.
+
+**Fix going forward:** before considering any implementation "delivered," check `git status --short` explicitly, not just that the files exist correctly on disk. Verified now, and the missing 5 files were found, reviewed diff-by-diff, and committed together in a single follow-up commit — deployment then succeeded.
+
+**Test/type status:** 311 tests passing. `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only (this sandbox's own Prisma Client remains stale and cannot be used to verify Prisma-derived type correctness — Vercel's real build is the actual source of truth for that, as this incident itself demonstrated).
+
+**Status:** Both recommendations delivered, deployed, and confirmed live.
