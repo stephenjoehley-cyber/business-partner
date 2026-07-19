@@ -2,6 +2,7 @@ import type { BusinessContext } from '@/lib/signals/provider';
 import type { CalendarSignalPayload, Signal } from '@/lib/signals/types';
 import type { InterpretedSignal, SignalInterpreter } from './types';
 import { clamp01, matchGoalsForSignal, relativeDayPhrase } from './util';
+import { companyDomainHint } from '@/lib/shared/emailDomain';
 
 const CALENDAR_GOAL_KEYWORDS = [
   'sales',
@@ -18,7 +19,14 @@ function interpretMeetingUpcoming(signal: Signal, context: BusinessContext): Int
   const personId = signal.relatedEntities.personId;
   const person = personId ? context.people.find((p) => p.id === personId) : undefined;
   const isKnown = Boolean(person);
-  const who = person?.name ?? (payload.attendees[0] ?? 'a new contact');
+  // Recommendation 1, approved by Founder + CPO, 19 July 2026: when the
+  // attendee isn't a known Person, show a real email domain as grounded
+  // context ("a new contact at mzansichat.co.za") rather than the raw
+  // address alone — but never a guessed company name, and never
+  // overriding a genuine display name Google Calendar already provided.
+  const rawAttendee = payload.attendees[0];
+  const domainHint = !person ? companyDomainHint(rawAttendee ?? '') : undefined;
+  const who = person?.name ?? (domainHint ? `a new contact at ${domainHint}` : rawAttendee ?? 'a new contact');
   const now = new Date();
   const when = relativeDayPhrase(now, signal.occurredAt);
 

@@ -79,6 +79,19 @@ describe('describeSignalPlainly', () => {
     expect(descriptionB).toContain('Test Meeting');
   });
 
+  it('shows a real email domain as grounded context for an unmatched attendee, per Recommendation 1', () => {
+    const now = new Date('2026-07-19T00:00:00.000Z');
+    const signal = baseSignal({
+      domain: 'calendar',
+      type: 'meeting_upcoming',
+      occurredAt: new Date('2026-07-20T00:00:00.000Z'),
+      payload: { title: 'Discovery call', startTime: '', durationMinutes: 30, attendees: ['hello@mzansichat.co.za'], isFirstMeetingWithPerson: true },
+    });
+
+    const description = describeSignalPlainly(signal, now);
+    expect(description).toContain('a new contact at mzansichat.co.za');
+  });
+
   it('describes an overdue invoice without exposing raw payload structure', () => {
     const signal = baseSignal({
       domain: 'finance',

@@ -196,6 +196,35 @@ describe('email interpreter', () => {
 });
 
 describe('calendar interpreter', () => {
+  it('shows a real, grounded email domain for an unmatched attendee — Recommendation 1, approved 19 July 2026, never a guessed company name', () => {
+    const context = makeContext({ people: [] });
+    const result = interpretSignal(
+      makeCalendarSignal({ payload: { ...makeCalendarSignal().payload, attendees: ['hello@mzansichat.co.za'] } }),
+      context
+    );
+    expect(result.recommendedAction).toContain('a new contact at mzansichat.co.za');
+    expect(result.recommendedAction).not.toContain('hello@mzansichat.co.za');
+  });
+
+  it('shows no domain hint for a generic consumer email provider — a domain there carries no genuine organisational signal', () => {
+    const context = makeContext({ people: [] });
+    const result = interpretSignal(
+      makeCalendarSignal({ payload: { ...makeCalendarSignal().payload, attendees: ['someone@gmail.com'] } }),
+      context
+    );
+    expect(result.recommendedAction).toContain('someone@gmail.com');
+    expect(result.recommendedAction).not.toContain('a new contact at');
+  });
+
+  it('never overrides a genuine display name Google Calendar already provided with a domain hint', () => {
+    const context = makeContext({ people: [] });
+    const result = interpretSignal(
+      makeCalendarSignal({ payload: { ...makeCalendarSignal().payload, attendees: ['Sam Rivera'] } }),
+      context
+    );
+    expect(result.recommendedAction).toContain('Sam Rivera');
+  });
+
   it('gives higher business impact to a first meeting with a prospect than a returning customer meeting', () => {
     const context = makeContext({
       people: [{ id: 'person-1', name: 'Jane Cooper', relationship: 'prospect' } as BusinessContext['people'][number]],

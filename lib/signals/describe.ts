@@ -1,4 +1,5 @@
 import { pluralDays, relativeDatePhrase } from '@/lib/shared/time';
+import { companyDomainHint } from '@/lib/shared/emailDomain';
 import type {
   CalendarSignalPayload,
   CrmSignalPayload,
@@ -43,16 +44,17 @@ export function describeSignalPlainly(signal: Signal, now: Date = new Date()): s
     case 'calendar': {
       const payload = signal.payload as CalendarSignalPayload;
       const when = relativeDatePhrase(now, signal.occurredAt);
-      // Found live, 19 July 2026: this branch previously omitted the
-      // meeting title entirely — two genuinely distinct real meetings
-      // with the same first-time attendee (different externalRef,
-      // different time, different title) produced byte-identical
-      // description text, making them look like a duplicate-ingestion
-      // bug when they were actually two real, separate events. Now
-      // includes the title, matching the non-first-meeting branch below,
-      // which already did this correctly.
+      // Recommendation 1, approved by Founder + CPO, 19 July 2026: same
+      // grounded-domain-hint treatment as the calendar interpreter —
+      // this function has no Business Memory context to know whether
+      // the attendee is a known Person, so it always tries the domain
+      // hint on the raw attendee string; a real display name (no "@")
+      // or a generic consumer provider both correctly yield no hint.
+      const rawAttendee = payload.attendees[0];
+      const domainHint = companyDomainHint(rawAttendee ?? '');
+      const attendeeDisplay = domainHint ? `a new contact at ${domainHint}` : rawAttendee ?? 'a new contact';
       return payload.isFirstMeetingWithPerson
-        ? `A first meeting with ${payload.attendees[0] ?? 'a new contact'} — "${payload.title}" — coming up ${when}`
+        ? `A first meeting with ${attendeeDisplay} — "${payload.title}" — coming up ${when}`
         : `A meeting — "${payload.title}" — coming up ${when}`;
     }
     case 'tasks': {
