@@ -22,3 +22,26 @@ export function matchGoals(goals: Goal[], keywords: readonly string[]): Goal[] {
     return keywords.some((k) => description.includes(k));
   });
 }
+
+/**
+ * Found live, 18/19 July 2026 — matchGoals alone produces a real false
+ * positive: it only checks whether *any current goal* happens to mention
+ * a keyword, never whether the signal itself is actually about that
+ * keyword. A goal like "Win our first client" contains the word
+ * "client," so every single unanswered email was being marked as
+ * "touching" that goal — including a WordPress notification about an
+ * unrelated job application, which has nothing to do with winning a
+ * client. That's not just a scoring quirk; the reasoning text asserted
+ * something false to the owner.
+ *
+ * This checks the signal's own text against the same keyword list first
+ * — only if the signal itself is plausibly about one of these keywords
+ * do we go on to ask which goals it touches. Still deliberately simple
+ * substring matching, not a new capability.
+ */
+export function matchGoalsForSignal(goals: Goal[], keywords: readonly string[], signalText: string): Goal[] {
+  const text = signalText.toLowerCase();
+  const signalMentionsAnyKeyword = keywords.some((k) => text.includes(k));
+  if (!signalMentionsAnyKeyword) return [];
+  return matchGoals(goals, keywords);
+}
