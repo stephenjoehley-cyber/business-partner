@@ -17,6 +17,20 @@ import { AllClearCard } from './AllClearCard';
 import { BusinessMemoryReflection } from './BusinessMemoryReflection';
 import { DemoModeBadge, DemoModeBanner } from './DemoModeBanner';
 
+/**
+ * Found live, 19 July 2026: this page had never been marked dynamic,
+ * unlike every API route (see DECISIONS.md, 17 July 2026, the
+ * build-time static-export failure). Settings appeared to update
+ * correctly after adding a Goal/Person only because those specific
+ * updates render via client-side state, not a server re-fetch — this
+ * page has no such workaround, and a real MorningBrief update (a new
+ * continuityNote, a newly-generated recommendation) could be served
+ * stale from a cached render indefinitely, surviving both a browser
+ * refresh and an incognito window, since the staleness lives on the
+ * server, not the browser.
+ */
+export const dynamic = 'force-dynamic';
+
 export default async function MorningBriefPage() {
   const demoMode = isDemoMode();
   if (demoMode) {

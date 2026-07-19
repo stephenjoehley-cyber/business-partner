@@ -57,7 +57,17 @@ import { asOfPhrase } from '@/lib/ui/time';
  * rather than building a new one. The manual refresh button is a
  * deliberate Phase 1 teaching aid (see HelpUnderstandSection.tsx), not
  * the permanent interaction model.
+ *
+ * 2026-07-19: marked force-dynamic — found live, alongside the same
+ * issue on the Morning Brief page: this page had never been explicitly
+ * marked dynamic, so its server-rendered parts (Calendar/Gmail
+ * lastSyncedAt, connection status) were at real risk of being served
+ * from a cached render. The Goal/Person lists appeared to update
+ * correctly regardless, because those specific updates render via
+ * client-side state, not this page's own server render.
  */
+export const dynamic = 'force-dynamic';
+
 export default async function SettingsPage({
   searchParams,
 }: {
