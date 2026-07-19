@@ -122,7 +122,13 @@ export default async function SettingsPage({
         </h2>
 
         <div className="rounded-lg border border-surface-border bg-surface-card p-6">
-          <HelpUnderstandSection />
+          <HelpUnderstandSection
+            initialGoals={business.goals.map((g: { description: string }) => ({ description: g.description }))}
+            initialPeople={business.people.map((p: { name: string; relationship: string }) => ({
+              name: p.name,
+              relationship: p.relationship,
+            }))}
+          />
         </div>
       </section>
 
@@ -150,8 +156,7 @@ export default async function SettingsPage({
             {isCalendarConnected ? (
               <DisconnectButton endpoint="/api/integrations/google-calendar/disconnect" />
             ) : (
-              
-                href="/api/integrations/google-calendar/connect"
+              <a href="/api/integrations/google-calendar/connect"
                 className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
               >
                 Connect Google Calendar
@@ -181,8 +186,7 @@ export default async function SettingsPage({
             {isGmailConnected ? (
               <DisconnectButton endpoint="/api/integrations/gmail/disconnect" />
             ) : (
-              
-                href="/api/integrations/gmail/connect"
+              <a href="/api/integrations/gmail/connect"
                 className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
               >
                 Connect Gmail
