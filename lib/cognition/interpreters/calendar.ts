@@ -75,7 +75,7 @@ function interpretMeetingUpcoming(signal: Signal, context: BusinessContext): Int
       ownerPreference: 0.5,
     },
     reasoning: reasoningParts.join(' '),
-    recommendedAction: `Prepare briefing notes for your ${when} meeting with ${who}.`,
+    recommendedAction: `Prepare briefing notes for your meeting with ${who}, ${when}.`,
   };
 }
 

@@ -223,6 +223,13 @@ describe('calendar interpreter', () => {
     expect(result.recommendedAction).toContain('Prepare briefing notes');
     expect(result.recommendedAction).toContain('Jane Cooper');
   });
+
+  it('never produces the grammatically broken "your today meeting" / "your tomorrow meeting" phrasing — found live, 19 July 2026', () => {
+    const context = makeContext();
+    const meetingToday = interpretSignal(makeCalendarSignal({ occurredAt: new Date() }), context);
+    expect(meetingToday.recommendedAction).not.toMatch(/your (today|tomorrow) meeting/);
+    expect(meetingToday.recommendedAction).toContain('meeting with');
+  });
 });
 
 describe('fallback interpreter', () => {
