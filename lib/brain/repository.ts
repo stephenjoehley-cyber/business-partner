@@ -2,6 +2,7 @@ import type { Business, Goal, Person } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { isDemoMode, DEMO_BUSINESS_ID } from '@/lib/demo/config';
 import {
+  addDemoGoal,
   addDemoPeople,
   completeDemoOnboarding,
   createDemoBusinessProfile,
@@ -102,6 +103,24 @@ export async function replaceGoals(businessId: string, goals: GoalInput[]): Prom
       data: goals.map((g) => ({ businessId, description: g.description, priority: g.priority })),
     }),
   ]);
+}
+
+/**
+ * Continuous Executive Learning (v1, Product Audit 17/18 July 2026) —
+ * adds one Goal without touching any existing ones. Deliberately a
+ * separate function from replaceGoals, not a reuse of it: replaceGoals
+ * is destructive by design (correct for onboarding's one-time bulk
+ * submission), and reusing it here would silently delete every goal
+ * already on file the first time an owner added a new one.
+ */
+export async function addGoal(businessId: string, goal: GoalInput): Promise<Goal> {
+  if (isDemoMode()) {
+    return addDemoGoal(businessId, goal);
+  }
+
+  return prisma.goal.create({
+    data: { businessId, description: goal.description, priority: goal.priority },
+  });
 }
 
 export interface PersonInput {
