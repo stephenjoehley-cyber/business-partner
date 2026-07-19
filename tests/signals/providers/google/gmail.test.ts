@@ -275,4 +275,28 @@ describe('GoogleGmailProvider', () => {
     expect(signals).toHaveLength(1);
     expect(signals[0].type).toBe('email_awaiting_reply_overdue');
   });
+
+  it('includes an email well past the old 14-day cutoff but within the new 90-day ingestion safety net — 19 July 2026 product decision: persistence must be proportional to significance, not age alone; the real relevance judgment now lives entirely in the email interpreter\'s decay curves, not at ingestion', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    const fortyTwoDaysAgo = new Date(Date.now() - 42 * 24 * 60 * 60 * 1000);
+    mockProfileAndThreads({ threads: [{ id: 'thread-42-days' }] }, [
+      { id: 'thread-42-days', messages: [inboundMessage({ internalDate: String(fortyTwoDaysAgo.getTime()) })] },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toHaveLength(1);
+  });
+
+  it('excludes an email beyond the 90-day ingestion safety net — a data-volume bound, not a relevance judgment', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    const wellOver90DaysAgo = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000);
+    mockProfileAndThreads({ threads: [{ id: 'thread-ancient' }] }, [
+      { id: 'thread-ancient', messages: [inboundMessage({ internalDate: String(wellOver90DaysAgo.getTime()) })] },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toEqual([]);
+  });
 });

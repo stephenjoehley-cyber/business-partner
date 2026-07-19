@@ -236,16 +236,17 @@ export class GoogleGmailProvider implements SignalProvider {
       ? new Date(Number(lastMessage.internalDate))
       : new Date(this.getHeader(lastMessage, 'Date') ?? now);
 
-    // A real, honest structural fact ("you never replied") stops being a
-    // useful executive signal once it's old enough — at real-world
-    // volume (confirmed live, 17 July 2026: ~100 emails/day), a 5-month-
-    // old unanswered thread is noise, not something worth the owner's
-    // attention today. 14 days is a deliberate, generous cutoff — long
-    // enough to still catch a genuinely dropped commitment, short enough
-    // that ancient dead threads don't resurface indefinitely.
-    const STALENESS_CUTOFF_DAYS = 14;
+    // Product decision, 19 July 2026 (Founder + CPO): "persistence must be
+    // proportional to significance," not age alone. This is no longer the
+    // relevance judgment — that now lives entirely in the email
+    // interpreter's significance-based decay curves
+    // (lib/cognition/interpreters/email.ts), re-evaluated fresh every
+    // generation. This remains only as a generous technical bound on how
+    // much history gets ingested as fresh signals at all — matching
+    // Observe's EMAIL_HISTORY_SAFETY_NET_DAYS (lib/cognition/observe.ts).
+    const INGESTION_SAFETY_NET_DAYS = 90;
     const daysSinceReceived = Math.max(0, Math.floor((now.getTime() - receivedAt.getTime()) / (1000 * 60 * 60 * 24)));
-    if (daysSinceReceived > STALENESS_CUTOFF_DAYS) {
+    if (daysSinceReceived > INGESTION_SAFETY_NET_DAYS) {
       return null;
     }
 

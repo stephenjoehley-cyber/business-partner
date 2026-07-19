@@ -20,6 +20,64 @@ const EMAIL_GOAL_KEYWORDS = [
   'service',
 ] as const;
 
+/**
+ * Product decision, 19 July 2026 (Founder + CPO, following a real Morning
+ * Brief where a low-value 7-day-old WordPress notification kept winning
+ * over genuinely relevant signals): "Executive attention is not preserved
+ * by age alone. A signal's persistence must be proportional to its
+ * business significance." Every Morning Brief is a fresh executive
+ * assessment of the business as it exists today — persistence is earned
+ * each morning, never assumed.
+ *
+ * Previously, every email shared one urgency curve (rise for 5 days, hold
+ * at maximum indefinitely, then a hard cutoff at day 14 removed it
+ * entirely) — a plateau-then-cliff shape nobody had actually decided on,
+ * applied identically regardless of whether the email mattered at all.
+ * Replaced with three decay curves, selected by significance — reusing
+ * the same isKnown/matchedGoals signals already computed below, not a
+ * new concept:
+ *
+ *   high   (known relationship AND touches a stated goal) — rises over 5
+ *          days, then holds, never decaying. "Genuinely important
+ *          unresolved commitments may persist substantially longer."
+ *   medium (known OR goal-touching, not both) — rises over 5 days, then
+ *          decays gradually back to zero over the following 15 days.
+ *          "Medium-significance business correspondence should decay
+ *          more gradually."
+ *   low    (neither) — rises quickly over 2 days, then decays fast,
+ *          reaching zero by day 7. "Low-significance operational noise
+ *          should decay quickly... should become less important every
+ *          morning until it quietly disappears."
+ *
+ * Deliberately still simple, deterministic piecewise-linear curves — no
+ * new capability, the same engineering discipline as everything else in
+ * this interpreter. Recomputed fresh on every single generation; nothing
+ * here is cached or persisted as "already decided."
+ */
+type Significance = 'high' | 'medium' | 'low';
+
+function significanceFor(isKnown: boolean, hasGoalMatch: boolean): Significance {
+  if (isKnown && hasGoalMatch) return 'high';
+  if (isKnown || hasGoalMatch) return 'medium';
+  return 'low';
+}
+
+function urgencyForSignificance(significance: Significance, daysSince: number): number {
+  switch (significance) {
+    case 'high':
+      // Rises over 5 days, then holds — never decays.
+      return clamp01(daysSince / 5);
+    case 'medium':
+      // Rises over 5 days, then decays to zero over the following 15.
+      if (daysSince <= 5) return clamp01(daysSince / 5);
+      return clamp01(1 - (daysSince - 5) / 15);
+    case 'low':
+      // Rises over 2 days, then decays to zero by day 7.
+      if (daysSince <= 2) return clamp01(daysSince / 2);
+      return clamp01(1 - (daysSince - 2) / 5);
+  }
+}
+
 function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSignal {
   const payload = signal.payload as EmailSignalPayload;
   const personId = signal.relatedEntities.personId;
@@ -28,16 +86,14 @@ function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSi
   const daysSince = payload.daysSinceReceived;
   const who = person?.name ?? payload.fromName;
 
-  // Urgency climbs with days waiting, saturating at 5 days — a week-old
-  // unanswered email is already as urgent as it's going to get for scoring
-  // purposes, even though it keeps getting worse in reality.
-  const urgency = clamp01(daysSince / 5);
+  const matchedGoals = matchGoalsForSignal(context.goals, EMAIL_GOAL_KEYWORDS, payload.subject);
+  const significance = significanceFor(isKnown, matchedGoals.length > 0);
+  const urgency = urgencyForSignificance(significance, daysSince);
 
   // A known customer or prospect matters more than an unidentified sender —
   // relationship risk is concrete for someone already on file.
   const businessImpact = isKnown ? 0.75 : 0.5;
 
-  const matchedGoals = matchGoalsForSignal(context.goals, EMAIL_GOAL_KEYWORDS, payload.subject);
   const strategicImportance = matchedGoals.length > 0 ? 0.7 : 0.4;
 
   // Less certain this specific message matters if we don't recognise the

@@ -2,22 +2,27 @@ import type { Signal } from '@/lib/signals/types';
 import type { Observation } from './types';
 
 /**
- * A real, honest structural fact ("you never replied") stops being useful
- * once it's old enough — confirmed live, 17 July 2026, at real-world
- * volume (~100 emails/day): a 165-day-old unanswered thread kept
- * resurfacing as the Morning Brief's top pick, because this function
- * previously never time-filtered email at all (the comment below used to
- * say "an unanswered email doesn't stop being unanswered once the window
- * passes" — true, but not useful). generateMorningBrief reads every
- * signal ever persisted for the business, every single time, so a
- * one-time fetch-time cutoff in GoogleGmailProvider (also 14 days, see
- * DECISIONS.md) only stops new stale signals from being created — it does
- * nothing for ones already sitting in the database from before that fix
- * existed, or from any other source. This is the actual place that
- * guarantee needs to live, since it's the one place every signal, from
- * any point in history, passes through before being reasoned over.
+ * Product decision, 19 July 2026 (Founder + CPO): "Executive attention is
+ * not preserved by age alone. A signal's persistence must be proportional
+ * to its business significance." This superseded a flat 14-day cutoff
+ * (added 17 July, after a 165-day-old email kept resurfacing) that
+ * excluded every email past a fixed age regardless of whether it
+ * genuinely mattered — the same plateau-then-cliff shape now recognised
+ * as never having been a deliberate product decision.
+ *
+ * The real judgment now lives entirely in the email interpreter's
+ * significance-based decay curves (lib/cognition/interpreters/email.ts),
+ * re-evaluated fresh on every single generation — a low-significance
+ * email's urgency naturally decays toward zero and stops competing for
+ * attention, without needing Observe to exclude it outright. Observe
+ * doesn't know significance (that's computed downstream, in Understand)
+ * so it has no business making that call.
+ *
+ * This constant is now purely a technical safety net — bounding how much
+ * historical data gets re-interpreted on every cycle as signal volume
+ * grows — not a judgment about relevance. Deliberately generous.
  */
-const EMAIL_STALENESS_CUTOFF_DAYS = 14;
+const EMAIL_HISTORY_SAFETY_NET_DAYS = 90;
 
 /**
  * Stage 1 — Observe (Asset 013A).
@@ -28,9 +33,9 @@ const EMAIL_STALENESS_CUTOFF_DAYS = 14;
  * The only judgement made here is scoping: a calendar signal for a meeting
  * that has already happened is no longer something to prepare for, so it
  * drops out of the working set. An email signal older than
- * EMAIL_STALENESS_CUTOFF_DAYS is scoped out the same way — this is a fact
- * about time and real-world volume, not a business conclusion; Understand
- * is where meaning gets attached to whatever remains.
+ * EMAIL_HISTORY_SAFETY_NET_DAYS is scoped out purely as a technical bound,
+ * not a relevance judgment — see the comment above. Understand is where
+ * real meaning gets attached to whatever remains.
  */
 export function observe(signals: Signal[], referenceTime: Date = new Date()): Observation[] {
   return signals.filter((signal) => {
@@ -39,7 +44,7 @@ export function observe(signals: Signal[], referenceTime: Date = new Date()): Ob
     }
     if (signal.domain === 'email') {
       const daysSince = (referenceTime.getTime() - signal.occurredAt.getTime()) / (1000 * 60 * 60 * 24);
-      return daysSince <= EMAIL_STALENESS_CUTOFF_DAYS;
+      return daysSince <= EMAIL_HISTORY_SAFETY_NET_DAYS;
     }
     return true;
   });

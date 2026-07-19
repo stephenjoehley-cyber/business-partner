@@ -63,15 +63,60 @@ function makeCalendarSignal(
 }
 
 describe('email interpreter', () => {
-  it('raises urgency with days since received, saturating at 5 days', () => {
-    const context = makeContext();
-    const fresh = interpretSignal(makeEmailSignal({ payload: { ...makeEmailSignal().payload, daysSinceReceived: 0 } }), context);
-    const stale = interpretSignal(
-      makeEmailSignal({ type: 'email_awaiting_reply_overdue', payload: { ...makeEmailSignal().payload, daysSinceReceived: 7 } }),
+  it('rises then decays to zero for low significance (unknown sender, no goal match) — "should decay quickly... quietly disappear," per the 19 July 2026 product decision', () => {
+    const context = makeContext({ goals: [] });
+    const day0 = interpretSignal(
+      makeEmailSignal({ relatedEntities: {}, payload: { ...makeEmailSignal().payload, daysSinceReceived: 0 } }),
       context
     );
-    expect(stale.dimensions.urgency).toBeGreaterThan(fresh.dimensions.urgency);
-    expect(stale.dimensions.urgency).toBe(1);
+    const day2 = interpretSignal(
+      makeEmailSignal({ relatedEntities: {}, payload: { ...makeEmailSignal().payload, daysSinceReceived: 2 } }),
+      context
+    );
+    const day7 = interpretSignal(
+      makeEmailSignal({ relatedEntities: {}, payload: { ...makeEmailSignal().payload, daysSinceReceived: 7 } }),
+      context
+    );
+    expect(day2.dimensions.urgency).toBe(1); // peaks quickly
+    expect(day7.dimensions.urgency).toBe(0); // fully decayed — "quietly disappears"
+    expect(day0.dimensions.urgency).toBeLessThan(day2.dimensions.urgency);
+  });
+
+  it('rises then decays gradually for medium significance (known OR goal-touching, not both) — "should decay more gradually"', () => {
+    const context = makeContext(); // known person, no goals — medium
+    const day5 = interpretSignal(
+      makeEmailSignal({ payload: { ...makeEmailSignal().payload, daysSinceReceived: 5 } }),
+      context
+    );
+    const day12 = interpretSignal(
+      makeEmailSignal({ payload: { ...makeEmailSignal().payload, daysSinceReceived: 12 } }),
+      context
+    );
+    const day20 = interpretSignal(
+      makeEmailSignal({ payload: { ...makeEmailSignal().payload, daysSinceReceived: 20 } }),
+      context
+    );
+    expect(day5.dimensions.urgency).toBe(1); // peaks at day 5
+    expect(day12.dimensions.urgency).toBeGreaterThan(0);
+    expect(day12.dimensions.urgency).toBeLessThan(1); // decaying
+    expect(day20.dimensions.urgency).toBe(0); // fully decayed by day 20
+  });
+
+  it('rises then holds indefinitely for high significance (known AND goal-touching) — "may persist substantially longer, provided they remain actionable"', () => {
+    const context = makeContext({
+      goals: [{ id: 'g1', businessId: 'biz-1', description: 'Improve customer response times', priority: 1, createdAt: new Date() }],
+    });
+    const subject = 'Re: customer service follow-up';
+    const day5 = interpretSignal(
+      makeEmailSignal({ payload: { ...makeEmailSignal().payload, subject, daysSinceReceived: 5 } }),
+      context
+    );
+    const day30 = interpretSignal(
+      makeEmailSignal({ payload: { ...makeEmailSignal().payload, subject, daysSinceReceived: 30 } }),
+      context
+    );
+    expect(day5.dimensions.urgency).toBe(1);
+    expect(day30.dimensions.urgency).toBe(1); // never decays
   });
 
   it('gives higher business impact and confidence to a known person than an unrecognised sender', () => {

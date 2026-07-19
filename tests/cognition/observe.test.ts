@@ -32,7 +32,7 @@ describe('observe', () => {
     expect(observe([signal], NOW)).toEqual([]);
   });
 
-  it('keeps email signals within the 14-day staleness cutoff', () => {
+  it('keeps email signals well within the 90-day technical safety net', () => {
     const signal = makeSignal({
       id: 'sig-2',
       domain: 'email',
@@ -42,12 +42,22 @@ describe('observe', () => {
     expect(observe([signal], NOW)).toEqual([signal]);
   });
 
-  it('drops email signals older than the 14-day staleness cutoff — found live, 17 July 2026: a 165-day-old unanswered email kept resurfacing as the Morning Brief\'s top pick, since generateMorningBrief reads every signal ever persisted with no date filter', () => {
+  it('keeps an email older than the old 14-day cutoff — that is no longer a relevance judgment made here, per the 19 July 2026 product decision ("persistence must be proportional to significance," not age alone). Real judgment now lives entirely in the email interpreter\'s decay curves', () => {
     const signal = makeSignal({
       id: 'sig-3',
       domain: 'email',
       type: 'email_awaiting_reply_overdue',
-      occurredAt: new Date('2026-06-01T00:00:00.000Z'), // 42 days before NOW
+      occurredAt: new Date('2026-06-01T00:00:00.000Z'), // 42 days before NOW — beyond the old cutoff, well within the new 90-day safety net
+    });
+    expect(observe([signal], NOW)).toEqual([signal]);
+  });
+
+  it('drops an email signal beyond the 90-day technical safety net — a data-volume bound, not a relevance judgment', () => {
+    const signal = makeSignal({
+      id: 'sig-4',
+      domain: 'email',
+      type: 'email_awaiting_reply_overdue',
+      occurredAt: new Date('2026-03-01T00:00:00.000Z'), // well over 90 days before NOW
     });
     expect(observe([signal], NOW)).toEqual([]);
   });
