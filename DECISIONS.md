@@ -941,3 +941,18 @@ Scope deliberately kept to deletion: the actual observed problem was "remove one
 **Test/type status:** 271 tests passing (260 before this work — 11 new: 3 in `tests/api/business-memory/goals-delete.test.ts`, 3 in `tests/api/business-memory/people-delete.test.ts`, plus repository-level tests for `deleteGoal`/`deletePerson`/`addPerson`). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed.
+
+## Continuous Executive Learning — Editing (Delivered)
+
+Objective: complete the Goal/Person management capability alongside deletion, per the Founder's request.
+
+### 2026-07-19 — Inline editing added
+**New:** `updateGoal`/`updatePerson` in `lib/brain/repository.ts` (and demo store equivalents), both scoped by `businessId` as well as `id` (`updateMany`, not `update`) — same guard as the delete functions. Returns `null` rather than throwing when the record doesn't belong to this business, letting the route decide the response (404). `PATCH /api/business-memory/goals/[id]` (description only — priority/ordering deliberately out of scope, a separate concern) and `PATCH /api/business-memory/people/[id]` (reuses `personSchema` unchanged — the editable shape is identical to add).
+
+**UI:** inline editing, not a separate page or modal — clicking "Edit" turns that one list item into a small form with Save/Cancel.
+
+**Test/type status:** 285 tests passing (271 before this work). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed. Together with deletion, Continuous Executive Learning now supports add, edit, and delete for both Goals and People.
+
+**Still open, not yet actioned:** the delete-error-handling gap found while investigating the Francios deletion — if a Person or Goal ever has a genuine database-level dependency blocking its removal (e.g. a linked Signal via `Signal.personId`'s `onDelete: NoAction`), the delete currently fails silently in the UI with no message at all. Worth a small fix (surface an error state) whenever it's next convenient.
