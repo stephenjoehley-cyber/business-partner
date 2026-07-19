@@ -984,3 +984,22 @@ The CPO drew a clear distinction: the paused inquiry is about *how important* so
 **Test/type status:** 290 tests passing (285 before this work — 5 net new: 3 replacing the old saturating-urgency test in `tests/cognition/interpreters.test.ts` covering all three tiers, 1 net new in `tests/cognition/observe.test.ts`, 2 net new in `tests/signals/providers/google/gmail.test.ts` covering the new 90-day ingestion safety net, which had no direct test coverage at all after an earlier recovery). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed. Real observation of how these curves behave against live data is the next input this should be revisited from — not further theory.
+
+## Automated Senders and Bulk Mail Excluded from Gmail Signals (found live, 19 July 2026)
+
+Objective: fix a real Executive Honesty violation found in the Founder's own live inbox, immediately after the significance-decay work — the Morning Brief recommended "Reply to noreply@mail.app.supabase.io about 'Reset your password.'"
+
+### Why this is a different, more serious category of problem than the decay work
+The decay-curve fix (delivered the same day) addresses *how long* something should compete for attention. This is different: recommending a reply to a system-generated notification address isn't a low-priority signal, it's a **false claim** — that address can never receive a meaningful reply from a human being. No amount of correct prioritisation fixes a recommendation that's actively wrong on its face.
+
+### 2026-07-19 — Two exclusions added to `GoogleGmailProvider.toDraftSignal`, both genuine structural facts, not content inference
+1. **Automated sender address** — the sender's local part (before the `@`) checked against common conventions (`noreply`, `no-reply`, `donotreply`, `notifications`, `mailer-daemon`, `postmaster`, etc.) — deliberately simple, literal string matching, the same discipline as `matchGoalsForSignal`.
+2. **Bulk/marketing mail** — detected via the presence of a `List-Unsubscribe` header (RFC 2369/8058), now requested alongside the existing `From`/`To`/`Subject`/`Date` metadata headers. This is a standard structural marker present on essentially all legitimate bulk mail — a genuine fact about the message, not an inference about what it says, consistent with Level 1's constraint that message content is never read.
+
+Both exclude the thread entirely rather than just deprioritising it — the claim itself ("awaiting your reply") would be false regardless of where it ranked.
+
+**Cost if wrong:** Low, with one deliberate trade-off named explicitly: a legitimate correspondent whose email address happens to contain one of the automated-sender substrings (unlikely, but possible) would be incorrectly excluded. Judged an acceptable trade against the alternative (recommending replies to notification addresses), and revisitable if it ever proves too aggressive in practice.
+
+**Test/type status:** 293 tests passing (290 before this work — 3 new: automated-sender exclusion, `List-Unsubscribe` exclusion, and a regression check confirming genuine correspondence is still included). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed.
