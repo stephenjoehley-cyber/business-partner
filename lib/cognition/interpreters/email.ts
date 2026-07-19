@@ -108,6 +108,7 @@ const AUTOMATED_SENDER_PATTERNS = [
   'notification',
   'mailer-daemon',
   'postmaster',
+  'system',
 ] as const;
 
 function looksAutomated(fromNameOrEmail: string): boolean {

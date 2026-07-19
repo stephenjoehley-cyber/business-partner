@@ -325,6 +325,17 @@ describe('GoogleGmailProvider', () => {
     expect(signals).toEqual([]);
   });
 
+  it('excludes a system@ automated address too — found live, 19 July 2026, alongside a real example (system@polsia.com)', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    mockProfileAndThreads({ threads: [{ id: 'thread-system' }] }, [
+      { id: 'thread-system', messages: [inboundMessage({ from: 'system@polsia.com', subject: 'A hiccup setting up your company' })] },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toEqual([]);
+  });
+
   it('excludes a bulk/marketing email identified by a List-Unsubscribe header — a genuine structural fact (RFC 2369/8058), not an inference about content', async () => {
     getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
     mockProfileAndThreads({ threads: [{ id: 'thread-marketing' }] }, [

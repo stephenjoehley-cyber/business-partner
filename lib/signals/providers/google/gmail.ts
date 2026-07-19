@@ -217,6 +217,7 @@ export class GoogleGmailProvider implements SignalProvider {
       'notification',
       'mailer-daemon',
       'postmaster',
+      'system',
     ];
     return AUTOMATED_SENDER_PATTERNS.some((pattern) => localPart.includes(pattern));
   }
