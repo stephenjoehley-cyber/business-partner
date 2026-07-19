@@ -8,6 +8,11 @@ vi.mock('@/lib/prisma', () => ({
     },
     goal: {
       create: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+    person: {
+      create: vi.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }));
@@ -21,6 +26,8 @@ vi.mock('@/lib/demo/store', () => ({
   getDemoBusinessById: vi.fn(),
   addDemoPeople: vi.fn(),
   addDemoGoal: vi.fn(),
+  deleteDemoGoal: vi.fn(),
+  deleteDemoPerson: vi.fn(),
   completeDemoOnboarding: vi.fn(),
   createDemoBusinessProfile: vi.fn(),
   getDemoBusinessByOwner: vi.fn(),
@@ -30,11 +37,29 @@ vi.mock('@/lib/demo/store', () => ({
 
 import { prisma } from '@/lib/prisma';
 import { isDemoMode } from '@/lib/demo/config';
-import { completeDemoOnboarding, getDemoBusinessById, addDemoGoal } from '@/lib/demo/store';
-import { completeOnboarding, getAllBusinessIds, addGoal } from '@/lib/brain/repository';
+import {
+  completeDemoOnboarding,
+  getDemoBusinessById,
+  addDemoGoal,
+  deleteDemoGoal,
+  deleteDemoPerson,
+} from '@/lib/demo/store';
+import {
+  completeOnboarding,
+  getAllBusinessIds,
+  addGoal,
+  deleteGoal,
+  deletePerson,
+  addPerson,
+} from '@/lib/brain/repository';
 
 const goalCreateMock = prisma.goal.create as unknown as ReturnType<typeof vi.fn>;
+const goalDeleteManyMock = prisma.goal.deleteMany as unknown as ReturnType<typeof vi.fn>;
+const personCreateMock = prisma.person.create as unknown as ReturnType<typeof vi.fn>;
+const personDeleteManyMock = prisma.person.deleteMany as unknown as ReturnType<typeof vi.fn>;
 const addDemoGoalMock = addDemoGoal as unknown as ReturnType<typeof vi.fn>;
+const deleteDemoGoalMock = deleteDemoGoal as unknown as ReturnType<typeof vi.fn>;
+const deleteDemoPersonMock = deleteDemoPerson as unknown as ReturnType<typeof vi.fn>;
 
 const findManyMock = prisma.business.findMany as unknown as ReturnType<typeof vi.fn>;
 const updateMock = prisma.business.update as unknown as ReturnType<typeof vi.fn>;
@@ -148,5 +173,82 @@ describe('addGoal', () => {
     expect(addDemoGoalMock).toHaveBeenCalledWith('demo-business', { description: 'Win our first client', priority: 1 });
     expect(goalCreateMock).not.toHaveBeenCalled();
     expect(result).toEqual({ id: 'demo-goal-0', description: 'Win our first client', priority: 1 });
+  });
+});
+
+describe('deleteGoal', () => {
+  const isDemoModeMock3 = isDemoMode as unknown as ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    goalDeleteManyMock.mockReset();
+    deleteDemoGoalMock.mockReset();
+    isDemoModeMock3.mockReset();
+  });
+
+  it('deletes via Prisma, scoped by both id and businessId — an owner can only delete their own business\'s goal', async () => {
+    isDemoModeMock3.mockReturnValue(false);
+    goalDeleteManyMock.mockResolvedValue({ count: 1 });
+
+    await deleteGoal('biz-1', 'goal-1');
+
+    expect(goalDeleteManyMock).toHaveBeenCalledWith({ where: { id: 'goal-1', businessId: 'biz-1' } });
+  });
+
+  it('delegates to the demo store in Demo Mode, without touching Prisma', async () => {
+    isDemoModeMock3.mockReturnValue(true);
+
+    await deleteGoal('demo-business', 'demo-goal-0');
+
+    expect(deleteDemoGoalMock).toHaveBeenCalledWith('demo-business', 'demo-goal-0');
+    expect(goalDeleteManyMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('deletePerson', () => {
+  const isDemoModeMock4 = isDemoMode as unknown as ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    personDeleteManyMock.mockReset();
+    deleteDemoPersonMock.mockReset();
+    isDemoModeMock4.mockReset();
+  });
+
+  it('deletes via Prisma, scoped by both id and businessId', async () => {
+    isDemoModeMock4.mockReturnValue(false);
+    personDeleteManyMock.mockResolvedValue({ count: 1 });
+
+    await deletePerson('biz-1', 'person-1');
+
+    expect(personDeleteManyMock).toHaveBeenCalledWith({ where: { id: 'person-1', businessId: 'biz-1' } });
+  });
+
+  it('delegates to the demo store in Demo Mode, without touching Prisma', async () => {
+    isDemoModeMock4.mockReturnValue(true);
+
+    await deletePerson('demo-business', 'demo-person-0');
+
+    expect(deleteDemoPersonMock).toHaveBeenCalledWith('demo-business', 'demo-person-0');
+    expect(personDeleteManyMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('addPerson', () => {
+  const isDemoModeMock5 = isDemoMode as unknown as ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    personCreateMock.mockReset();
+    isDemoModeMock5.mockReset();
+  });
+
+  it('creates exactly one new Person via Prisma and returns the created record (including its real id)', async () => {
+    isDemoModeMock5.mockReturnValue(false);
+    personCreateMock.mockResolvedValue({ id: 'person-1', name: 'Jane Cooper', relationship: 'customer' });
+
+    const result = await addPerson('biz-1', { name: 'Jane Cooper', relationship: 'customer' });
+
+    expect(personCreateMock).toHaveBeenCalledWith({
+      data: { businessId: 'biz-1', name: 'Jane Cooper', relationship: 'customer', email: undefined, notes: undefined },
+    });
+    expect(result).toEqual({ id: 'person-1', name: 'Jane Cooper', relationship: 'customer' });
   });
 });

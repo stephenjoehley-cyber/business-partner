@@ -144,6 +144,16 @@ export function addDemoGoal(businessId: string, goal: GoalInput): Goal {
   return newGoal;
 }
 
+/**
+ * Continuous Executive Learning — deletion (19 July 2026). Scoped by
+ * businessId as well as id, same guard the real Prisma-backed
+ * deleteGoal uses — an owner can only ever delete their own business's
+ * goals, even in demo data.
+ */
+export function deleteDemoGoal(businessId: string, goalId: string): void {
+  demoGoals = demoGoals.filter((g) => !(g.id === goalId && g.businessId === businessId));
+}
+
 export function addDemoPeople(businessId: string, people: PersonInput[]): void {
   const startIndex = demoPeople.length;
   const added: Person[] = people.map((p, index) => ({
@@ -156,6 +166,11 @@ export function addDemoPeople(businessId: string, people: PersonInput[]): void {
     createdAt: new Date(),
   }));
   demoPeople = [...demoPeople, ...added];
+}
+
+/** Continuous Executive Learning — deletion (19 July 2026). Same businessId + id scoping guard as deleteDemoGoal. */
+export function deleteDemoPerson(businessId: string, personId: string): void {
+  demoPeople = demoPeople.filter((p) => !(p.id === personId && p.businessId === businessId));
 }
 
 // ---------------------------------------------------------------------------

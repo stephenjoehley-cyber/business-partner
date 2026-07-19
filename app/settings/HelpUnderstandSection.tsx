@@ -7,10 +7,12 @@ import { FormField, inputClasses } from '@/components/FormField';
 type RelationshipType = 'customer' | 'prospect' | 'supplier' | 'employee' | 'partner';
 
 interface GoalSummary {
+  id: string;
   description: string;
 }
 
 interface PersonSummary {
+  id: string;
   name: string;
   relationship: string;
 }
@@ -45,6 +47,13 @@ interface PersonSummary {
  * the Founder's explicit correction — the next relevant signal might
  * not arrive for days, and the sentence needs to remain true regardless
  * of when that turns out to be.
+ *
+ * 2026-07-19: added deletion — a duplicate "Francios" entry, entered by
+ * accident, had no way to be corrected. Delete only, not edit — the
+ * actual problem observed was "remove one wrong entry," not "change a
+ * goal's wording." No confirmation dialog: this is a mild, easily
+ * re-added action, unlike the full "delete this business" flow, which
+ * keeps its heavier confirmation.
  */
 export function HelpUnderstandSection({
   initialGoals,
@@ -59,6 +68,7 @@ export function HelpUnderstandSection({
   const [goalDescription, setGoalDescription] = useState('');
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [goalStatus, setGoalStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
 
   const [people, setPeople] = useState(initialPeople);
   const [personName, setPersonName] = useState('');
@@ -66,6 +76,7 @@ export function HelpUnderstandSection({
   const [personEmail, setPersonEmail] = useState('');
   const [isSavingPerson, setIsSavingPerson] = useState(false);
   const [personStatus, setPersonStatus] = useState<'idle' | 'saved' | 'error'>('idle');
+  const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState<'idle' | 'done' | 'error'>('idle');
@@ -84,11 +95,21 @@ export function HelpUnderstandSection({
 
     setIsSavingGoal(false);
     if (res.ok) {
-      setGoals((prev) => [...prev, { description }]);
+      const { goal } = await res.json();
+      setGoals((prev) => [...prev, { id: goal.id, description: goal.description }]);
       setGoalStatus('saved');
       setGoalDescription('');
     } else {
       setGoalStatus('error');
+    }
+  }
+
+  async function handleDeleteGoal(id: string) {
+    setDeletingGoalId(id);
+    const res = await fetch(`/api/business-memory/goals/${id}`, { method: 'DELETE' });
+    setDeletingGoalId(null);
+    if (res.ok) {
+      setGoals((prev) => prev.filter((g) => g.id !== id));
     }
   }
 
@@ -110,12 +131,22 @@ export function HelpUnderstandSection({
 
     setIsSavingPerson(false);
     if (res.ok) {
-      setPeople((prev) => [...prev, { name, relationship }]);
+      const { person } = await res.json();
+      setPeople((prev) => [...prev, { id: person.id, name: person.name, relationship: person.relationship }]);
       setPersonStatus('saved');
       setPersonName('');
       setPersonEmail('');
     } else {
       setPersonStatus('error');
+    }
+  }
+
+  async function handleDeletePerson(id: string) {
+    setDeletingPersonId(id);
+    const res = await fetch(`/api/business-memory/people/${id}`, { method: 'DELETE' });
+    setDeletingPersonId(null);
+    if (res.ok) {
+      setPeople((prev) => prev.filter((p) => p.id !== id));
     }
   }
 
@@ -147,9 +178,17 @@ export function HelpUnderstandSection({
       <div>
         {goals.length > 0 && (
           <ul className="mb-4 flex flex-col gap-1.5">
-            {goals.map((g, i) => (
-              <li key={i} className="text-sm text-ink">
-                • {g.description}
+            {goals.map((g) => (
+              <li key={g.id} className="flex items-center justify-between gap-2 text-sm text-ink">
+                <span>• {g.description}</span>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteGoal(g.id)}
+                  disabled={deletingGoalId === g.id}
+                  className="focus-ring text-xs text-ink-faint underline disabled:opacity-50"
+                >
+                  {deletingGoalId === g.id ? 'Removing…' : 'Remove'}
+                </button>
               </li>
             ))}
           </ul>
@@ -189,9 +228,19 @@ export function HelpUnderstandSection({
       <div className="border-t border-surface-border pt-6">
         {people.length > 0 && (
           <ul className="mb-4 flex flex-col gap-1.5">
-            {people.map((p, i) => (
-              <li key={i} className="text-sm text-ink">
-                • {p.name} <span className="text-ink-faint">({p.relationship})</span>
+            {people.map((p) => (
+              <li key={p.id} className="flex items-center justify-between gap-2 text-sm text-ink">
+                <span>
+                  • {p.name} <span className="text-ink-faint">({p.relationship})</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDeletePerson(p.id)}
+                  disabled={deletingPersonId === p.id}
+                  className="focus-ring text-xs text-ink-faint underline disabled:opacity-50"
+                >
+                  {deletingPersonId === p.id ? 'Removing…' : 'Remove'}
+                </button>
               </li>
             ))}
           </ul>

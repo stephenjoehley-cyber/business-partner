@@ -6,16 +6,16 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('@/lib/brain/repository', () => ({
   getBusinessByOwner: vi.fn(),
-  addPeople: vi.fn(),
+  addPerson: vi.fn(),
 }));
 
 import { createClient } from '@/lib/supabase/server';
-import { getBusinessByOwner, addPeople } from '@/lib/brain/repository';
+import { getBusinessByOwner, addPerson } from '@/lib/brain/repository';
 import { POST } from '@/app/api/business-memory/people/route';
 
 const createClientMock = createClient as unknown as ReturnType<typeof vi.fn>;
 const getBusinessByOwnerMock = getBusinessByOwner as unknown as ReturnType<typeof vi.fn>;
-const addPeopleMock = addPeople as unknown as ReturnType<typeof vi.fn>;
+const addPersonMock = addPerson as unknown as ReturnType<typeof vi.fn>;
 
 function mockAuthedUser(userId: string | null) {
   createClientMock.mockReturnValue({
@@ -36,7 +36,7 @@ describe('POST /api/business-memory/people', () => {
   beforeEach(() => {
     createClientMock.mockReset();
     getBusinessByOwnerMock.mockReset();
-    addPeopleMock.mockReset();
+    addPersonMock.mockReset();
   });
 
   it('returns 401 when there is no authenticated user', async () => {
@@ -45,7 +45,7 @@ describe('POST /api/business-memory/people', () => {
     const res = await POST(makeRequest({ name: 'Jane Cooper', relationship: 'customer' }));
 
     expect(res.status).toBe(401);
-    expect(addPeopleMock).not.toHaveBeenCalled();
+    expect(addPersonMock).not.toHaveBeenCalled();
   });
 
   it('returns 409 when the owner has no business', async () => {
@@ -64,7 +64,7 @@ describe('POST /api/business-memory/people', () => {
     const res = await POST(makeRequest({ name: '', relationship: 'customer' }));
 
     expect(res.status).toBe(400);
-    expect(addPeopleMock).not.toHaveBeenCalled();
+    expect(addPersonMock).not.toHaveBeenCalled();
   });
 
   it('rejects an invalid relationship value', async () => {
@@ -76,23 +76,27 @@ describe('POST /api/business-memory/people', () => {
     expect(res.status).toBe(400);
   });
 
-  it('adds exactly one person via the existing, already-additive addPeople function', async () => {
+  it('adds exactly one person via the singular addPerson function, and returns the created record (including its real id) so the UI can target it for deletion', async () => {
     mockAuthedUser('user-1');
     getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
-    addPeopleMock.mockResolvedValue(undefined);
+    addPersonMock.mockResolvedValue({ id: 'person-99', name: 'Jane Cooper', relationship: 'customer' });
 
     const res = await POST(makeRequest({ name: 'Jane Cooper', relationship: 'customer', email: 'jane@example.com' }));
 
     expect(res.status).toBe(200);
-    expect(addPeopleMock).toHaveBeenCalledWith('biz-1', [
-      { name: 'Jane Cooper', relationship: 'customer', email: 'jane@example.com' },
-    ]);
+    expect(addPersonMock).toHaveBeenCalledWith('biz-1', {
+      name: 'Jane Cooper',
+      relationship: 'customer',
+      email: 'jane@example.com',
+    });
+    const body = await res.json();
+    expect(body.person.id).toBe('person-99');
   });
 
   it('accepts a person with no email supplied at all', async () => {
     mockAuthedUser('user-1');
     getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
-    addPeopleMock.mockResolvedValue(undefined);
+    addPersonMock.mockResolvedValue({ id: 'person-1', name: 'Jane Cooper', relationship: 'customer' });
 
     const res = await POST(makeRequest({ name: 'Jane Cooper', relationship: 'customer' }));
 

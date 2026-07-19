@@ -6,6 +6,8 @@ import {
   addDemoPeople,
   completeDemoOnboarding,
   createDemoBusinessProfile,
+  deleteDemoGoal,
+  deleteDemoPerson,
   getDemoBusinessById,
   getDemoBusinessByOwner,
   replaceDemoGoals,
@@ -123,6 +125,22 @@ export async function addGoal(businessId: string, goal: GoalInput): Promise<Goal
   });
 }
 
+/**
+ * Continuous Executive Learning — deletion (19 July 2026). Scoped by
+ * businessId as well as id (deleteMany, not delete) — an owner can only
+ * ever delete a goal that actually belongs to their own business, even
+ * if they somehow guessed another business's goal id. Idempotent: does
+ * nothing (no error) if the goal is already gone.
+ */
+export async function deleteGoal(businessId: string, goalId: string): Promise<void> {
+  if (isDemoMode()) {
+    deleteDemoGoal(businessId, goalId);
+    return;
+  }
+
+  await prisma.goal.deleteMany({ where: { id: goalId, businessId } });
+}
+
 export interface PersonInput {
   name: string;
   relationship: string;
@@ -146,6 +164,49 @@ export async function addPeople(businessId: string, people: PersonInput[]): Prom
       email: p.email,
       notes: p.notes,
     })),
+  });
+}
+
+/** Continuous Executive Learning — deletion (19 July 2026). Same businessId + id scoping guard as deleteGoal. */
+export async function deletePerson(businessId: string, personId: string): Promise<void> {
+  if (isDemoMode()) {
+    deleteDemoPerson(businessId, personId);
+    return;
+  }
+
+  await prisma.person.deleteMany({ where: { id: personId, businessId } });
+}
+
+/**
+ * Continuous Executive Learning — deletion (19 July 2026). `addPeople`
+ * (above) uses Prisma's `createMany`, which never returns the created
+ * rows — fine for onboarding's bulk submission, which doesn't need the
+ * new ids back, but a real gap for the single-person add in Settings,
+ * which needs the real id immediately so a delete button can target it.
+ * A distinct singular function, not a change to addPeople's existing
+ * bulk behaviour or callers.
+ */
+export async function addPerson(businessId: string, person: PersonInput): Promise<Person> {
+  if (isDemoMode()) {
+    addDemoPeople(businessId, [person]);
+    // Demo store doesn't currently return the created record from
+    // addDemoPeople — read it straight back out, since Demo Mode always
+    // appends and this is always the most recently added Person for the
+    // business.
+    const demo = getDemoBusinessById(businessId);
+    const created = demo?.people[demo.people.length - 1];
+    if (!created) throw new Error('Failed to add demo person');
+    return created;
+  }
+
+  return prisma.person.create({
+    data: {
+      businessId,
+      name: person.name,
+      relationship: person.relationship,
+      email: person.email,
+      notes: person.notes,
+    },
   });
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getBusinessByOwner, addPeople } from '@/lib/brain/repository';
+import { getBusinessByOwner, addPerson } from '@/lib/brain/repository';
 import { personSchema } from '@/lib/brain/validation';
 
 /**
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  await addPeople(business.id, [parsed.data]);
+  const person = await addPerson(business.id, parsed.data);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, person });
 }

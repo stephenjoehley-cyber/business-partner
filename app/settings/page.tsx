@@ -156,8 +156,12 @@ export default async function SettingsPage({
 
         <div className="rounded-lg border border-surface-border bg-surface-card p-6">
           <HelpUnderstandSection
-            initialGoals={business.goals.map((g: { description: string }) => ({ description: g.description }))}
-            initialPeople={business.people.map((p: { name: string; relationship: string }) => ({
+            initialGoals={business.goals.map((g: { id: string; description: string }) => ({
+              id: g.id,
+              description: g.description,
+            }))}
+            initialPeople={business.people.map((p: { id: string; name: string; relationship: string }) => ({
+              id: p.id,
               name: p.name,
               relationship: p.relationship,
             }))}
