@@ -71,7 +71,14 @@ function mockProfileAndThreads(threadsListBody: unknown, threadDetailBodies: unk
 }
 
 function inboundMessage(
-  overrides: Partial<{ from: string; subject: string; date: string; internalDate: string; listUnsubscribe: string }> = {}
+  overrides: Partial<{
+    from: string;
+    subject: string;
+    date: string;
+    internalDate: string;
+    listUnsubscribe: string;
+    listId: string;
+  }> = {}
 ) {
   const headers = [
     { name: 'From', value: overrides.from ?? 'Jane Cooper <jane@example.com>' },
@@ -81,6 +88,9 @@ function inboundMessage(
   ];
   if (overrides.listUnsubscribe) {
     headers.push({ name: 'List-Unsubscribe', value: overrides.listUnsubscribe });
+  }
+  if (overrides.listId) {
+    headers.push({ name: 'List-Id', value: overrides.listId });
   }
   return {
     id: 'msg-1',
@@ -325,6 +335,26 @@ describe('GoogleGmailProvider', () => {
             from: 'hello@travelpayouts.com',
             subject: 'Last Chance — 50% Early Bird Enrollment',
             listUnsubscribe: '<mailto:unsubscribe@travelpayouts.com>',
+          }),
+        ],
+      },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toEqual([]);
+  });
+
+  it('excludes a bulk/marketing email identified by a List-Id header instead — found live, 19 July 2026: a second Travelpayouts email had no List-Unsubscribe header at all, only List-Id (RFC 2919), which Gmail\'s own UI surfaces as "mailing list"', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    mockProfileAndThreads({ threads: [{ id: 'thread-mailing-list' }] }, [
+      {
+        id: 'thread-mailing-list',
+        messages: [
+          inboundMessage({
+            from: 'hello@travelpayouts.com',
+            subject: 'Three ideas worth stealing from TBEX 2026',
+            listId: '<batch303813.list-id.travelpayouts.com>',
           }),
         ],
       },

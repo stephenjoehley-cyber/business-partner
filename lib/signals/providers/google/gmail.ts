@@ -166,7 +166,7 @@ export class GoogleGmailProvider implements SignalProvider {
     const threads: GmailThread[] = [];
     for (const stub of threadStubs) {
       const detailParams = new URLSearchParams({ format: 'metadata' });
-      ['From', 'To', 'Subject', 'Date', 'List-Unsubscribe'].forEach((header) =>
+      ['From', 'To', 'Subject', 'Date', 'List-Unsubscribe', 'List-Id'].forEach((header) =>
         detailParams.append('metadataHeaders', header)
       );
 
@@ -230,9 +230,16 @@ export class GoogleGmailProvider implements SignalProvider {
    * structural fact, not an inference about content, consistent with
    * Level 1's constraints (gmail.metadata never returns a message body
    * to read anyway).
+   *
+   * Widened same day: a second Travelpayouts email got through this
+   * check entirely — Gmail's own UI labelled it "mailing list," which
+   * comes from `List-Id` (RFC 2919), a different standard header this
+   * particular sender apparently includes instead of List-Unsubscribe.
+   * Checking both is still the same kind of genuine structural fact, not
+   * a broader or fuzzier rule.
    */
   private hasListUnsubscribeHeader(message: GmailMessage): boolean {
-    return Boolean(this.getHeader(message, 'List-Unsubscribe'));
+    return Boolean(this.getHeader(message, 'List-Unsubscribe')) || Boolean(this.getHeader(message, 'List-Id'));
   }
 
   private matchCorrespondentToPerson(email: string | undefined, people: Person[]): Person | undefined {
