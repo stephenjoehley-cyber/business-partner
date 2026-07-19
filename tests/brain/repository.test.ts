@@ -9,10 +9,14 @@ vi.mock('@/lib/prisma', () => ({
     goal: {
       create: vi.fn(),
       deleteMany: vi.fn(),
+      updateMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     person: {
       create: vi.fn(),
       deleteMany: vi.fn(),
+      updateMany: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }));
@@ -28,6 +32,8 @@ vi.mock('@/lib/demo/store', () => ({
   addDemoGoal: vi.fn(),
   deleteDemoGoal: vi.fn(),
   deleteDemoPerson: vi.fn(),
+  updateDemoGoal: vi.fn(),
+  updateDemoPerson: vi.fn(),
   completeDemoOnboarding: vi.fn(),
   createDemoBusinessProfile: vi.fn(),
   getDemoBusinessByOwner: vi.fn(),
@@ -43,6 +49,8 @@ import {
   addDemoGoal,
   deleteDemoGoal,
   deleteDemoPerson,
+  updateDemoGoal,
+  updateDemoPerson,
 } from '@/lib/demo/store';
 import {
   completeOnboarding,
@@ -51,15 +59,23 @@ import {
   deleteGoal,
   deletePerson,
   addPerson,
+  updateGoal,
+  updatePerson,
 } from '@/lib/brain/repository';
 
 const goalCreateMock = prisma.goal.create as unknown as ReturnType<typeof vi.fn>;
 const goalDeleteManyMock = prisma.goal.deleteMany as unknown as ReturnType<typeof vi.fn>;
+const goalUpdateManyMock = prisma.goal.updateMany as unknown as ReturnType<typeof vi.fn>;
+const goalFindUniqueMock = prisma.goal.findUnique as unknown as ReturnType<typeof vi.fn>;
 const personCreateMock = prisma.person.create as unknown as ReturnType<typeof vi.fn>;
 const personDeleteManyMock = prisma.person.deleteMany as unknown as ReturnType<typeof vi.fn>;
+const personUpdateManyMock = prisma.person.updateMany as unknown as ReturnType<typeof vi.fn>;
+const personFindUniqueMock = prisma.person.findUnique as unknown as ReturnType<typeof vi.fn>;
 const addDemoGoalMock = addDemoGoal as unknown as ReturnType<typeof vi.fn>;
 const deleteDemoGoalMock = deleteDemoGoal as unknown as ReturnType<typeof vi.fn>;
 const deleteDemoPersonMock = deleteDemoPerson as unknown as ReturnType<typeof vi.fn>;
+const updateDemoGoalMock = updateDemoGoal as unknown as ReturnType<typeof vi.fn>;
+const updateDemoPersonMock = updateDemoPerson as unknown as ReturnType<typeof vi.fn>;
 
 const findManyMock = prisma.business.findMany as unknown as ReturnType<typeof vi.fn>;
 const updateMock = prisma.business.update as unknown as ReturnType<typeof vi.fn>;
@@ -250,5 +266,100 @@ describe('addPerson', () => {
       data: { businessId: 'biz-1', name: 'Jane Cooper', relationship: 'customer', email: undefined, notes: undefined },
     });
     expect(result).toEqual({ id: 'person-1', name: 'Jane Cooper', relationship: 'customer' });
+  });
+});
+
+describe('updateGoal', () => {
+  const isDemoModeMock6 = isDemoMode as unknown as ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    goalUpdateManyMock.mockReset();
+    goalFindUniqueMock.mockReset();
+    updateDemoGoalMock.mockReset();
+    isDemoModeMock6.mockReset();
+  });
+
+  it('updates only the description, scoped by both id and businessId, and returns the updated record', async () => {
+    isDemoModeMock6.mockReturnValue(false);
+    goalUpdateManyMock.mockResolvedValue({ count: 1 });
+    goalFindUniqueMock.mockResolvedValue({ id: 'goal-1', description: 'Updated wording', priority: 1 });
+
+    const result = await updateGoal('biz-1', 'goal-1', 'Updated wording');
+
+    expect(goalUpdateManyMock).toHaveBeenCalledWith({
+      where: { id: 'goal-1', businessId: 'biz-1' },
+      data: { description: 'Updated wording' },
+    });
+    expect(result).toEqual({ id: 'goal-1', description: 'Updated wording', priority: 1 });
+  });
+
+  it('returns null (not a thrown error) when the goal does not belong to this business', async () => {
+    isDemoModeMock6.mockReturnValue(false);
+    goalUpdateManyMock.mockResolvedValue({ count: 0 });
+
+    const result = await updateGoal('biz-1', 'someone-elses-goal', 'Updated wording');
+
+    expect(result).toBeNull();
+    expect(goalFindUniqueMock).not.toHaveBeenCalled();
+  });
+
+  it('delegates to the demo store in Demo Mode, without touching Prisma', async () => {
+    isDemoModeMock6.mockReturnValue(true);
+    updateDemoGoalMock.mockReturnValue({ id: 'demo-goal-0', description: 'Updated wording', priority: 1 });
+
+    const result = await updateGoal('demo-business', 'demo-goal-0', 'Updated wording');
+
+    expect(updateDemoGoalMock).toHaveBeenCalledWith('demo-business', 'demo-goal-0', 'Updated wording');
+    expect(goalUpdateManyMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ id: 'demo-goal-0', description: 'Updated wording', priority: 1 });
+  });
+});
+
+describe('updatePerson', () => {
+  const isDemoModeMock7 = isDemoMode as unknown as ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    personUpdateManyMock.mockReset();
+    personFindUniqueMock.mockReset();
+    updateDemoPersonMock.mockReset();
+    isDemoModeMock7.mockReset();
+  });
+
+  it('updates name/relationship/email, scoped by both id and businessId, and returns the updated record', async () => {
+    isDemoModeMock7.mockReturnValue(false);
+    personUpdateManyMock.mockResolvedValue({ count: 1 });
+    personFindUniqueMock.mockResolvedValue({ id: 'person-1', name: 'Jane C.', relationship: 'prospect' });
+
+    const result = await updatePerson('biz-1', 'person-1', { name: 'Jane C.', relationship: 'prospect' });
+
+    expect(personUpdateManyMock).toHaveBeenCalledWith({
+      where: { id: 'person-1', businessId: 'biz-1' },
+      data: { name: 'Jane C.', relationship: 'prospect', email: undefined, notes: undefined },
+    });
+    expect(result).toEqual({ id: 'person-1', name: 'Jane C.', relationship: 'prospect' });
+  });
+
+  it('returns null (not a thrown error) when the person does not belong to this business', async () => {
+    isDemoModeMock7.mockReturnValue(false);
+    personUpdateManyMock.mockResolvedValue({ count: 0 });
+
+    const result = await updatePerson('biz-1', 'someone-elses-person', { name: 'X', relationship: 'customer' });
+
+    expect(result).toBeNull();
+    expect(personFindUniqueMock).not.toHaveBeenCalled();
+  });
+
+  it('delegates to the demo store in Demo Mode, without touching Prisma', async () => {
+    isDemoModeMock7.mockReturnValue(true);
+    updateDemoPersonMock.mockReturnValue({ id: 'demo-person-0', name: 'Jane C.', relationship: 'prospect' });
+
+    const result = await updatePerson('demo-business', 'demo-person-0', { name: 'Jane C.', relationship: 'prospect' });
+
+    expect(updateDemoPersonMock).toHaveBeenCalledWith('demo-business', 'demo-person-0', {
+      name: 'Jane C.',
+      relationship: 'prospect',
+    });
+    expect(personUpdateManyMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ id: 'demo-person-0', name: 'Jane C.', relationship: 'prospect' });
   });
 });

@@ -12,6 +12,8 @@ import {
   getDemoBusinessByOwner,
   replaceDemoGoals,
   updateDemoBusinessProfile,
+  updateDemoGoal,
+  updateDemoPerson,
 } from '@/lib/demo/store';
 
 /**
@@ -141,6 +143,24 @@ export async function deleteGoal(businessId: string, goalId: string): Promise<vo
   await prisma.goal.deleteMany({ where: { id: goalId, businessId } });
 }
 
+/**
+ * Continuous Executive Learning — editing (19 July 2026). Only
+ * description is editable — priority (ordering relative to other goals)
+ * is a separate concern this doesn't touch. Scoped by businessId as
+ * well as id, same guard as deleteGoal. Returns null (not a thrown
+ * error) if the goal doesn't exist or doesn't belong to this business —
+ * the caller decides what that means (404 vs. silent no-op).
+ */
+export async function updateGoal(businessId: string, goalId: string, description: string): Promise<Goal | null> {
+  if (isDemoMode()) {
+    return updateDemoGoal(businessId, goalId, description);
+  }
+
+  const result = await prisma.goal.updateMany({ where: { id: goalId, businessId }, data: { description } });
+  if (result.count === 0) return null;
+  return prisma.goal.findUnique({ where: { id: goalId } });
+}
+
 export interface PersonInput {
   name: string;
   relationship: string;
@@ -175,6 +195,24 @@ export async function deletePerson(businessId: string, personId: string): Promis
   }
 
   await prisma.person.deleteMany({ where: { id: personId, businessId } });
+}
+
+/**
+ * Continuous Executive Learning — editing (19 July 2026). Same
+ * businessId + id scoping guard as deletePerson. Returns null if the
+ * person doesn't exist or doesn't belong to this business.
+ */
+export async function updatePerson(businessId: string, personId: string, input: PersonInput): Promise<Person | null> {
+  if (isDemoMode()) {
+    return updateDemoPerson(businessId, personId, input);
+  }
+
+  const result = await prisma.person.updateMany({
+    where: { id: personId, businessId },
+    data: { name: input.name, relationship: input.relationship, email: input.email, notes: input.notes },
+  });
+  if (result.count === 0) return null;
+  return prisma.person.findUnique({ where: { id: personId } });
 }
 
 /**

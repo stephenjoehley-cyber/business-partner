@@ -154,6 +154,15 @@ export function deleteDemoGoal(businessId: string, goalId: string): void {
   demoGoals = demoGoals.filter((g) => !(g.id === goalId && g.businessId === businessId));
 }
 
+/** Continuous Executive Learning — editing (19 July 2026). Only description is editable — priority (ordering) is a separate concern, not part of this capability. */
+export function updateDemoGoal(businessId: string, goalId: string, description: string): Goal | null {
+  const goal = demoGoals.find((g) => g.id === goalId && g.businessId === businessId);
+  if (!goal) return null;
+  const updated = { ...goal, description };
+  demoGoals = demoGoals.map((g) => (g.id === goalId ? updated : g));
+  return updated;
+}
+
 export function addDemoPeople(businessId: string, people: PersonInput[]): void {
   const startIndex = demoPeople.length;
   const added: Person[] = people.map((p, index) => ({
@@ -171,6 +180,21 @@ export function addDemoPeople(businessId: string, people: PersonInput[]): void {
 /** Continuous Executive Learning — deletion (19 July 2026). Same businessId + id scoping guard as deleteDemoGoal. */
 export function deleteDemoPerson(businessId: string, personId: string): void {
   demoPeople = demoPeople.filter((p) => !(p.id === personId && p.businessId === businessId));
+}
+
+/** Continuous Executive Learning — editing (19 July 2026). */
+export function updateDemoPerson(businessId: string, personId: string, input: PersonInput): Person | null {
+  const person = demoPeople.find((p) => p.id === personId && p.businessId === businessId);
+  if (!person) return null;
+  const updated: Person = {
+    ...person,
+    name: input.name,
+    relationship: input.relationship,
+    email: input.email ?? null,
+    notes: input.notes ?? null,
+  };
+  demoPeople = demoPeople.map((p) => (p.id === personId ? updated : p));
+  return updated;
 }
 
 // ---------------------------------------------------------------------------

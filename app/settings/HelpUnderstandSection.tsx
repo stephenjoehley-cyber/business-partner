@@ -15,6 +15,7 @@ interface PersonSummary {
   id: string;
   name: string;
   relationship: string;
+  email?: string;
 }
 
 /**
@@ -25,11 +26,15 @@ interface PersonSummary {
  * investor-demo feature — see DECISIONS.md and the Executive Design
  * Authority Brief.
  *
- * 2026-07-19: added visible lists of what's already saved. Found live:
- * an owner added a second goal and had no way to see the first one was
- * still there at all — the form only ever let you add, never showed you
- * what Business Partner already knew. Lists update optimistically on
- * save, so a newly added item appears immediately without a page reload.
+ * 2026-07-19: added visible lists of what's already saved, then
+ * deletion, then editing — each found live in sequence: an owner had no
+ * way to see what was already saved, then no way to correct a duplicate
+ * entry, then no way to fix a genuine mistake in wording rather than
+ * delete-and-re-add it. Lists update optimistically on every action.
+ *
+ * Deletion has no confirmation dialog (mild, easily re-added, unlike
+ * the full "delete this business" flow). Editing is inline — click
+ * "Edit," the row becomes a small form, "Save" or "Cancel."
  *
  * The "Refresh my Morning Brief" action is a deliberate Phase 1 teaching
  * aid, not the permanent interaction model: making cause and effect
@@ -47,13 +52,6 @@ interface PersonSummary {
  * the Founder's explicit correction — the next relevant signal might
  * not arrive for days, and the sentence needs to remain true regardless
  * of when that turns out to be.
- *
- * 2026-07-19: added deletion — a duplicate "Francios" entry, entered by
- * accident, had no way to be corrected. Delete only, not edit — the
- * actual problem observed was "remove one wrong entry," not "change a
- * goal's wording." No confirmation dialog: this is a mild, easily
- * re-added action, unlike the full "delete this business" flow, which
- * keeps its heavier confirmation.
  */
 export function HelpUnderstandSection({
   initialGoals,
@@ -69,6 +67,9 @@ export function HelpUnderstandSection({
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [goalStatus, setGoalStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [editGoalDescription, setEditGoalDescription] = useState('');
+  const [isSavingGoalEdit, setIsSavingGoalEdit] = useState(false);
 
   const [people, setPeople] = useState(initialPeople);
   const [personName, setPersonName] = useState('');
@@ -77,6 +78,11 @@ export function HelpUnderstandSection({
   const [isSavingPerson, setIsSavingPerson] = useState(false);
   const [personStatus, setPersonStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null);
+  const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
+  const [editPersonName, setEditPersonName] = useState('');
+  const [editPersonRelationship, setEditPersonRelationship] = useState<RelationshipType>('customer');
+  const [editPersonEmail, setEditPersonEmail] = useState('');
+  const [isSavingPersonEdit, setIsSavingPersonEdit] = useState(false);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState<'idle' | 'done' | 'error'>('idle');
@@ -113,6 +119,29 @@ export function HelpUnderstandSection({
     }
   }
 
+  function startEditGoal(goal: GoalSummary) {
+    setEditingGoalId(goal.id);
+    setEditGoalDescription(goal.description);
+  }
+
+  async function handleSaveGoalEdit(id: string) {
+    if (!editGoalDescription.trim()) return;
+    setIsSavingGoalEdit(true);
+
+    const res = await fetch(`/api/business-memory/goals/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description: editGoalDescription.trim() }),
+    });
+
+    setIsSavingGoalEdit(false);
+    if (res.ok) {
+      const { goal } = await res.json();
+      setGoals((prev) => prev.map((g) => (g.id === id ? { id: goal.id, description: goal.description } : g)));
+      setEditingGoalId(null);
+    }
+  }
+
   async function handleAddPerson() {
     if (!personName.trim()) return;
     setIsSavingPerson(true);
@@ -132,7 +161,10 @@ export function HelpUnderstandSection({
     setIsSavingPerson(false);
     if (res.ok) {
       const { person } = await res.json();
-      setPeople((prev) => [...prev, { id: person.id, name: person.name, relationship: person.relationship }]);
+      setPeople((prev) => [
+        ...prev,
+        { id: person.id, name: person.name, relationship: person.relationship, email: person.email ?? undefined },
+      ]);
       setPersonStatus('saved');
       setPersonName('');
       setPersonEmail('');
@@ -147,6 +179,41 @@ export function HelpUnderstandSection({
     setDeletingPersonId(null);
     if (res.ok) {
       setPeople((prev) => prev.filter((p) => p.id !== id));
+    }
+  }
+
+  function startEditPerson(person: PersonSummary) {
+    setEditingPersonId(person.id);
+    setEditPersonName(person.name);
+    setEditPersonRelationship(person.relationship as RelationshipType);
+    setEditPersonEmail(person.email ?? '');
+  }
+
+  async function handleSavePersonEdit(id: string) {
+    if (!editPersonName.trim()) return;
+    setIsSavingPersonEdit(true);
+
+    const res = await fetch(`/api/business-memory/people/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: editPersonName.trim(),
+        relationship: editPersonRelationship,
+        email: editPersonEmail.trim() || undefined,
+      }),
+    });
+
+    setIsSavingPersonEdit(false);
+    if (res.ok) {
+      const { person } = await res.json();
+      setPeople((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? { id: person.id, name: person.name, relationship: person.relationship, email: person.email ?? undefined }
+            : p
+        )
+      );
+      setEditingPersonId(null);
     }
   }
 
@@ -177,20 +244,55 @@ export function HelpUnderstandSection({
     <div className="flex flex-col gap-6">
       <div>
         {goals.length > 0 && (
-          <ul className="mb-4 flex flex-col gap-1.5">
-            {goals.map((g) => (
-              <li key={g.id} className="flex items-center justify-between gap-2 text-sm text-ink">
-                <span>• {g.description}</span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteGoal(g.id)}
-                  disabled={deletingGoalId === g.id}
-                  className="focus-ring text-xs text-ink-faint underline disabled:opacity-50"
-                >
-                  {deletingGoalId === g.id ? 'Removing…' : 'Remove'}
-                </button>
-              </li>
-            ))}
+          <ul className="mb-4 flex flex-col gap-2">
+            {goals.map((g) =>
+              editingGoalId === g.id ? (
+                <li key={g.id} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    className={inputClasses}
+                    value={editGoalDescription}
+                    onChange={(e) => setEditGoalDescription(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSaveGoalEdit(g.id)}
+                    disabled={isSavingGoalEdit || !editGoalDescription.trim()}
+                    className="focus-ring whitespace-nowrap text-xs text-ink underline disabled:opacity-50"
+                  >
+                    {isSavingGoalEdit ? 'Saving…' : 'Save'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingGoalId(null)}
+                    className="focus-ring whitespace-nowrap text-xs text-ink-faint underline"
+                  >
+                    Cancel
+                  </button>
+                </li>
+              ) : (
+                <li key={g.id} className="flex items-center justify-between gap-2 text-sm text-ink">
+                  <span>• {g.description}</span>
+                  <span className="flex shrink-0 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => startEditGoal(g)}
+                      className="focus-ring text-xs text-ink-faint underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteGoal(g.id)}
+                      disabled={deletingGoalId === g.id}
+                      className="focus-ring text-xs text-ink-faint underline disabled:opacity-50"
+                    >
+                      {deletingGoalId === g.id ? 'Removing…' : 'Remove'}
+                    </button>
+                  </span>
+                </li>
+              )
+            )}
           </ul>
         )}
 
@@ -227,22 +329,78 @@ export function HelpUnderstandSection({
 
       <div className="border-t border-surface-border pt-6">
         {people.length > 0 && (
-          <ul className="mb-4 flex flex-col gap-1.5">
-            {people.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-2 text-sm text-ink">
-                <span>
-                  • {p.name} <span className="text-ink-faint">({p.relationship})</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleDeletePerson(p.id)}
-                  disabled={deletingPersonId === p.id}
-                  className="focus-ring text-xs text-ink-faint underline disabled:opacity-50"
-                >
-                  {deletingPersonId === p.id ? 'Removing…' : 'Remove'}
-                </button>
-              </li>
-            ))}
+          <ul className="mb-4 flex flex-col gap-2">
+            {people.map((p) =>
+              editingPersonId === p.id ? (
+                <li key={p.id} className="flex flex-col gap-2 rounded border border-surface-border p-3">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    className={inputClasses}
+                    value={editPersonName}
+                    onChange={(e) => setEditPersonName(e.target.value)}
+                  />
+                  <select
+                    className={inputClasses}
+                    value={editPersonRelationship}
+                    onChange={(e) => setEditPersonRelationship(e.target.value as RelationshipType)}
+                  >
+                    <option value="customer">Customer</option>
+                    <option value="prospect">Prospect</option>
+                    <option value="supplier">Supplier</option>
+                    <option value="employee">Employee</option>
+                    <option value="partner">Partner</option>
+                  </select>
+                  <input
+                    type="email"
+                    placeholder="Email (optional)"
+                    className={inputClasses}
+                    value={editPersonEmail}
+                    onChange={(e) => setEditPersonEmail(e.target.value)}
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleSavePersonEdit(p.id)}
+                      disabled={isSavingPersonEdit || !editPersonName.trim()}
+                      className="focus-ring text-xs text-ink underline disabled:opacity-50"
+                    >
+                      {isSavingPersonEdit ? 'Saving…' : 'Save'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingPersonId(null)}
+                      className="focus-ring text-xs text-ink-faint underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </li>
+              ) : (
+                <li key={p.id} className="flex items-center justify-between gap-2 text-sm text-ink">
+                  <span>
+                    • {p.name} <span className="text-ink-faint">({p.relationship})</span>
+                  </span>
+                  <span className="flex shrink-0 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => startEditPerson(p)}
+                      className="focus-ring text-xs text-ink-faint underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePerson(p.id)}
+                      disabled={deletingPersonId === p.id}
+                      className="focus-ring text-xs text-ink-faint underline disabled:opacity-50"
+                    >
+                      {deletingPersonId === p.id ? 'Removing…' : 'Remove'}
+                    </button>
+                  </span>
+                </li>
+              )
+            )}
           </ul>
         )}
 
