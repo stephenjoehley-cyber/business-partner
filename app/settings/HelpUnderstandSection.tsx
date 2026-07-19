@@ -128,8 +128,15 @@ export function HelpUnderstandSection({
     setIsRefreshing(false);
     if (res.ok) {
       setRefreshStatus('done');
-      router.push('/morning-brief');
-      router.refresh();
+      // Found live, 19 July 2026: router.push() + router.refresh() is a
+      // known-fragile pattern in Next.js's client-side router — if
+      // /morning-brief had already been visited earlier in the same
+      // browser session, push() could still serve a cached client-side
+      // render regardless of the refresh() call right after. A hard
+      // navigation bypasses the client router entirely, guaranteeing a
+      // genuinely fresh server request every time — the belt-and-
+      // suspenders companion to marking that page force-dynamic.
+      window.location.href = '/morning-brief';
     } else {
       setRefreshStatus('error');
     }
