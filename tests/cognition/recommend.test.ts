@@ -92,18 +92,38 @@ describe('recommend', () => {
 
     expect(result.tier).toBe('confident_recommendation');
     if (result.tier === 'confident_recommendation') {
-      expect(result.supportingSignalIds).toEqual(['winner', 'related']);
+      // 'unrelated' now also appears — evidence widening (18/19 July
+      // 2026) always includes a couple of other top-priority signals
+      // regardless of shared person, not just same-person context.
+      expect(result.supportingSignalIds).toEqual(['winner', 'related', 'unrelated']);
     }
   });
 
-  it('supports only the winning signal when no related person is known', () => {
+  it('includes up to 2 other top-priority signals as supporting evidence when no related person is known, so the owner can see Business Partner is tracking more than just the winning signal — found live, 18/19 July 2026', () => {
     const winner = makePrioritised('winner', 0.9, { confidence: 0.9 });
-    const other = makePrioritised('other', 0.3, { confidence: 0.9 });
+    const second = makePrioritised('second', 0.5, { confidence: 0.9 });
+    const third = makePrioritised('third', 0.4, { confidence: 0.9 });
+    const fourth = makePrioritised('fourth', 0.3, { confidence: 0.9 });
 
-    const result = recommend([winner, other]);
+    const result = recommend([winner, second, third, fourth]);
 
     if (result.tier === 'confident_recommendation') {
-      expect(result.supportingSignalIds).toEqual(['winner']);
+      expect(result.supportingSignalIds).toEqual(['winner', 'second', 'third']);
+    } else {
+      throw new Error('expected confident_recommendation');
+    }
+  });
+
+  it('deduplicates: an other-top-priority signal that already qualifies via shared person is never added twice', () => {
+    const winner = makePrioritised('winner', 0.9, { relatedPersonName: 'Jane Cooper', confidence: 0.9 });
+    const sameSecondHighest = makePrioritised('second', 0.5, { relatedPersonName: 'Jane Cooper', confidence: 0.9 });
+    const third = makePrioritised('third', 0.4, { confidence: 0.9 });
+
+    const result = recommend([winner, sameSecondHighest, third]);
+
+    if (result.tier === 'confident_recommendation') {
+      expect(result.supportingSignalIds).toEqual(['winner', 'second', 'third']);
+      expect(result.supportingSignalIds.filter((id) => id === 'second')).toHaveLength(1);
     } else {
       throw new Error('expected confident_recommendation');
     }
