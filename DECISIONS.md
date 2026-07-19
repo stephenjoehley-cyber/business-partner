@@ -922,3 +922,22 @@ Per the Founder's explicit decision, a fine-grained PAT (scoped to `Contents: Re
 **Status:** Delivered and confirmed live — the continuity note, richer confirmations, and `lastSyncedAt` all verified working end-to-end via direct production testing, including a real, unplanned confirmation that Calendar visibility (the very first issue raised tonight) is now also resolved, as a side effect of the earlier supporting-evidence widening.
 
 **Open finding, not yet actioned — recommend adding to the Decision Backlog:** Continuous Executive Learning (v1) supports adding a Goal or Person but has no way to edit or delete one. Surfaced live when a duplicate "Francios" entry (an accidental double-submission) had no way to be corrected. Smaller in scope than a full editing capability — worth its own short audit rather than folding into a future increment silently.
+
+## Continuous Executive Learning — Deletion (Delivered)
+
+Objective: fix the specific gap found live during Executive Presence Increment 1 testing — a duplicate "Francios" entry (an accidental double-submission) had no way to be corrected.
+
+### 2026-07-19 — Delete only, not edit
+Scope deliberately kept to deletion: the actual observed problem was "remove one wrong entry," not "change a goal's wording" — a real edit capability is a separate, larger question left for later if it's ever actually needed.
+
+**New:** `deleteGoal`/`deletePerson` in `lib/brain/repository.ts` (and `deleteDemoGoal`/`deleteDemoPerson` in the demo store), both scoped by `businessId` as well as `id` (`deleteMany`, not `delete`) — an owner can only ever remove something genuinely belonging to their own business, even if an id were somehow guessed. Idempotent: deleting an already-gone entry is a no-op, not an error. New routes: `DELETE /api/business-memory/goals/[id]`, `DELETE /api/business-memory/people/[id]`.
+
+**A related gap fixed in passing:** the existing `addPeople` (bulk, via Prisma's `createMany`) never returns created rows — fine for onboarding's bulk submission, which never needed the new ids back, but a real problem for Settings' single-person add, which needs the real id immediately so a Remove button has something to target. Added `addPerson` (singular, via `prisma.person.create`, which does return the created row) rather than changing `addPeople`'s existing behaviour or its onboarding caller.
+
+**No confirmation dialog** — a deliberate choice: removing a Goal or Person is mild and easily re-added, unlike the full "delete this business" flow, which keeps its heavier confirmation.
+
+**Cost if wrong:** Low. Deletion is scoped and idempotent; the worst case of a mistaken click is re-adding the same Goal/Person, which takes seconds.
+
+**Test/type status:** 271 tests passing (260 before this work — 11 new: 3 in `tests/api/business-memory/goals-delete.test.ts`, 3 in `tests/api/business-memory/people-delete.test.ts`, plus repository-level tests for `deleteGoal`/`deletePerson`/`addPerson`). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed.
