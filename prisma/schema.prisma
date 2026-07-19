@@ -109,5 +109,6 @@ model MorningBrief {
   confidence          Float? // null only for all_clear — there is nothing to be confident or unconfident about.
   supportingSignalIds String[] @default([]) // empty for all_clear.
   message             String? // all_clear tier's plain statement. Null for the other two tiers.
-  ownerResponse       String? continuityNote      String? // Executive Presence Audit, 19 July 2026 — an optional, timeless sentence acknowledging what's been added to Business Memory since the previous brief. Never present for all_clear (Business Memory Reflection already covers that tier fully). Null whenever nothing genuinely changed.
+  ownerResponse       String? 
+  continuityNote      String? // Executive Presence Audit, 19 July 2026 — an optional, timeless sentence acknowledging what's been added to Business Memory since the previous brief. Never present for all_clear (Business Memory Reflection already covers that tier fully). Null whenever nothing genuinely changed.
 }
