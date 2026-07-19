@@ -1,0 +1,58 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { getBusinessByOwner, addGoal } from '@/lib/brain/repository';
+import { goalSchema } from '@/lib/brain/validation';
+
+/**
+ * Forces this route to always run per-request rather than being
+ * considered for static optimization at build time — see DECISIONS.md,
+ * 17 July 2026.
+ */
+export const dynamic = 'force-dynamic';
+
+/**
+ * Continuous Executive Learning (v1) — Product Audit, 17/18 July 2026.
+ * Adds one Goal after onboarding, without touching any goal already on
+ * file. This is a permanent product capability, not an investor-demo
+ * feature: Business Memory should keep growing throughout the
+ * relationship, not only once, at signup. Reuses the existing
+ * `strategicImportance` scoring already live in the Cognitive Engine's
+ * email interpreter — no new reasoning capability required, only a way
+ * for the owner to actually reach it after onboarding.
+ */
+export async function POST(request: Request) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const business = await getBusinessByOwner(user.id);
+  if (!business) {
+    return NextResponse.json({ error: 'Complete your business profile first' }, { status: 409 });
+  }
+
+  const body = await request.json();
+
+  // Priority is caller-optional here, unlike onboarding's bulk submission
+  // — a newly added goal defaults to the lowest current importance
+  // (highest priority number + 1) rather than silently outranking every
+  // existing goal.
+  const nextPriority = business.goals.length > 0 ? Math.max(...business.goals.map((g: { priority: number }) => g.priority)) + 1 : 1;
+
+  const parsed = goalSchema.safeParse({
+    description: body.description,
+    priority: typeof body.priority === 'number' ? body.priority : nextPriority,
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const goal = await addGoal(business.id, parsed.data);
+
+  return NextResponse.json({ success: true, goal });
+}
