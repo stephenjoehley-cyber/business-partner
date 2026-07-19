@@ -10,16 +10,16 @@ describe('getAppLogoDimensions', () => {
     expect(getAppLogoDimensions('mark', 'md').src).toBe('/brand/business-partner-mark.png');
   });
 
-  it('renders sm at the specified 25px visible height (mobile header/drawer)', () => {
-    expect(getAppLogoDimensions('horizontal', 'sm').height).toBe(25);
+  it('renders sm at the specified 40px visible height (mobile header/drawer)', () => {
+    expect(getAppLogoDimensions('horizontal', 'sm').height).toBe(40);
   });
 
-  it('renders md at the specified 30px visible height (sidebar, auth pages)', () => {
-    expect(getAppLogoDimensions('horizontal', 'md').height).toBe(30);
+  it('renders md at the specified 50px visible height (sidebar, auth pages)', () => {
+    expect(getAppLogoDimensions('horizontal', 'md').height).toBe(50);
   });
 
-  it('renders lg at the specified 32px visible height (public desktop header)', () => {
-    expect(getAppLogoDimensions('horizontal', 'lg').height).toBe(32);
+  it('renders lg at the specified 60px visible height (public desktop header)', () => {
+    expect(getAppLogoDimensions('horizontal', 'lg').height).toBe(60);
   });
 
   it('derives width proportionally from the asset aspect ratio, never a fixed value independent of height', () => {
