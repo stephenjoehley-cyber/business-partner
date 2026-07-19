@@ -193,6 +193,23 @@ describe('email interpreter', () => {
     expect(result.recommendedAction).toContain('Jane Cooper');
     expect(result.recommendedAction).toContain('Re: quotation');
   });
+
+  it('includes the known person\'s company in reasoning when present — Recommendation 2, approved 19 July 2026, Business Memory the owner provided', () => {
+    const context = makeContext({
+      people: [{ id: 'person-1', name: 'Jane Cooper', relationship: 'customer', company: 'Acme Corp' } as BusinessContext['people'][number]],
+    });
+    const result = interpretSignal(makeEmailSignal(), context);
+    expect(result.reasoning).toContain('Acme Corp');
+  });
+
+  it('never fabricates a company mention when none is on file', () => {
+    const context = makeContext({
+      people: [{ id: 'person-1', name: 'Jane Cooper', relationship: 'customer' } as BusinessContext['people'][number]],
+    });
+    const result = interpretSignal(makeEmailSignal(), context);
+    expect(result.reasoning).not.toContain(' at ,');
+    expect(result.reasoning).toContain('Jane Cooper is a known customer —');
+  });
 });
 
 describe('calendar interpreter', () => {
@@ -251,6 +268,17 @@ describe('calendar interpreter', () => {
     const result = interpretSignal(makeCalendarSignal(), makeContext());
     expect(result.recommendedAction).toContain('Prepare briefing notes');
     expect(result.recommendedAction).toContain('Jane Cooper');
+  });
+
+  it('includes the known person\'s company in reasoning when present — Recommendation 2, approved 19 July 2026', () => {
+    const context = makeContext({
+      people: [{ id: 'person-1', name: 'Jane Cooper', relationship: 'customer', company: 'Acme Corp' } as BusinessContext['people'][number]],
+    });
+    const result = interpretSignal(
+      makeCalendarSignal({ payload: { ...makeCalendarSignal().payload, isFirstMeetingWithPerson: false } }),
+      context
+    );
+    expect(result.reasoning).toContain('Acme Corp');
   });
 
   it('never produces the grammatically broken "your today meeting" / "your tomorrow meeting" phrasing — found live, 19 July 2026', () => {

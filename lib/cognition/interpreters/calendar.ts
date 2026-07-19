@@ -60,7 +60,13 @@ function interpretMeetingUpcoming(signal: Signal, context: BusinessContext): Int
       `This is a first meeting with a prospect — first impressions here directly affect conversion.`
     );
   } else if (isKnown) {
-    reasoningParts.push(`${who} is an existing ${person!.relationship} — worth reviewing recent history before the call.`);
+    // Recommendation 2, approved by Founder + CPO, 19 July 2026 —
+    // Business Memory the owner provided, not extracted from Calendar.
+    // Only included when actually present; never fabricated.
+    const companyContext = person?.company ? ` at ${person.company}` : '';
+    reasoningParts.push(
+      `${who} is an existing ${person!.relationship}${companyContext} — worth reviewing recent history before the call.`
+    );
   } else {
     reasoningParts.push(`No prior record exists for this attendee yet.`);
   }

@@ -153,12 +153,17 @@ function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSi
       ? `An email from ${who} has gone unanswered for ${pluralDays(daysSince)}.`
       : `An email from ${who} is waiting on a reply.`;
 
+  // Recommendation 2, approved by Founder + CPO, 19 July 2026 — Business
+  // Memory the owner provided, not extracted from Gmail. Only included
+  // when actually present; never fabricated.
+  const companyContext = person?.company ? ` at ${person.company}` : '';
+
   const reasoningParts: string[] = [
     `"${payload.subject}" was received ${pluralDays(daysSince)} ago and still requires a reply.`,
     isAutomated
       ? `${who} appears to be an automated notification address, not a person who could receive a reply.`
       : isKnown
-        ? `${who} is a known ${person!.relationship} — an unanswered message from someone on file carries more relationship risk than a generic enquiry.`
+        ? `${who} is a known ${person!.relationship}${companyContext} — an unanswered message from someone on file carries more relationship risk than a generic enquiry.`
         : `${who} is not yet on file as a known contact, so this is treated as a new enquiry rather than an existing relationship.`,
   ];
   if (matchedGoals.length > 0 && !isAutomated) {
