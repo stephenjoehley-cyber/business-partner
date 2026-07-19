@@ -87,17 +87,40 @@ describe('email interpreter', () => {
     expect(unknown.insight.isKnownRelationship).toBe(false);
   });
 
-  it('boosts strategic importance when a goal matches by keyword', () => {
+  it('boosts strategic importance when the email\'s own subject relates to a matching goal', () => {
     const withGoal = makeContext({
       goals: [{ id: 'g1', businessId: 'biz-1', description: 'Improve customer response times', priority: 1, createdAt: new Date() }],
     });
     const withoutGoal = makeContext({ goals: [] });
 
-    const withGoalResult = interpretSignal(makeEmailSignal(), withGoal);
-    const withoutGoalResult = interpretSignal(makeEmailSignal(), withoutGoal);
+    const subject = 'Re: customer service follow-up';
+    const withGoalResult = interpretSignal(
+      makeEmailSignal({ payload: { ...makeEmailSignal().payload, subject } }),
+      withGoal
+    );
+    const withoutGoalResult = interpretSignal(
+      makeEmailSignal({ payload: { ...makeEmailSignal().payload, subject } }),
+      withoutGoal
+    );
 
     expect(withGoalResult.dimensions.strategicImportance).toBeGreaterThan(withoutGoalResult.dimensions.strategicImportance);
     expect(withGoalResult.insight.relatedGoalDescriptions).toContain('Improve customer response times');
+  });
+
+  it('does NOT boost strategic importance just because a goal happens to mention a keyword, if the email itself is unrelated — found live, 18/19 July 2026: a WordPress job-application notification was being marked as "touching" a goal called "Win our first client" purely because that goal contains the word "client"', () => {
+    const context = makeContext({
+      goals: [{ id: 'g1', businessId: 'biz-1', description: 'Win our first client', priority: 1, createdAt: new Date() }],
+    });
+
+    const result = interpretSignal(
+      makeEmailSignal({
+        payload: { ...makeEmailSignal().payload, subject: 'Your job application for Marketing Operations Assistant' },
+      }),
+      context
+    );
+
+    expect(result.insight.relatedGoalDescriptions).toEqual([]);
+    expect(result.dimensions.strategicImportance).toBe(0.4);
   });
 
   it('produces a concrete recommended action referencing the sender and subject', () => {
