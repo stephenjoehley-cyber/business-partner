@@ -6,6 +6,9 @@ vi.mock('@/lib/prisma', () => ({
       findMany: vi.fn(),
       update: vi.fn(),
     },
+    goal: {
+      create: vi.fn(),
+    },
   },
 }));
 
@@ -17,6 +20,7 @@ vi.mock('@/lib/demo/config', () => ({
 vi.mock('@/lib/demo/store', () => ({
   getDemoBusinessById: vi.fn(),
   addDemoPeople: vi.fn(),
+  addDemoGoal: vi.fn(),
   completeDemoOnboarding: vi.fn(),
   createDemoBusinessProfile: vi.fn(),
   getDemoBusinessByOwner: vi.fn(),
@@ -26,8 +30,11 @@ vi.mock('@/lib/demo/store', () => ({
 
 import { prisma } from '@/lib/prisma';
 import { isDemoMode } from '@/lib/demo/config';
-import { completeDemoOnboarding, getDemoBusinessById } from '@/lib/demo/store';
-import { completeOnboarding, getAllBusinessIds } from '@/lib/brain/repository';
+import { completeDemoOnboarding, getDemoBusinessById, addDemoGoal } from '@/lib/demo/store';
+import { completeOnboarding, getAllBusinessIds, addGoal } from '@/lib/brain/repository';
+
+const goalCreateMock = prisma.goal.create as unknown as ReturnType<typeof vi.fn>;
+const addDemoGoalMock = addDemoGoal as unknown as ReturnType<typeof vi.fn>;
 
 const findManyMock = prisma.business.findMany as unknown as ReturnType<typeof vi.fn>;
 const updateMock = prisma.business.update as unknown as ReturnType<typeof vi.fn>;
@@ -108,5 +115,38 @@ describe('completeOnboarding', () => {
 
     expect(completeDemoOnboardingMock).toHaveBeenCalledWith('demo-business');
     expect(updateMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('addGoal', () => {
+  const isDemoModeMock2 = isDemoMode as unknown as ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    goalCreateMock.mockReset();
+    addDemoGoalMock.mockReset();
+    isDemoModeMock2.mockReset();
+  });
+
+  it('creates exactly one new Goal via Prisma, never deleting or touching existing ones (unlike replaceGoals)', async () => {
+    isDemoModeMock2.mockReturnValue(false);
+    goalCreateMock.mockResolvedValue({ id: 'goal-1', description: 'Win our first client', priority: 3 });
+
+    const result = await addGoal('biz-1', { description: 'Win our first client', priority: 3 });
+
+    expect(goalCreateMock).toHaveBeenCalledWith({
+      data: { businessId: 'biz-1', description: 'Win our first client', priority: 3 },
+    });
+    expect(result).toEqual({ id: 'goal-1', description: 'Win our first client', priority: 3 });
+  });
+
+  it('delegates to the demo store in Demo Mode, without touching Prisma', async () => {
+    isDemoModeMock2.mockReturnValue(true);
+    addDemoGoalMock.mockReturnValue({ id: 'demo-goal-0', description: 'Win our first client', priority: 1 });
+
+    const result = await addGoal('demo-business', { description: 'Win our first client', priority: 1 });
+
+    expect(addDemoGoalMock).toHaveBeenCalledWith('demo-business', { description: 'Win our first client', priority: 1 });
+    expect(goalCreateMock).not.toHaveBeenCalled();
+    expect(result).toEqual({ id: 'demo-goal-0', description: 'Win our first client', priority: 1 });
   });
 });
