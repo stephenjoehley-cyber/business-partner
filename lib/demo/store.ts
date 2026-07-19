@@ -126,6 +126,24 @@ export function replaceDemoGoals(businessId: string, goals: GoalInput[]): void {
   }));
 }
 
+/**
+ * Continuous Executive Learning (v1) — genuinely additive, unlike
+ * replaceDemoGoals, which is onboarding's own bulk one-time submission
+ * and deliberately destructive by design. Adding one goal after
+ * onboarding must never silently delete every goal already there.
+ */
+export function addDemoGoal(businessId: string, goal: GoalInput): Goal {
+  const newGoal: Goal = {
+    id: `demo-goal-${demoGoals.length}`,
+    businessId,
+    description: goal.description,
+    priority: goal.priority,
+    createdAt: new Date(),
+  };
+  demoGoals = [...demoGoals, newGoal];
+  return newGoal;
+}
+
 export function addDemoPeople(businessId: string, people: PersonInput[]): void {
   const startIndex = demoPeople.length;
   const added: Person[] = people.map((p, index) => ({
