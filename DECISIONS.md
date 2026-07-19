@@ -1019,3 +1019,19 @@ Same shape of gap as the 165-day-old-email and duplicate-Person bugs found earli
 **Test/type status:** 295 tests passing (293 before this work). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed. The `noreply@` case is fixed immediately upon next refresh; the `travelpayouts` case is expected to persist for a few more days as it naturally decays, not as an unresolved bug.
+
+## Widened Automated-Sender Patterns; One-Time Cleanup of the Travelpayouts Signal (Delivered)
+
+Objective: close out the automated-sender/bulk-mail chain of fixes from earlier the same day.
+
+### 2026-07-19 — 'system' added to AUTOMATED_SENDER_PATTERNS
+Found via the same diagnostic check used to confirm the Travelpayouts cleanup below: two emails from `system@polsia.com` (an unrelated third-party service, not Business Partner) — the same category of automated-notification address as `noreply@`/`notifications@`, not previously in the pattern list. Added to both copies of the list (the interpreter's retroactive check and the Gmail provider's ingestion-time check).
+
+### 2026-07-19 — Targeted, confirmed, one-time deletion of the one signal that couldn't be retroactively fixed
+The Travelpayouts "Three ideas worth stealing from TBEX 2026" signal was ingested before the `List-Id` fix existed, and — unlike the `noreply@` case — couldn't be retroactively suppressed at the interpreter level, because the header data that identified it as bulk mail was never stored in the payload. Rather than wait roughly 5 days for it to decay away on its own (during which it would have remained the Morning Brief's active, incorrect top recommendation), a temporary diagnostic route was used to confirm the exact Signal id directly against the Founder's own output, then delete only that one row (scoped by businessId as well as id, same guard as every deletion tonight). Confirmed: `{"deleted": 1}`. Route removed immediately after.
+
+**Why a manual deletion here, and not as a general pattern:** this was specifically bounded to one already-diagnosed, already-fixed-going-forward row — not a standing "delete anything annoying" capability. The systemic fix (checking both `List-Unsubscribe` and `List-Id` at ingestion, checking `system`/`noreply`/`notifications` patterns at both ingestion and interpretation) is what prevents recurrence; the deletion only cleared out the one known leftover from before that fix existed.
+
+**Test/type status:** 297 tests passing (296 before this work — 1 new, covering the `system@` pattern). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed. This closes out the automated-sender/bulk-mail chain of findings from 19 July 2026 — Level 1 email signals should no longer produce false "reply to this" recommendations for system-generated or bulk mail, whether newly ingested or already persisted (where retroactively fixable).
