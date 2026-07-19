@@ -1,7 +1,7 @@
 import type { BusinessContext } from '@/lib/signals/provider';
 import type { CalendarSignalPayload, Signal } from '@/lib/signals/types';
 import type { InterpretedSignal, SignalInterpreter } from './types';
-import { clamp01, matchGoals, relativeDayPhrase } from './util';
+import { clamp01, matchGoalsForSignal, relativeDayPhrase } from './util';
 
 const CALENDAR_GOAL_KEYWORDS = [
   'sales',
@@ -34,7 +34,7 @@ function interpretMeetingUpcoming(signal: Signal, context: BusinessContext): Int
   const isProspect = person?.relationship === 'prospect';
   const businessImpact = payload.isFirstMeetingWithPerson && isProspect ? 0.85 : isKnown ? 0.6 : 0.5;
 
-  const matchedGoals = matchGoals(context.goals, CALENDAR_GOAL_KEYWORDS);
+  const matchedGoals = matchGoalsForSignal(context.goals, CALENDAR_GOAL_KEYWORDS, payload.title);
   const strategicImportance =
     matchedGoals.length > 0 ? (payload.isFirstMeetingWithPerson ? 0.8 : 0.6) : 0.4;
 
