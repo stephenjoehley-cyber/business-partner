@@ -1,7 +1,7 @@
 import type { BusinessContext } from '@/lib/signals/provider';
 import type { EmailSignalPayload, Signal } from '@/lib/signals/types';
 import type { InterpretedSignal, SignalInterpreter } from './types';
-import { clamp01, matchGoals, pluralDays } from './util';
+import { clamp01, matchGoalsForSignal, pluralDays } from './util';
 
 /**
  * Goals mentioning any of these are treated as strategically connected to
@@ -37,7 +37,7 @@ function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSi
   // relationship risk is concrete for someone already on file.
   const businessImpact = isKnown ? 0.75 : 0.5;
 
-  const matchedGoals = matchGoals(context.goals, EMAIL_GOAL_KEYWORDS);
+  const matchedGoals = matchGoalsForSignal(context.goals, EMAIL_GOAL_KEYWORDS, payload.subject);
   const strategicImportance = matchedGoals.length > 0 ? 0.7 : 0.4;
 
   // Less certain this specific message matters if we don't recognise the
