@@ -43,8 +43,16 @@ export function describeSignalPlainly(signal: Signal, now: Date = new Date()): s
     case 'calendar': {
       const payload = signal.payload as CalendarSignalPayload;
       const when = relativeDatePhrase(now, signal.occurredAt);
+      // Found live, 19 July 2026: this branch previously omitted the
+      // meeting title entirely — two genuinely distinct real meetings
+      // with the same first-time attendee (different externalRef,
+      // different time, different title) produced byte-identical
+      // description text, making them look like a duplicate-ingestion
+      // bug when they were actually two real, separate events. Now
+      // includes the title, matching the non-first-meeting branch below,
+      // which already did this correctly.
       return payload.isFirstMeetingWithPerson
-        ? `A first meeting with ${payload.attendees[0] ?? 'a new contact'}, coming up ${when}`
+        ? `A first meeting with ${payload.attendees[0] ?? 'a new contact'} — "${payload.title}" — coming up ${when}`
         : `A meeting — "${payload.title}" — coming up ${when}`;
     }
     case 'tasks': {

@@ -38,7 +38,7 @@ describe('describeSignalPlainly', () => {
     expect(description).not.toContain('_');
   });
 
-  it('describes a first meeting distinctly from a returning one', () => {
+  it('describes a first meeting distinctly from a returning one, including the title', () => {
     const now = new Date('2026-07-13T00:00:00.000Z');
     const first = baseSignal({
       domain: 'calendar',
@@ -47,7 +47,36 @@ describe('describeSignalPlainly', () => {
       payload: { title: 'Intro call', startTime: '', durationMinutes: 30, attendees: ['Sam Rivera'], isFirstMeetingWithPerson: true },
     });
 
-    expect(describeSignalPlainly(first, now)).toContain('first meeting with Sam Rivera');
+    const description = describeSignalPlainly(first, now);
+    expect(description).toContain('first meeting with Sam Rivera');
+    expect(description).toContain('Intro call');
+  });
+
+  it('produces distinct descriptions for two genuinely different first meetings with the same attendee — found live, 19 July 2026: two real, separate meetings with the same contact looked like a duplicate-ingestion bug because the title was previously omitted entirely', () => {
+    const now = new Date('2026-07-19T00:00:00.000Z');
+    const meetingA = baseSignal({
+      id: 'sig-a',
+      domain: 'calendar',
+      type: 'meeting_upcoming',
+      externalRef: 'event-a',
+      occurredAt: new Date('2026-07-20T10:30:00.000Z'),
+      payload: { title: 'Test Monday', startTime: '', durationMinutes: 30, attendees: ['hello@mzansichat.co.za'], isFirstMeetingWithPerson: true },
+    });
+    const meetingB = baseSignal({
+      id: 'sig-b',
+      domain: 'calendar',
+      type: 'meeting_upcoming',
+      externalRef: 'event-b',
+      occurredAt: new Date('2026-07-20T13:00:00.000Z'),
+      payload: { title: 'Test Meeting', startTime: '', durationMinutes: 30, attendees: ['hello@mzansichat.co.za'], isFirstMeetingWithPerson: true },
+    });
+
+    const descriptionA = describeSignalPlainly(meetingA, now);
+    const descriptionB = describeSignalPlainly(meetingB, now);
+
+    expect(descriptionA).not.toBe(descriptionB);
+    expect(descriptionA).toContain('Test Monday');
+    expect(descriptionB).toContain('Test Meeting');
   });
 
   it('describes an overdue invoice without exposing raw payload structure', () => {
