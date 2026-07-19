@@ -166,7 +166,9 @@ export class GoogleGmailProvider implements SignalProvider {
     const threads: GmailThread[] = [];
     for (const stub of threadStubs) {
       const detailParams = new URLSearchParams({ format: 'metadata' });
-      ['From', 'To', 'Subject', 'Date'].forEach((header) => detailParams.append('metadataHeaders', header));
+      ['From', 'To', 'Subject', 'Date', 'List-Unsubscribe'].forEach((header) =>
+        detailParams.append('metadataHeaders', header)
+      );
 
       const threadResponse = await fetch(
         `${GMAIL_API_BASE}/threads/${stub.id}?${detailParams.toString()}`,
@@ -189,6 +191,48 @@ export class GoogleGmailProvider implements SignalProvider {
     if (!headerValue) return undefined;
     const match = headerValue.match(/<([^>]+)>/);
     return (match ? match[1] : headerValue).trim().toLowerCase();
+  }
+
+  /**
+   * Found live, 19 July 2026 — Business Partner recommended "Reply to
+   * noreply@mail.app.supabase.io about 'Reset your password.'" That's
+   * not low-value noise (the decay-curve fix that same day addressed
+   * that); it's a false claim — a system-generated notification address
+   * is structurally incapable of ever receiving a meaningful reply, so
+   * recommending one is actively wrong advice, an Executive Honesty
+   * violation, not just a low-priority signal. Checked against the
+   * sender's local part (before the @) — deliberately simple, literal,
+   * deterministic string matching, the same discipline as
+   * matchGoalsForSignal, not a new capability.
+   */
+  private isAutomatedSenderAddress(email: string): boolean {
+    const localPart = email.split('@')[0] ?? '';
+    const AUTOMATED_SENDER_PATTERNS = [
+      'noreply',
+      'no-reply',
+      'no_reply',
+      'donotreply',
+      'do-not-reply',
+      'notifications',
+      'notification',
+      'mailer-daemon',
+      'postmaster',
+    ];
+    return AUTOMATED_SENDER_PATTERNS.some((pattern) => localPart.includes(pattern));
+  }
+
+  /**
+   * Found live, 19 July 2026, alongside the automated-sender fix — a
+   * marketing email (hello@travelpayouts.com) was also being recommended
+   * as "awaiting reply." `List-Unsubscribe` is a standard structural
+   * header (RFC 2369/8058) present on essentially all legitimate bulk
+   * and marketing mail — checking for its presence is a genuine
+   * structural fact, not an inference about content, consistent with
+   * Level 1's constraints (gmail.metadata never returns a message body
+   * to read anyway).
+   */
+  private hasListUnsubscribeHeader(message: GmailMessage): boolean {
+    return Boolean(this.getHeader(message, 'List-Unsubscribe'));
   }
 
   private matchCorrespondentToPerson(email: string | undefined, people: Person[]): Person | undefined {
@@ -228,6 +272,15 @@ export class GoogleGmailProvider implements SignalProvider {
     const fromEmail = this.extractEmailAddress(this.getHeader(lastMessage, 'From'));
 
     if (!fromEmail || fromEmail === ownerEmail) {
+      return null;
+    }
+
+    // Found live, 19 July 2026 — see isAutomatedSenderAddress and
+    // hasListUnsubscribeHeader above. Neither an automated notification
+    // address nor bulk/marketing mail can honestly be described as
+    // "awaiting your reply" — excluded entirely, not just deprioritised,
+    // since the claim itself would be false regardless of ranking.
+    if (this.isAutomatedSenderAddress(fromEmail) || this.hasListUnsubscribeHeader(lastMessage)) {
       return null;
     }
 

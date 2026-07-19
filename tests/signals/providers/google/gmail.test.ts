@@ -70,18 +70,22 @@ function mockProfileAndThreads(threadsListBody: unknown, threadDetailBodies: unk
   return fetchMock;
 }
 
-function inboundMessage(overrides: Partial<{ from: string; subject: string; date: string; internalDate: string }> = {}) {
+function inboundMessage(
+  overrides: Partial<{ from: string; subject: string; date: string; internalDate: string; listUnsubscribe: string }> = {}
+) {
+  const headers = [
+    { name: 'From', value: overrides.from ?? 'Jane Cooper <jane@example.com>' },
+    { name: 'To', value: OWNER_EMAIL },
+    { name: 'Subject', value: overrides.subject ?? 'Re: quotation for gearbox rebuild' },
+    { name: 'Date', value: overrides.date ?? 'Wed, 15 Jul 2026 10:00:00 +0000' },
+  ];
+  if (overrides.listUnsubscribe) {
+    headers.push({ name: 'List-Unsubscribe', value: overrides.listUnsubscribe });
+  }
   return {
     id: 'msg-1',
     internalDate: overrides.internalDate,
-    payload: {
-      headers: [
-        { name: 'From', value: overrides.from ?? 'Jane Cooper <jane@example.com>' },
-        { name: 'To', value: OWNER_EMAIL },
-        { name: 'Subject', value: overrides.subject ?? 'Re: quotation for gearbox rebuild' },
-        { name: 'Date', value: overrides.date ?? 'Wed, 15 Jul 2026 10:00:00 +0000' },
-      ],
-    },
+    payload: { headers },
   };
 }
 
@@ -298,5 +302,47 @@ describe('GoogleGmailProvider', () => {
     const signals = await provider.fetchSignals(contextWithJane, window);
 
     expect(signals).toEqual([]);
+  });
+
+  it('excludes an automated notification address entirely — found live, 19 July 2026: recommending "Reply to noreply@..." is a false claim, not just noise, since a system-generated address can never receive a meaningful reply', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    mockProfileAndThreads({ threads: [{ id: 'thread-noreply' }] }, [
+      { id: 'thread-noreply', messages: [inboundMessage({ from: 'noreply@mail.app.supabase.io', subject: 'Reset your password' })] },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toEqual([]);
+  });
+
+  it('excludes a bulk/marketing email identified by a List-Unsubscribe header — a genuine structural fact (RFC 2369/8058), not an inference about content', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    mockProfileAndThreads({ threads: [{ id: 'thread-marketing' }] }, [
+      {
+        id: 'thread-marketing',
+        messages: [
+          inboundMessage({
+            from: 'hello@travelpayouts.com',
+            subject: 'Last Chance — 50% Early Bird Enrollment',
+            listUnsubscribe: '<mailto:unsubscribe@travelpayouts.com>',
+          }),
+        ],
+      },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toEqual([]);
+  });
+
+  it('still includes a genuine, real correspondence email — neither an automated address nor bulk mail', async () => {
+    getProviderConfigDataMock.mockResolvedValue(validStoredConfig);
+    mockProfileAndThreads({ threads: [{ id: 'thread-real' }] }, [
+      { id: 'thread-real', messages: [inboundMessage({ from: 'jane@example.com' })] },
+    ]);
+
+    const signals = await provider.fetchSignals(contextWithJane, window);
+
+    expect(signals).toHaveLength(1);
   });
 });
