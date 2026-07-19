@@ -16,6 +16,7 @@ interface PersonSummary {
   name: string;
   relationship: string;
   email?: string;
+  company?: string;
 }
 
 /**
@@ -52,6 +53,14 @@ interface PersonSummary {
  * the Founder's explicit correction — the next relevant signal might
  * not arrive for days, and the sentence needs to remain true regardless
  * of when that turns out to be.
+ *
+ * 2026-07-19: Recommendation 2, approved by Founder + CPO — an optional
+ * Company field on Person. Deliberately Business Memory, not something
+ * Calendar or Gmail could ever supply (neither has a company field at
+ * all) — knowledge only the owner can reliably provide. Deliberately
+ * added here, in Settings, not to onboarding's People step, per the
+ * CPO's explicit principle: "Onboarding establishes identity.
+ * Continuous Executive Learning builds understanding."
  */
 export function HelpUnderstandSection({
   initialGoals,
@@ -75,6 +84,7 @@ export function HelpUnderstandSection({
   const [personName, setPersonName] = useState('');
   const [relationship, setRelationship] = useState<RelationshipType>('customer');
   const [personEmail, setPersonEmail] = useState('');
+  const [personCompany, setPersonCompany] = useState('');
   const [isSavingPerson, setIsSavingPerson] = useState(false);
   const [personStatus, setPersonStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null);
@@ -82,6 +92,7 @@ export function HelpUnderstandSection({
   const [editPersonName, setEditPersonName] = useState('');
   const [editPersonRelationship, setEditPersonRelationship] = useState<RelationshipType>('customer');
   const [editPersonEmail, setEditPersonEmail] = useState('');
+  const [editPersonCompany, setEditPersonCompany] = useState('');
   const [isSavingPersonEdit, setIsSavingPersonEdit] = useState(false);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -155,6 +166,7 @@ export function HelpUnderstandSection({
         name,
         relationship,
         email: personEmail.trim() || undefined,
+        company: personCompany.trim() || undefined,
       }),
     });
 
@@ -163,11 +175,18 @@ export function HelpUnderstandSection({
       const { person } = await res.json();
       setPeople((prev) => [
         ...prev,
-        { id: person.id, name: person.name, relationship: person.relationship, email: person.email ?? undefined },
+        {
+          id: person.id,
+          name: person.name,
+          relationship: person.relationship,
+          email: person.email ?? undefined,
+          company: person.company ?? undefined,
+        },
       ]);
       setPersonStatus('saved');
       setPersonName('');
       setPersonEmail('');
+      setPersonCompany('');
     } else {
       setPersonStatus('error');
     }
@@ -187,6 +206,7 @@ export function HelpUnderstandSection({
     setEditPersonName(person.name);
     setEditPersonRelationship(person.relationship as RelationshipType);
     setEditPersonEmail(person.email ?? '');
+    setEditPersonCompany(person.company ?? '');
   }
 
   async function handleSavePersonEdit(id: string) {
@@ -200,6 +220,7 @@ export function HelpUnderstandSection({
         name: editPersonName.trim(),
         relationship: editPersonRelationship,
         email: editPersonEmail.trim() || undefined,
+        company: editPersonCompany.trim() || undefined,
       }),
     });
 
@@ -209,7 +230,13 @@ export function HelpUnderstandSection({
       setPeople((prev) =>
         prev.map((p) =>
           p.id === id
-            ? { id: person.id, name: person.name, relationship: person.relationship, email: person.email ?? undefined }
+            ? {
+                id: person.id,
+                name: person.name,
+                relationship: person.relationship,
+                email: person.email ?? undefined,
+                company: person.company ?? undefined,
+              }
             : p
         )
       );
@@ -352,6 +379,13 @@ export function HelpUnderstandSection({
                     <option value="partner">Partner</option>
                   </select>
                   <input
+                    type="text"
+                    placeholder="Company (optional)"
+                    className={inputClasses}
+                    value={editPersonCompany}
+                    onChange={(e) => setEditPersonCompany(e.target.value)}
+                  />
+                  <input
                     type="email"
                     placeholder="Email (optional)"
                     className={inputClasses}
@@ -379,7 +413,7 @@ export function HelpUnderstandSection({
               ) : (
                 <li key={p.id} className="flex items-center justify-between gap-2 text-sm text-ink">
                   <span>
-                    • {p.name} <span className="text-ink-faint">({p.relationship})</span>
+                    • {p.name} <span className="text-ink-faint">({p.relationship}{p.company ? ` at ${p.company}` : ''})</span>
                   </span>
                   <span className="flex shrink-0 gap-3">
                     <button
@@ -434,6 +468,19 @@ export function HelpUnderstandSection({
             <option value="employee">Employee</option>
             <option value="partner">Partner</option>
           </select>
+        </div>
+
+        <div className="mt-3">
+          <FormField label="Company (optional)" htmlFor="personCompany">
+            <input
+              id="personCompany"
+              type="text"
+              placeholder="e.g. Acme Corp"
+              className={inputClasses}
+              value={personCompany}
+              onChange={(e) => setPersonCompany(e.target.value)}
+            />
+          </FormField>
         </div>
 
         <div className="mt-3">

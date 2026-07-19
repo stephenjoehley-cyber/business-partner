@@ -165,6 +165,7 @@ export interface PersonInput {
   name: string;
   relationship: string;
   email?: string;
+  company?: string;
   notes?: string;
 }
 
@@ -182,6 +183,7 @@ export async function addPeople(businessId: string, people: PersonInput[]): Prom
       name: p.name,
       relationship: p.relationship,
       email: p.email,
+      company: p.company,
       notes: p.notes,
     })),
   });
@@ -209,7 +211,13 @@ export async function updatePerson(businessId: string, personId: string, input: 
 
   const result = await prisma.person.updateMany({
     where: { id: personId, businessId },
-    data: { name: input.name, relationship: input.relationship, email: input.email, notes: input.notes },
+    data: {
+      name: input.name,
+      relationship: input.relationship,
+      email: input.email,
+      company: input.company,
+      notes: input.notes,
+    },
   });
   if (result.count === 0) return null;
   return prisma.person.findUnique({ where: { id: personId } });
@@ -243,6 +251,7 @@ export async function addPerson(businessId: string, person: PersonInput): Promis
       name: person.name,
       relationship: person.relationship,
       email: person.email,
+      company: person.company,
       notes: person.notes,
     },
   });

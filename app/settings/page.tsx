@@ -161,11 +161,12 @@ export default async function SettingsPage({
               description: g.description,
             }))}
             initialPeople={business.people.map(
-              (p: { id: string; name: string; relationship: string; email: string | null }) => ({
+              (p: { id: string; name: string; relationship: string; email: string | null; company: string | null }) => ({
                 id: p.id,
                 name: p.name,
                 relationship: p.relationship,
                 email: p.email ?? undefined,
+                company: p.company ?? undefined,
               })
             )}
           />

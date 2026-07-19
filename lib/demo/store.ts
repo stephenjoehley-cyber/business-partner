@@ -68,6 +68,7 @@ let demoPeople: Person[] = [
     name: 'Jane Cooper',
     relationship: 'customer',
     email: 'jane.cooper@example.com',
+    company: null,
     notes: 'Long-standing customer on a quarterly service contract.',
     createdAt: new Date(),
   },
@@ -171,6 +172,7 @@ export function addDemoPeople(businessId: string, people: PersonInput[]): void {
     name: p.name,
     relationship: p.relationship,
     email: p.email ?? null,
+    company: p.company ?? null,
     notes: p.notes ?? null,
     createdAt: new Date(),
   }));
@@ -191,6 +193,7 @@ export function updateDemoPerson(businessId: string, personId: string, input: Pe
     name: input.name,
     relationship: input.relationship,
     email: input.email ?? null,
+    company: input.company ?? null,
     notes: input.notes ?? null,
   };
   demoPeople = demoPeople.map((p) => (p.id === personId ? updated : p));
