@@ -1003,3 +1003,19 @@ Both exclude the thread entirely rather than just deprioritising it — the clai
 **Test/type status:** 293 tests passing (290 before this work — 3 new: automated-sender exclusion, `List-Unsubscribe` exclusion, and a regression check confirming genuine correspondence is still included). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed.
+
+## Automated-Sender Fix Made Retroactive at the Interpreter Level (found live, 19 July 2026)
+
+Objective: fix a real gap in the same-day automated-sender/bulk-mail exclusion — refreshing the Morning Brief did not remove the "Reply to noreply@mail.app.supabase.io" recommendation, because it was already persisted before that fix existed.
+
+### 2026-07-19 — Root cause: provider-level exclusion only prevents new signals, doesn't retroactively fix existing ones
+Same shape of gap as the 165-day-old-email and duplicate-Person bugs found earlier tonight: new ingestion-time logic changes what gets created going forward, but does nothing for signals already in the database. A refresh re-fetches from Gmail and adds anything new — it never re-validates existing rows.
+
+### 2026-07-19 — Fixed at the interpreter level, the one place every signal genuinely gets re-evaluated
+`interpretEmail` now re-checks `payload.fromName` against the same automated-sender patterns — for an unmatched sender, `fromName` is literally their raw email address (set at ingestion), so this retroactively catches the `noreply@` case regardless of when the signal was created. Confidence is forced to 0.1 (well below `CONFIDENCE_THRESHOLD`, 0.6), making a `confident_recommendation` — and therefore its `recommendedAction` field — structurally impossible for that signal, regardless of every other dimension.
+
+**Known, explicit limitation:** cannot retroactively fix the `List-Unsubscribe`-based bulk-mail exclusion the same way, since that header was never stored in the payload — only the provider had access to it, at ingestion time. An already-ingested bulk-mail signal (e.g. `hello@travelpayouts.com`) will fade out via its own low-significance decay curve instead, over the following days, rather than being retroactively suppressed.
+
+**Test/type status:** 295 tests passing (293 before this work). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed. The `noreply@` case is fixed immediately upon next refresh; the `travelpayouts` case is expected to persist for a few more days as it naturally decays, not as an unresolved bug.
