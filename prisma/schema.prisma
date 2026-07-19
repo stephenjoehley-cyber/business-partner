@@ -45,6 +45,7 @@ model Person {
   name         String
   relationship String // customer | prospect | supplier | employee | partner
   email        String?
+  company      String? // Recommendation 2, approved by Founder + CPO, 19 July 2026. Business Memory — knowledge only the owner can reliably provide, not extracted from Calendar or Gmail (which have no company field at all). Optional; owner-provided.
   notes        String?
   signals      Signal[]
   createdAt    DateTime @default(now())
