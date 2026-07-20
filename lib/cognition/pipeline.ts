@@ -1,6 +1,7 @@
 import { getBusinessById } from '@/lib/brain/repository';
 import { getSignalsForBusiness } from '@/lib/signals/repository';
 import { observe } from './observe';
+import { qualify } from './qualify';
 import { understand } from './understand';
 import { prioritise } from './prioritise';
 import { recommend } from './recommend';
@@ -9,8 +10,16 @@ import { buildContinuityNote } from './continuity';
 import type { MorningBriefResult } from './types';
 
 /**
- * Runs the full Cognitive Engine cycle for a business — Observe → Understand
- * → Prioritise → Recommend — and persists the result.
+ * Runs the full Cognitive Engine cycle for a business — Observe → Qualify
+ * → Understand → Prioritise → Recommend — and persists the result.
+ *
+ * Qualify (Product Audit and Implementation Plan, 20 July 2026) is a gate,
+ * not a scoring dimension: only signals that have genuinely earned
+ * executive intervention (grounded in Business Memory, or carrying
+ * structural, world-inherent consequence) proceed to Understand at all.
+ * Prioritise and Recommend are completely unchanged by this stage's
+ * existence — confirmed directly in the Product Audit — they simply see
+ * a smaller, pre-qualified set of signals than before.
  *
  * This function's signature — businessId in, MorningBriefResult persisted —
  * is exactly what Increment 5's Executive Orchestrator will call on a
@@ -39,11 +48,15 @@ export async function generateMorningBrief(businessId: string): Promise<MorningB
   const allSignals = await getSignalsForBusiness(businessId);
   const observations = observe(allSignals);
 
-  const understood = understand(observations, {
+  const context = {
     business,
     goals: business.goals,
     people: business.people,
-  });
+  };
+
+  const { admitted } = qualify(observations, context);
+
+  const understood = understand(admitted, context);
   const prioritised = prioritise(understood);
   const morningBrief = recommend(prioritised);
 

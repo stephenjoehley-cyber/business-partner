@@ -191,4 +191,40 @@ describe('generateMorningBrief', () => {
       expect(result.continuityNote).toBeUndefined();
     }
   });
+
+  it('excludes a genuinely ungrounded email from the Brief entirely — Qualification, Product Audit and Implementation Plan, 20 July 2026: an email from an unmatched sender with no goal-touching subject should never enter the Brief at all, not merely be deprioritised', async () => {
+    getBusinessByIdMock.mockResolvedValue({ ...BUSINESS, people: [], goals: [] });
+    const ungroundedEmail: Signal = { ...makeEmailSignal(3), relatedEntities: {} };
+    getSignalsForBusinessMock.mockResolvedValue([ungroundedEmail]);
+
+    const result = await generateMorningBrief('biz-1');
+
+    // With no signals qualifying, nothing reaches Understand/Prioritise at
+    // all, and recommend() correctly turns "nothing observed" into an
+    // honest all_clear — not a low-confidence mention of the ungrounded
+    // email.
+    expect(result.tier).toBe('all_clear');
+  });
+
+  it('still admits a calendar signal even when the attendee is entirely unmatched — Qualification treats calendar as always world-inherent, unaffected by Business Memory', async () => {
+    const calendarSignal: Signal = {
+      id: 'sig-cal-unmatched',
+      businessId: 'biz-1',
+      domain: 'calendar',
+      type: 'meeting_upcoming',
+      occurredAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
+      relatedEntities: {},
+      payload: { title: 'Discovery call', startTime: '', durationMinutes: 30, attendees: ['stranger@example.com'], isFirstMeetingWithPerson: true },
+      sourceProviderId: 'seeded-calendar',
+      externalRef: 'ref-cal-unmatched',
+      confidence: 1.0,
+      createdAt: new Date(),
+    };
+    getBusinessByIdMock.mockResolvedValue({ ...BUSINESS, people: [], goals: [] });
+    getSignalsForBusinessMock.mockResolvedValue([calendarSignal]);
+
+    const result = await generateMorningBrief('biz-1');
+
+    expect(result.tier).not.toBe('all_clear');
+  });
 });

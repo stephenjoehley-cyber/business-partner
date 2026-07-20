@@ -3,6 +3,7 @@ import type { CalendarSignalPayload, Signal } from '@/lib/signals/types';
 import type { InterpretedSignal, SignalInterpreter } from './types';
 import { clamp01, matchGoalsForSignal, relativeDayPhrase } from './util';
 import { companyDomainHint } from '@/lib/shared/emailDomain';
+import { findMatchedPerson } from '../grounding';
 
 const CALENDAR_GOAL_KEYWORDS = [
   'sales',
@@ -16,8 +17,7 @@ const CALENDAR_GOAL_KEYWORDS = [
 
 function interpretMeetingUpcoming(signal: Signal, context: BusinessContext): InterpretedSignal {
   const payload = signal.payload as CalendarSignalPayload;
-  const personId = signal.relatedEntities.personId;
-  const person = personId ? context.people.find((p) => p.id === personId) : undefined;
+  const person = findMatchedPerson(signal, context.people);
   const isKnown = Boolean(person);
   // Recommendation 1, approved by Founder + CPO, 19 July 2026: when the
   // attendee isn't a known Person, show a real email domain as grounded

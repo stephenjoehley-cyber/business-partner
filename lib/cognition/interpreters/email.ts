@@ -2,6 +2,7 @@ import type { BusinessContext } from '@/lib/signals/provider';
 import type { EmailSignalPayload, Signal } from '@/lib/signals/types';
 import type { InterpretedSignal, SignalInterpreter } from './types';
 import { clamp01, matchGoalsForSignal, pluralDays } from './util';
+import { findMatchedPerson } from '../grounding';
 
 /**
  * Goals mentioning any of these are treated as strategically connected to
@@ -9,7 +10,7 @@ import { clamp01, matchGoalsForSignal, pluralDays } from './util';
  * key client relationships". Deliberately small and literal (see
  * matchGoals) rather than an LLM-scored relevance judgement.
  */
-const EMAIL_GOAL_KEYWORDS = [
+export const EMAIL_GOAL_KEYWORDS = [
   'customer',
   'client',
   'relationship',
@@ -118,8 +119,7 @@ function looksAutomated(fromNameOrEmail: string): boolean {
 
 function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSignal {
   const payload = signal.payload as EmailSignalPayload;
-  const personId = signal.relatedEntities.personId;
-  const person = personId ? context.people.find((p) => p.id === personId) : undefined;
+  const person = findMatchedPerson(signal, context.people);
   const isKnown = Boolean(person);
   // Found live, 19 July 2026 — this previously read payload.daysSinceReceived,
   // a value frozen at ingestion time (whenever the Gmail provider last

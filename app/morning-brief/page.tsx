@@ -15,6 +15,7 @@ import { RecommendationTrigger } from './RecommendationTrigger';
 import { MorningBriefCard } from './MorningBriefCard';
 import { AllClearCard } from './AllClearCard';
 import { BusinessMemoryReflection } from './BusinessMemoryReflection';
+import { AwarenessLine } from './AwarenessLine';
 import { DemoModeBadge, DemoModeBanner } from './DemoModeBanner';
 
 /**
@@ -89,14 +90,19 @@ export default async function MorningBriefPage() {
   const today = new Date();
   const todaysAgenda = signals.filter((signal) => signal.domain === 'calendar' && isSameDay(signal.occurredAt, today));
 
+  // Executive Awareness, 20 July 2026 — unlike calendarConnected below
+  // (only ever needed for BusinessMemoryReflection's all_clear-specific
+  // closing sentence), both connection states are needed on every tier
+  // now, since AwarenessLine appears regardless of which tier renders.
+  const isCalendarConnectedNow =
+    !demoMode && (await getConfiguredProviderId(business.id, 'calendar')) === 'google-calendar';
+  const isEmailConnectedNow = !demoMode && (await getConfiguredProviderId(business.id, 'email')) === 'google-gmail';
+
   // Only computed when actually needed (the all_clear tier, real accounts
   // only) — determines which closing sentence BusinessMemoryReflection
   // shows. Demo Mode never reaches the all_clear tier, so this is never
   // evaluated for it.
-  const calendarConnected =
-    latestBrief?.tier === 'all_clear' &&
-    !demoMode &&
-    (await getConfiguredProviderId(business.id, 'calendar')) === 'google-calendar';
+  const calendarConnected = latestBrief?.tier === 'all_clear' && isCalendarConnectedNow;
 
   return (
     <AppShell
@@ -123,6 +129,17 @@ export default async function MorningBriefPage() {
         <h1 className="text-editorial-headline mb-12">
           {greetingForTime()}, {greetingName}.
         </h1>
+
+        {/*
+          Executive Awareness, 20 July 2026 — present whenever a real
+          brief exists, on every tier, not just all_clear. Deliberately
+          absent from the pre-first-cycle empty state directly below
+          (no cycle has run yet, so "I've already been watching" would
+          not yet be true).
+        */}
+        {latestBrief && (
+          <AwarenessLine calendarConnected={isCalendarConnectedNow} emailConnected={isEmailConnectedNow} />
+        )}
 
         {!latestBrief && (
         /*
