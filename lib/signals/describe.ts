@@ -48,8 +48,19 @@ export function describeSignalPlainly(signal: Signal, now: Date = new Date(), pe
   switch (signal.domain) {
     case 'email': {
       const payload = signal.payload as EmailSignalPayload;
-      return payload.daysSinceReceived >= 2
-        ? `An email from ${payload.fromName}, unanswered for ${pluralDays(payload.daysSinceReceived)}`
+      // Found live, 19 July 2026 — this read payload.daysSinceReceived
+      // directly, the same frozen ingestion-time value already fixed in
+      // the email interpreter (lib/cognition/interpreters/email.ts) for
+      // the winning signal's own reasoning. This function is used for
+      // every OTHER signal shown as supporting evidence, which never
+      // passes through that fix — so a non-winning email's displayed
+      // "unanswered for X days" text kept showing its original,
+      // stale ingestion-time count indefinitely, even after the
+      // interpreter fix shipped and even after a genuine fresh
+      // generation.
+      const daysSince = Math.max(0, Math.floor((now.getTime() - signal.occurredAt.getTime()) / (1000 * 60 * 60 * 24)));
+      return daysSince >= 2
+        ? `An email from ${payload.fromName}, unanswered for ${pluralDays(daysSince)}`
         : `An email from ${payload.fromName}, waiting on a reply`;
     }
     case 'calendar': {

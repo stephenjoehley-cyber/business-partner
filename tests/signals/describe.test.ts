@@ -38,6 +38,21 @@ describe('describeSignalPlainly', () => {
     expect(description).not.toContain('_');
   });
 
+  it('computes days-unanswered fresh from occurredAt, not from a frozen payload.daysSinceReceived — found live, 19 July 2026: a non-winning email in the evidence list kept showing its original ingestion-time day-count indefinitely, even after a genuine fresh Morning Brief generation, because this specific code path was missed when the same bug was fixed in the email interpreter', () => {
+    const now = new Date('2026-07-19T00:00:00.000Z');
+    const signal = baseSignal({
+      domain: 'email',
+      type: 'email_awaiting_reply_overdue',
+      occurredAt: new Date('2026-07-10T00:00:00.000Z'), // 9 real days before `now`
+      payload: { fromName: 'Jane Cooper', daysSinceReceived: 2, subject: 'Re: quotation', preview: '', requiresReply: true }, // frozen, wrong
+    });
+
+    const description = describeSignalPlainly(signal, now);
+
+    expect(description).toContain('9 days');
+    expect(description).not.toContain('2 days');
+  });
+
   it('describes a first meeting distinctly from a returning one, including the title', () => {
     const now = new Date('2026-07-13T00:00:00.000Z');
     const first = baseSignal({
