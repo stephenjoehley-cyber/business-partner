@@ -1072,3 +1072,28 @@ A significant part of Recommendation 2's actual plumbing — `lib/brain/reposito
 **Test/type status:** 311 tests passing. `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only (this sandbox's own Prisma Client remains stale and cannot be used to verify Prisma-derived type correctness — Vercel's real build is the actual source of truth for that, as this incident itself demonstrated).
 
 **Status:** Both recommendations delivered, deployed, and confirmed live.
+
+## "Stale Email Persists" Investigated Thoroughly — Confirmed Not a Cognitive Engine Defect (Delivered)
+
+Objective: investigate, with real evidence rather than assumption, whether the significance-decay model or scoring logic had a genuine defect, following the Founder's direct question ("might this be a Cognitive Engine issue? explore all possibilities and failures").
+
+### 2026-07-20 — Verified with real production scoring data before touching any code
+A temporary diagnostic route ran every signal through the real Observe → Understand → Prioritise pipeline and returned each one's actual dimensions and priority score. Findings:
+
+- The winning meeting scored 0.637, clearly ahead of everything else.
+- Every automated sender (`noreply@`, `notifications@vercel.com`, `system@polsia.com`) correctly scored confidence 0.1 / priority 0.09 — permanently incapable of winning, confirming the earlier fix works.
+- The 9-day-old wordpress email correctly showed `urgency: 0` — fully decayed, exactly matching the low-significance curve.
+- The 6-day-old fnbloans email correctly showed `urgency: 0.2` — exactly matching the same curve's partial-decay value at that age.
+
+Every number was exactly what the architecture should produce. **This confirmed the Cognitive Engine has no defect here.**
+
+### The actual root cause: a UI labeling issue, not a scoring issue
+`confidenceRegisterLabel` (e.g. "Worth acting on today") describes only the winning recommendation's own confidence — but it rendered directly above the "Also relevant" list of other signals, with no visual separation. Since urgency is the only dimension that decays (business impact, strategic importance, and confidence do not), a fully-decayed low-significance email still carries a real, non-zero floor score from those other dimensions — enough to still rank among the "top 2 other signals" shown as supporting context. The badge never claimed anything about those items, but its placement made that a plausible, real misreading.
+
+**Fix:** a border and a distinct, neutral heading ("Also tracking," not implying urgency or endorsement) now separate the winning recommendation's own confidence indicator from the list of other things Business Partner is tracking.
+
+**Why this matters beyond tonight:** confirms the value of verifying against real computed data before assuming a defect exists, especially once a system (like the significance-decay model) has several interacting parts — the actual failure mode here was one layer up, in presentation, not in the reasoning underneath it.
+
+**Test/type status:** 314 tests passing. `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed. The Cognitive Engine's scoring and decay behaviour is now directly confirmed correct against real production data, not just tested in isolation.
