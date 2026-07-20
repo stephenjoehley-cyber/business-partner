@@ -1,9 +1,16 @@
 import type { Goal } from '@prisma/client';
 
 // Re-exported so existing interpreter imports (`from './util'`) are
-// unaffected — the implementations now live in `lib/shared/time.ts`, shared
+// unaffected — the implementation now lives in `lib/shared/time.ts`, shared
 // with the Signal layer and the UI. See that file for why.
-export { relativeDayPhrase, pluralDays } from '@/lib/shared/time';
+//
+// Found live, 20 July 2026: relativeDayPhrase (also previously re-exported
+// here) was removed entirely — it computed a raw duration in hours and
+// rounded, so a meeting 10.6 hours away but on the *next calendar date*
+// was called "today." relativeDatePhrase (calendar-date-boundary-aware)
+// is the one correct function for this, now used everywhere, including
+// the calendar interpreter, which was this bug's only remaining source.
+export { pluralDays } from '@/lib/shared/time';
 
 export function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));

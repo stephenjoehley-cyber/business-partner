@@ -1,7 +1,8 @@
 import type { BusinessContext } from '@/lib/signals/provider';
 import type { CalendarSignalPayload, Signal } from '@/lib/signals/types';
 import type { InterpretedSignal, SignalInterpreter } from './types';
-import { clamp01, matchGoalsForSignal, relativeDayPhrase } from './util';
+import { clamp01, matchGoalsForSignal } from './util';
+import { relativeDatePhrase } from '@/lib/shared/time';
 import { companyDomainHint } from '@/lib/shared/emailDomain';
 import { findMatchedPerson } from '../grounding';
 
@@ -28,7 +29,16 @@ function interpretMeetingUpcoming(signal: Signal, context: BusinessContext): Int
   const domainHint = !person ? companyDomainHint(rawAttendee ?? '') : undefined;
   const who = person?.name ?? (domainHint ? `a new contact at ${domainHint}` : rawAttendee ?? 'a new contact');
   const now = new Date();
-  const when = relativeDayPhrase(now, signal.occurredAt);
+  // Found live, 20 July 2026 — relativeDayPhrase (duration-based:
+  // rounds raw hours-until-24) called a meeting 10.6 hours away, on the
+  // *next calendar date*, "today," because 10.6/24 ≈ 0.44 rounds down to
+  // 0. relativeDatePhrase (calendar-date-boundary-aware — compares
+  // startOfDay(occurredAt) to startOfDay(now)) is what the evidence list
+  // already correctly used for the exact same signal, which is exactly
+  // why the headline said "today" while the evidence list, for the same
+  // meeting, correctly said "tomorrow." "Today" should mean "the same
+  // calendar date," not "within the next 24 hours."
+  const when = relativeDatePhrase(now, signal.occurredAt);
 
   // Urgency rises the sooner the meeting is — a meeting today needs
   // preparation now; one three days out can wait.
