@@ -121,7 +121,20 @@ function interpretEmail(signal: Signal, context: BusinessContext): InterpretedSi
   const personId = signal.relatedEntities.personId;
   const person = personId ? context.people.find((p) => p.id === personId) : undefined;
   const isKnown = Boolean(person);
-  const daysSince = payload.daysSinceReceived;
+  // Found live, 19 July 2026 — this previously read payload.daysSinceReceived,
+  // a value frozen at ingestion time (whenever the Gmail provider last
+  // fetched this specific thread) and never recomputed. Since Gmail only
+  // re-fetches a business's most-recently-active threads, a thread that
+  // falls out of that window is never touched again — its stored
+  // daysSinceReceived simply stops incrementing, silently undermining the
+  // entire "persistence is earned each generation" decay-curve model from
+  // earlier the same day. The calendar interpreter already computed its
+  // own time-based dimension fresh from signal.occurredAt on every call;
+  // email needs the identical treatment.
+  const daysSince = Math.max(
+    0,
+    Math.floor((Date.now() - signal.occurredAt.getTime()) / (1000 * 60 * 60 * 24))
+  );
   const who = person?.name ?? payload.fromName;
 
   // An unmatched automated address is never really "awaiting a reply" —

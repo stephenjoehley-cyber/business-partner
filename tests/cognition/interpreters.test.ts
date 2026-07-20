@@ -3,6 +3,18 @@ import { interpretSignal } from '@/lib/cognition/interpreters/registry';
 import type { BusinessContext } from '@/lib/signals/provider';
 import type { EmailSignalPayload, CalendarSignalPayload, Signal } from '@/lib/signals/types';
 
+/**
+ * Found live, 19 July 2026: the email interpreter now computes days-since
+ * fresh from signal.occurredAt vs the real current time (matching the
+ * calendar interpreter), rather than trusting a frozen payload field. So
+ * these tests construct occurredAt relative to Date.now(), not a fixed
+ * historical date paired with a payload.daysSinceReceived override that
+ * the interpreter no longer reads.
+ */
+function daysAgo(n: number): Date {
+  return new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+}
+
 function makeContext(overrides?: Partial<BusinessContext>): BusinessContext {
   return {
     business: { id: 'biz-1', name: 'Meridian Gearboxes', industry: 'Automotive' } as BusinessContext['business'],
@@ -20,7 +32,7 @@ function makeEmailSignal(overrides: Partial<Signal<EmailSignalPayload>> = {}): S
     businessId: 'biz-1',
     domain: 'email',
     type: 'email_awaiting_reply',
-    occurredAt: new Date('2026-07-11T00:00:00.000Z'),
+    occurredAt: daysAgo(1),
     relatedEntities: { personId: 'person-1' },
     payload: {
       subject: 'Re: quotation',
@@ -85,18 +97,9 @@ describe('email interpreter', () => {
 
   it('rises then decays to zero for low significance (unknown sender, no goal match) — "should decay quickly... quietly disappear," per the 19 July 2026 product decision', () => {
     const context = makeContext({ goals: [] });
-    const day0 = interpretSignal(
-      makeEmailSignal({ relatedEntities: {}, payload: { ...makeEmailSignal().payload, daysSinceReceived: 0 } }),
-      context
-    );
-    const day2 = interpretSignal(
-      makeEmailSignal({ relatedEntities: {}, payload: { ...makeEmailSignal().payload, daysSinceReceived: 2 } }),
-      context
-    );
-    const day7 = interpretSignal(
-      makeEmailSignal({ relatedEntities: {}, payload: { ...makeEmailSignal().payload, daysSinceReceived: 7 } }),
-      context
-    );
+    const day0 = interpretSignal(makeEmailSignal({ relatedEntities: {}, occurredAt: daysAgo(0) }), context);
+    const day2 = interpretSignal(makeEmailSignal({ relatedEntities: {}, occurredAt: daysAgo(2) }), context);
+    const day7 = interpretSignal(makeEmailSignal({ relatedEntities: {}, occurredAt: daysAgo(7) }), context);
     expect(day2.dimensions.urgency).toBe(1); // peaks quickly
     expect(day7.dimensions.urgency).toBe(0); // fully decayed — "quietly disappears"
     expect(day0.dimensions.urgency).toBeLessThan(day2.dimensions.urgency);
@@ -104,18 +107,9 @@ describe('email interpreter', () => {
 
   it('rises then decays gradually for medium significance (known OR goal-touching, not both) — "should decay more gradually"', () => {
     const context = makeContext(); // known person, no goals — medium
-    const day5 = interpretSignal(
-      makeEmailSignal({ payload: { ...makeEmailSignal().payload, daysSinceReceived: 5 } }),
-      context
-    );
-    const day12 = interpretSignal(
-      makeEmailSignal({ payload: { ...makeEmailSignal().payload, daysSinceReceived: 12 } }),
-      context
-    );
-    const day20 = interpretSignal(
-      makeEmailSignal({ payload: { ...makeEmailSignal().payload, daysSinceReceived: 20 } }),
-      context
-    );
+    const day5 = interpretSignal(makeEmailSignal({ occurredAt: daysAgo(5) }), context);
+    const day12 = interpretSignal(makeEmailSignal({ occurredAt: daysAgo(12) }), context);
+    const day20 = interpretSignal(makeEmailSignal({ occurredAt: daysAgo(20) }), context);
     expect(day5.dimensions.urgency).toBe(1); // peaks at day 5
     expect(day12.dimensions.urgency).toBeGreaterThan(0);
     expect(day12.dimensions.urgency).toBeLessThan(1); // decaying
@@ -127,16 +121,27 @@ describe('email interpreter', () => {
       goals: [{ id: 'g1', businessId: 'biz-1', description: 'Improve customer response times', priority: 1, createdAt: new Date() }],
     });
     const subject = 'Re: customer service follow-up';
-    const day5 = interpretSignal(
-      makeEmailSignal({ payload: { ...makeEmailSignal().payload, subject, daysSinceReceived: 5 } }),
-      context
-    );
-    const day30 = interpretSignal(
-      makeEmailSignal({ payload: { ...makeEmailSignal().payload, subject, daysSinceReceived: 30 } }),
-      context
-    );
+    const day5 = interpretSignal(makeEmailSignal({ occurredAt: daysAgo(5), payload: { ...makeEmailSignal().payload, subject } }), context);
+    const day30 = interpretSignal(makeEmailSignal({ occurredAt: daysAgo(30), payload: { ...makeEmailSignal().payload, subject } }), context);
     expect(day5.dimensions.urgency).toBe(1);
     expect(day30.dimensions.urgency).toBe(1); // never decays
+  });
+
+  it('ignores a stale payload.daysSinceReceived and computes fresh from occurredAt instead — found live, 19 July 2026: an email frozen at "unanswered for 7 days" in its stored payload kept scoring as if still 7 days old, days after it was actually first ingested, because Gmail only re-fetches recently-active threads and this one had fallen out of that window', () => {
+    const context = makeContext({ goals: [] }); // low significance
+    const staleSignal = makeEmailSignal({
+      relatedEntities: {},
+      occurredAt: daysAgo(9), // the real, current age
+      payload: { ...makeEmailSignal().payload, daysSinceReceived: 7 }, // frozen at ingestion, now wrong
+    });
+
+    const result = interpretSignal(staleSignal, context);
+
+    // Low significance fully decays to zero urgency by day 7 — if the
+    // interpreter were still trusting the frozen "7" from the payload,
+    // this would incorrectly still show some residual urgency instead
+    // of being fully decayed at the real age of 9 days.
+    expect(result.dimensions.urgency).toBe(0);
   });
 
   it('gives higher business impact and confidence to a known person than an unrecognised sender', () => {

@@ -38,7 +38,12 @@ function makeEmailSignal(daysSinceReceived: number): Signal {
     businessId: 'biz-1',
     domain: 'email',
     type: daysSinceReceived >= 2 ? 'email_awaiting_reply_overdue' : 'email_awaiting_reply',
-    occurredAt: new Date('2026-07-10T00:00:00.000Z'),
+    // Found live, 19 July 2026: the email interpreter now computes days-
+    // since fresh from occurredAt vs the real current time, rather than
+    // trusting payload.daysSinceReceived (frozen at ingestion) — see
+    // lib/cognition/interpreters/email.ts. occurredAt is constructed
+    // relative to Date.now() here for exactly that reason.
+    occurredAt: new Date(Date.now() - daysSinceReceived * 24 * 60 * 60 * 1000),
     relatedEntities: { personId: 'person-1' },
     payload: {
       subject: 'Re: quotation',
