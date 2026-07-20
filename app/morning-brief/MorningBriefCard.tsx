@@ -16,7 +16,7 @@ interface MorningBriefCardProps {
   generatedAt: Date;
   /** The complete traceable signal list this brief was reasoned from. Always the deterministic ground truth — never touched by the Narrative Layer. */
   supportingSignals: Signal[];
-  /** Found live, 19 July 2026 — without this, describeSignalPlainly (used for "Also relevant" and the evidence list below) could describe the exact same meeting differently from the winning recommendation's own headline, which does look the matched Person up. Defaults to none. */
+  /** Found live, 19 July 2026 — without this, describeSignalPlainly (used for the "Also tracking" section and the evidence list below) could describe the exact same meeting differently from the winning recommendation's own headline, which does look the matched Person up. Defaults to none. */
   people?: Person[];
   /** Executive Presence Increment 1 — Demonstrating Understanding (per the Executive Presence Audit, 19 July 2026) — an already-finished, deterministic sentence from the Cognitive Engine (see lib/cognition/continuity.ts). Rendered directly, never passed through the Narrative Layer — there's nothing here for it to translate. Undefined whenever nothing has changed since the previous brief. */
   continuityNote?: string;
@@ -105,13 +105,27 @@ export function MorningBriefCard({
       </div>
 
       {relatedSignals.length > 0 && (
-        <ul className="mt-4 flex flex-col gap-1">
-          {relatedSignals.slice(0, 2).map((signal) => (
-            <li key={signal.id} className="text-sm text-ink-faint">
-              Also relevant: {describeSignalPlainly(signal, generatedAt, people)} ({relativeDatePhrase(generatedAt, signal.occurredAt)})
-            </li>
-          ))}
-        </ul>
+        <div className="mt-6 border-t border-surface-border pt-4">
+          {/*
+            Found live, 19 July 2026: the confidence badge above
+            (registerLabel — e.g. "Worth acting on today") describes only
+            the winning recommendation's own confidence. It previously sat
+            directly above this list with no separation, creating a real,
+            plausible misreading that it endorsed these other signals too
+            — even ones the Cognitive Engine has already correctly decayed
+            toward zero urgency. This heading and the border above it make
+            clear these are other things Business Partner is tracking, not
+            a second batch of "worth acting on" items.
+          */}
+          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Also tracking</p>
+          <ul className="mt-2 flex flex-col gap-1">
+            {relatedSignals.slice(0, 2).map((signal) => (
+              <li key={signal.id} className="text-sm text-ink-faint">
+                {describeSignalPlainly(signal, generatedAt, people)} ({relativeDatePhrase(generatedAt, signal.occurredAt)})
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {supportingSignals.length > 0 && (
