@@ -16,6 +16,7 @@ import { MorningBriefCard } from './MorningBriefCard';
 import { AllClearCard } from './AllClearCard';
 import { BusinessMemoryReflection } from './BusinessMemoryReflection';
 import { AwarenessLine } from './AwarenessLine';
+import { Greeting } from './Greeting';
 import { DemoModeBadge, DemoModeBanner } from './DemoModeBanner';
 
 /**
@@ -126,9 +127,7 @@ export default async function MorningBriefPage() {
           takes the editorial headline role Asset 021 §5.1 names
           explicitly for Morning Brief headlines.
         */}
-        <h1 className="text-editorial-headline mb-12">
-          {greetingForTime()}, {greetingName}.
-        </h1>
+        <Greeting name={greetingName} initialGreeting={greetingForTime()} />
 
         {/*
           Executive Awareness, 20 July 2026 — present whenever a real
