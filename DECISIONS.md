@@ -1129,3 +1129,18 @@ New `app/morning-brief/AwarenessLine.tsx`, present on **every** tier — `confid
 **Test/type status:** 327 tests passing (314 before this work — 13 new: 6 in `tests/cognition/qualify.test.ts`, 2 in `tests/cognition/pipeline.test.ts`, 5 in `tests/morning-brief/awarenessLine.test.ts`). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed. This concludes the Executive Intervention Product Inquiry — philosophy, Product Audit, architectural boundary resolution, and Implementation Plan, in that order, exactly as the project's own governance discipline requires.
+
+## "Today" vs "Tomorrow" Date Calculation Bug (Delivered)
+
+Objective: fix a real, confirmed defect found live — a meeting genuinely 10.6 hours away, on the next calendar date, was described as "today" in the headline and reasoning, while the evidence list correctly said "tomorrow" for the exact same event.
+
+### 2026-07-20 — Root cause: two different date-phrasing functions, one provably wrong
+`relativeDayPhrase` (the calendar interpreter's only caller) computed a raw duration in hours and rounded it: `10.6 / 24 ≈ 0.44`, which rounds down to `0` days — "today." `relativeDatePhrase` (used correctly everywhere else, including the evidence list) compares actual calendar dates first (`startOfDay` to `startOfDay`). "Today" should mean "the same calendar date," not "within the next 24 hours" — the two are only equivalent near midday, and diverge exactly at the evening/early-morning boundary where this was actually caught.
+
+**Fix:** `relativeDayPhrase` removed entirely, not merely bypassed — it had exactly one remaining caller, that caller was the bug, and a duplicate, provably-wrong function serves no purpose left in the codebase. The calendar interpreter now uses `relativeDatePhrase` directly.
+
+**A real test-coverage gap found in the process:** no dedicated test file existed for `lib/shared/time.ts` at all, despite it now being the single remaining date-phrasing function used throughout the product. `tests/shared/time.test.ts` created, including the exact real-world regression scenario as its own named test.
+
+**Test/type status:** 333 tests passing (327 before this work). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed. Verification of the Executive Awareness line's actual presence in production is still pending a direct answer from the Founder about what the top of the real page shows.
