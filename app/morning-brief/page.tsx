@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { getSignalsByIds, getSignalsForBusiness } from '@/lib/signals/repository';
 import { getLatestMorningBrief } from '@/lib/cognition/repository';
+import { observe } from '@/lib/cognition/observe';
 import { getConfiguredProviderId } from '@/lib/signals/config-repository';
 import { generateNarrative } from '@/lib/narrative/generate';
 import { buildNarrativeInput } from '@/lib/narrative/fromMorningBrief';
@@ -99,6 +100,14 @@ export default async function MorningBriefPage() {
     !demoMode && (await getConfiguredProviderId(business.id, 'calendar')) === 'google-calendar';
   const isEmailConnectedNow = !demoMode && (await getConfiguredProviderId(business.id, 'email')) === 'google-gmail';
 
+  // Found live, 20 July 2026, hours after Awareness first shipped:
+  // "I've been watching" needs something behind it — reusing observe()
+  // (the exact same scoping the real Cognitive Engine pipeline applies:
+  // calendar future-only, email within the 90-day safety net) keeps this
+  // count honestly consistent with what the pipeline itself actually
+  // considered, rather than a separate, potentially-diverging query.
+  const emailSignalCount = observe(signals).filter((s) => s.domain === 'email').length;
+
   // Only computed when actually needed (the all_clear tier, real accounts
   // only) — determines which closing sentence BusinessMemoryReflection
   // shows. Demo Mode never reaches the all_clear tier, so this is never
@@ -137,7 +146,11 @@ export default async function MorningBriefPage() {
           not yet be true).
         */}
         {latestBrief && (
-          <AwarenessLine calendarConnected={isCalendarConnectedNow} emailConnected={isEmailConnectedNow} />
+          <AwarenessLine
+            calendarConnected={isCalendarConnectedNow}
+            emailConnected={isEmailConnectedNow}
+            emailCount={emailSignalCount}
+          />
         )}
 
         {!latestBrief && (
