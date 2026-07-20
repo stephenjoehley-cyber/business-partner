@@ -25,14 +25,14 @@ import type { InterpretedSignal } from './types';
  * X" directly into `reasoning`, which is both a raw identifier and the
  * banned word "interpreter." Fixed here; see DECISIONS.md.)
  */
-export function interpretUnknown(signal: Signal, _context: BusinessContext): InterpretedSignal {
+export function interpretUnknown(signal: Signal, context: BusinessContext): InterpretedSignal {
   return {
     insight: {
       // describeSignalPlainly covers all six signal domains regardless of
       // interpreter registration status, so even a not-yet-understood
       // signal gets a plain-language description rather than a raw
       // domain/type string.
-      summary: describeSignalPlainly(signal),
+      summary: describeSignalPlainly(signal, new Date(), context.people),
       isKnownRelationship: false,
       relatedGoalDescriptions: [],
     },

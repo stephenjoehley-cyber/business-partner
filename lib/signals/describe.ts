@@ -1,5 +1,6 @@
 import { pluralDays, relativeDatePhrase } from '@/lib/shared/time';
 import { companyDomainHint } from '@/lib/shared/emailDomain';
+import type { Person } from '@prisma/client';
 import type {
   CalendarSignalPayload,
   CrmSignalPayload,
@@ -26,14 +27,24 @@ import type {
  * "any signal, not just the one the Cognitive Engine chose to act on."
  *
  * Deliberately simpler than the interpreters in `lib/cognition/interpreters`
- * — it has no access to Business Memory (no known-person lookup, no goal
- * matching) and produces a description, not a scored Insight. Where an
- * interpreter already exists for a domain, its `Insight.summary` is the
- * richer, context-aware version of the same fact; this function is the
- * fallback plain-language form used for signals that are along for the
- * ride as supporting evidence rather than the one being reasoned about.
+ * — it produces a description, not a scored Insight, and does no goal
+ * matching. Where an interpreter already exists for a domain, its
+ * `Insight.summary` is the richer, context-aware version of the same
+ * fact; this function is the fallback plain-language form used for
+ * signals that are along for the ride as supporting evidence rather than
+ * the one being reasoned about.
+ *
+ * `people` is optional (defaults to none) so every existing call site
+ * keeps working unchanged — but found live, 19 July 2026: without it,
+ * the calendar case could describe the exact same meeting differently
+ * from the winning recommendation's own headline (which does look the
+ * person up), since only the calendar interpreter previously did this
+ * lookup. Email's `payload.fromName` doesn't have the same gap — the
+ * Gmail provider already resolves it to the matched Person's name once,
+ * at ingestion (see gmail.ts's toDraftSignal), so no live lookup is
+ * needed there.
  */
-export function describeSignalPlainly(signal: Signal, now: Date = new Date()): string {
+export function describeSignalPlainly(signal: Signal, now: Date = new Date(), people: Person[] = []): string {
   switch (signal.domain) {
     case 'email': {
       const payload = signal.payload as EmailSignalPayload;
@@ -44,15 +55,19 @@ export function describeSignalPlainly(signal: Signal, now: Date = new Date()): s
     case 'calendar': {
       const payload = signal.payload as CalendarSignalPayload;
       const when = relativeDatePhrase(now, signal.occurredAt);
-      // Recommendation 1, approved by Founder + CPO, 19 July 2026: same
-      // grounded-domain-hint treatment as the calendar interpreter —
-      // this function has no Business Memory context to know whether
-      // the attendee is a known Person, so it always tries the domain
-      // hint on the raw attendee string; a real display name (no "@")
-      // or a generic consumer provider both correctly yield no hint.
+      // Found live, 19 July 2026: the winning recommendation's headline
+      // correctly showed "Stephen Oehley" (a matched Person, via the
+      // calendar interpreter's own lookup) while this function, for the
+      // exact same meeting, still showed "a new contact at
+      // mzansichat.co.za" — the same inconsistency the title fix
+      // addressed for two genuinely different meetings, but this time
+      // for one single meeting describing itself two different ways.
+      const matchedPersonId = signal.relatedEntities.personId;
+      const matchedPerson = matchedPersonId ? people.find((p) => p.id === matchedPersonId) : undefined;
       const rawAttendee = payload.attendees[0];
-      const domainHint = companyDomainHint(rawAttendee ?? '');
-      const attendeeDisplay = domainHint ? `a new contact at ${domainHint}` : rawAttendee ?? 'a new contact';
+      const domainHint = matchedPerson ? undefined : companyDomainHint(rawAttendee ?? '');
+      const attendeeDisplay =
+        matchedPerson?.name ?? (domainHint ? `a new contact at ${domainHint}` : rawAttendee ?? 'a new contact');
       return payload.isFirstMeetingWithPerson
         ? `A first meeting with ${attendeeDisplay} — "${payload.title}" — coming up ${when}`
         : `A meeting — "${payload.title}" — coming up ${when}`;

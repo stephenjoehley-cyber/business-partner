@@ -83,7 +83,7 @@ export default async function MorningBriefPage() {
   // additional empty/error state to handle here.
   const narrative =
     latestBrief && latestBrief.tier !== 'all_clear'
-      ? await generateNarrative(buildNarrativeInput(latestBrief, supportingSignals))
+      ? await generateNarrative(buildNarrativeInput(latestBrief, supportingSignals, business.people))
       : null;
 
   const today = new Date();
@@ -174,6 +174,7 @@ export default async function MorningBriefPage() {
           confidence={latestBrief.confidence}
           generatedAt={latestBrief.generatedAt}
           supportingSignals={supportingSignals}
+          people={business.people}
           continuityNote={latestBrief.continuityNote}
         />
       )}

@@ -92,6 +92,24 @@ describe('describeSignalPlainly', () => {
     expect(description).toContain('a new contact at mzansichat.co.za');
   });
 
+  it('shows the matched Person\'s real name, never a domain hint, when people context is provided — found live, 19 July 2026: the winning recommendation\'s headline correctly showed "Stephen Oehley" while this function, for the exact same meeting, still showed "a new contact at mzansichat.co.za"', () => {
+    const now = new Date('2026-07-19T00:00:00.000Z');
+    const signal = baseSignal({
+      domain: 'calendar',
+      type: 'meeting_upcoming',
+      occurredAt: new Date('2026-07-20T00:00:00.000Z'),
+      relatedEntities: { personId: 'person-1' },
+      payload: { title: 'Test Monday', startTime: '', durationMinutes: 30, attendees: ['hello@mzansichat.co.za'], isFirstMeetingWithPerson: true },
+    });
+    const people = [
+      { id: 'person-1', name: 'Stephen Oehley', relationship: 'partner', company: 'Mzansichat' } as import('@prisma/client').Person,
+    ];
+
+    const description = describeSignalPlainly(signal, now, people);
+    expect(description).toContain('Stephen Oehley');
+    expect(description).not.toContain('a new contact at mzansichat.co.za');
+  });
+
   it('describes an overdue invoice without exposing raw payload structure', () => {
     const signal = baseSignal({
       domain: 'finance',

@@ -1,6 +1,7 @@
 import { confidenceRegisterFor, confidenceRegisterLabel } from '@/lib/narrative/confidenceRegister';
 import { describeSignalPlainly } from '@/lib/signals/describe';
 import type { Signal } from '@/lib/signals/types';
+import type { Person } from '@prisma/client';
 import { asOfPhrase } from '@/lib/ui/time';
 import { relativeDatePhrase } from '@/lib/shared/time';
 
@@ -15,6 +16,8 @@ interface MorningBriefCardProps {
   generatedAt: Date;
   /** The complete traceable signal list this brief was reasoned from. Always the deterministic ground truth — never touched by the Narrative Layer. */
   supportingSignals: Signal[];
+  /** Found live, 19 July 2026 — without this, describeSignalPlainly (used for "Also relevant" and the evidence list below) could describe the exact same meeting differently from the winning recommendation's own headline, which does look the matched Person up. Defaults to none. */
+  people?: Person[];
   /** Executive Presence Increment 1 — Demonstrating Understanding (per the Executive Presence Audit, 19 July 2026) — an already-finished, deterministic sentence from the Cognitive Engine (see lib/cognition/continuity.ts). Rendered directly, never passed through the Narrative Layer — there's nothing here for it to translate. Undefined whenever nothing has changed since the previous brief. */
   continuityNote?: string;
 }
@@ -46,6 +49,7 @@ export function MorningBriefCard({
   confidence,
   generatedAt,
   supportingSignals,
+  people = [],
   continuityNote,
 }: MorningBriefCardProps) {
   const isConfident = tier === 'confident_recommendation';
@@ -104,7 +108,7 @@ export function MorningBriefCard({
         <ul className="mt-4 flex flex-col gap-1">
           {relatedSignals.slice(0, 2).map((signal) => (
             <li key={signal.id} className="text-sm text-ink-faint">
-              Also relevant: {describeSignalPlainly(signal)} ({relativeDatePhrase(generatedAt, signal.occurredAt)})
+              Also relevant: {describeSignalPlainly(signal, generatedAt, people)} ({relativeDatePhrase(generatedAt, signal.occurredAt)})
             </li>
           ))}
         </ul>
@@ -121,7 +125,7 @@ export function MorningBriefCard({
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-ink-faint">{relativeDatePhrase(generatedAt, signal.occurredAt)}</span>
                 </div>
-                <p className="mt-1 text-ink">{describeSignalPlainly(signal)}</p>
+                <p className="mt-1 text-ink">{describeSignalPlainly(signal, generatedAt, people)}</p>
               </li>
             ))}
           </ul>
