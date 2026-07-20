@@ -1097,3 +1097,35 @@ Every number was exactly what the architecture should produce. **This confirmed 
 **Test/type status:** 314 tests passing. `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed. The Cognitive Engine's scoring and decay behaviour is now directly confirmed correct against real production data, not just tested in isolation.
+
+## Executive Intervention Qualification and Executive Awareness (Delivered)
+
+Objective: implement the concluded Executive Intervention Product Inquiry — a multi-day, three-way discovery (Founder, CPO, Engineering) that began with a real complaint about stale emails and ended in two durable product principles, certified by a formal Product Audit before any code was written.
+
+### The governing principles, for the permanent record
+1. Business Partner exists to optimise executive intervention, not maximise information exposure.
+2. A signal must demonstrate a real consequence of inaction before it earns executive intervention.
+3. Signals qualify before they are prioritised.
+4. Business Partner never substitutes default values for genuine judgement.
+5. Business Partner is internally honest about its capabilities and externally calm in its guidance.
+6. The Morning Brief serves two distinct, complementary jobs — Executive Awareness ("has someone competent been paying attention," always present) and Executive Intervention ("is there anything to act on today," qualification-governed and rare by design).
+
+### 2026-07-20 — Qualification: new pipeline stage
+`Observe → Qualify → Understand → Prioritise → Recommend`. `lib/cognition/qualify.ts` resolves every signal to `qualified (owner-declared)`, `qualified (world-inherent)`, or `not-yet-assessable` — never a score, and never `disqualified` for email, since Level 1's metadata-only access cannot positively conclude irrelevance, only that Business Partner doesn't yet know. Calendar always qualifies as world-inherent (a meeting's time pressure is structural, independent of Business Memory) — confirmed this is a no-op for calendar's actual admitted set, existing only for consistency and auditability. Only qualified signals reach Understand at all.
+
+**`prioritise.ts` and `recommend.ts` are completely unchanged** — confirmed directly in the Product Audit and again in this implementation. This is a gate, not a new scoring dimension, exactly as the audit concluded.
+
+**New `lib/cognition/grounding.ts`** extracts `findMatchedPerson`, confirmed identically duplicated inside both `email.ts` and `calendar.ts` before extraction — the same pattern already established for `matchGoalsForSignal`. Both Qualify and the interpreters now call the same function.
+
+**Behavioural consequence, stated plainly:** a genuinely ungrounded email no longer decays quietly toward the bottom of the Brief — it does not enter the Brief at all. Confirmed by a dedicated pipeline test: an ungrounded email with no signals produces an honest `all_clear`, not a low-confidence mention.
+
+**A deliberate decision, recorded rather than silently made:** the interpreter-level automated-sender confidence-suppression (built 19 July) is now largely redundant for its original purpose — an automated sender is essentially never grounded, so Qualification excludes it upstream. Kept anyway, as a low-cost defense-in-depth safety net for the rare edge case where an automated address is somehow grounded (e.g. manually added as a Person by mistake).
+
+### 2026-07-20 — Executive Awareness: new permanent layer
+New `app/morning-brief/AwarenessLine.tsx`, present on **every** tier — `confident_recommendation` and `low_confidence_insight` included, where nothing equivalent existed before. States plainly what's actually connected (calendar, inbox, both, or neither) — never a claim about what was found or concluded, only about what's being watched. Deliberately distinct from `BusinessMemoryReflection`, which remains the richer, one-time onboarding-completion moment, shown only alongside `all_clear`.
+
+**The product promise this expresses, verbatim from the concluding discussion:** *"Every morning, before you arrive, I've already been watching. Here's what I know. Here's what, if anything, deserves your attention today."*
+
+**Test/type status:** 327 tests passing (314 before this work — 13 new: 6 in `tests/cognition/qualify.test.ts`, 2 in `tests/cognition/pipeline.test.ts`, 5 in `tests/morning-brief/awarenessLine.test.ts`). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed. This concludes the Executive Intervention Product Inquiry — philosophy, Product Audit, architectural boundary resolution, and Implementation Plan, in that order, exactly as the project's own governance discipline requires.
