@@ -41,7 +41,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: result.supportingSignalIds,
         message: null,
         continuityNote: result.continuityNote ?? null,
-        recognisedSignals: result.recognisedSignals ?? Prisma.JsonNull,
+        recognisedSignals: (result.recognisedSignals as unknown as Prisma.InputJsonValue) ?? Prisma.JsonNull,
       };
     case 'low_confidence_insight':
       return {
@@ -53,7 +53,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: result.supportingSignalIds,
         message: null,
         continuityNote: result.continuityNote ?? null,
-        recognisedSignals: result.recognisedSignals ?? Prisma.JsonNull,
+        recognisedSignals: (result.recognisedSignals as unknown as Prisma.InputJsonValue) ?? Prisma.JsonNull,
       };
     case 'all_clear':
       return {
