@@ -112,4 +112,5 @@ model MorningBrief {
   message             String? // all_clear tier's plain statement. Null for the other two tiers.
   ownerResponse       String? 
   continuityNote      String? // Executive Presence Audit, 19 July 2026 — an optional, timeless sentence acknowledging what's been added to Business Memory since the previous brief. Never present for all_clear (Business Memory Reflection already covers that tier fully). Null whenever nothing genuinely changed.
+  recognisedSignals   Json? // Production Implementation Contract, Point 6 (Evidence Chain), 20 July 2026. Every signal that qualified (see lib/cognition/qualify.ts) but did not win the recommendation, with its grounding reason and matched Person/Goal id — so "Recognised Signals" is inspectable after the fact, not just used in-memory for one generation. Array of {signalId, reason, matchedPersonId?, matchedGoalId?}. Null/empty when nothing else qualified.
 }
