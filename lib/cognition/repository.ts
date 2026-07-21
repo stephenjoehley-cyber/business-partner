@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import type { MorningBriefResult, RecognisedSignal } from './types';
 import { isDemoMode } from '@/lib/demo/config';
 import { getLatestDemoMorningBrief, saveDemoMorningBrief } from '@/lib/demo/store';
@@ -40,7 +41,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: result.supportingSignalIds,
         message: null,
         continuityNote: result.continuityNote ?? null,
-        recognisedSignals: result.recognisedSignals ?? null,
+        recognisedSignals: result.recognisedSignals ?? Prisma.JsonNull,
       };
     case 'low_confidence_insight':
       return {
@@ -52,7 +53,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: result.supportingSignalIds,
         message: null,
         continuityNote: result.continuityNote ?? null,
-        recognisedSignals: result.recognisedSignals ?? null,
+        recognisedSignals: result.recognisedSignals ?? Prisma.JsonNull,
       };
     case 'all_clear':
       return {
@@ -64,7 +65,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: [],
         message: result.message,
         continuityNote: null,
-        recognisedSignals: null,
+        recognisedSignals: Prisma.JsonNull,
       };
   }
 }

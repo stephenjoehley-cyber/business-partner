@@ -11,6 +11,7 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import {
   getAllMorningBriefsForBusiness,
   getLatestMorningBrief,
@@ -69,7 +70,7 @@ describe('saveMorningBrief', () => {
         supportingSignalIds: confidentBrief.supportingSignalIds,
         message: null,
         continuityNote: null,
-        recognisedSignals: null,
+        recognisedSignals: Prisma.JsonNull,
       },
     });
   });
@@ -89,7 +90,7 @@ describe('saveMorningBrief', () => {
         supportingSignalIds: lowConfidenceBrief.supportingSignalIds,
         message: null,
         continuityNote: null,
-        recognisedSignals: null,
+        recognisedSignals: Prisma.JsonNull,
       },
     });
   });
@@ -109,7 +110,7 @@ describe('saveMorningBrief', () => {
         supportingSignalIds: [],
         message: allClearBrief.message,
         continuityNote: null,
-        recognisedSignals: null,
+        recognisedSignals: Prisma.JsonNull,
       },
     });
   });
