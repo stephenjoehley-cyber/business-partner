@@ -1,6 +1,7 @@
 import { confidenceRegisterFor, confidenceRegisterLabel } from '@/lib/narrative/confidenceRegister';
 import { describeSignalPlainly } from '@/lib/signals/describe';
 import type { Signal } from '@/lib/signals/types';
+import type { RecognisedSignal } from '@/lib/cognition/types';
 import type { Person } from '@prisma/client';
 import { asOfPhrase } from '@/lib/ui/time';
 import { relativeDatePhrase } from '@/lib/shared/time';
@@ -20,6 +21,8 @@ interface MorningBriefCardProps {
   people?: Person[];
   /** Executive Presence Increment 1 — Demonstrating Understanding (per the Executive Presence Audit, 19 July 2026) — an already-finished, deterministic sentence from the Cognitive Engine (see lib/cognition/continuity.ts). Rendered directly, never passed through the Narrative Layer — there's nothing here for it to translate. Undefined whenever nothing has changed since the previous brief. */
   continuityNote?: string;
+  /** Production Implementation Contract, Point 6 (Evidence Chain), 20 July 2026 — the qualification reason for each supporting signal other than the winner, so "Recognised Signals" can state honestly *why* each one was recognised, grounded in the Executive Signal Capability & Claims Audit's claim-boundary findings. Undefined for older briefs generated before this existed, or when nothing else qualified — the list still renders, just without the reason clause. */
+  recognisedSignals?: RecognisedSignal[];
 }
 
 /**
@@ -51,12 +54,39 @@ export function MorningBriefCard({
   supportingSignals,
   people = [],
   continuityNote,
+  recognisedSignals = [],
 }: MorningBriefCardProps) {
   const isConfident = tier === 'confident_recommendation';
   const register = confidenceRegisterFor(tier, confidence);
   const registerLabel = confidenceRegisterLabel(register);
   const confidencePercent = Math.round(confidence * 100);
   const relatedSignals = supportingSignals.slice(1); // the first is the subject of the headline itself
+
+  /**
+   * Production Implementation Contract, Point 6 (Evidence Chain), 20 July
+   * 2026 — states honestly *why* a signal was recognised, never a
+   * conclusion about whether it matters. Grounded directly in the
+   * Executive Signal Capability & Claims Audit's claim boundary: a
+   * matched Person proves the sender is recorded in Business Memory; a
+   * subject-line match proves shared vocabulary with a stated priority,
+   * never that the message concerns it (Level 1 never reads message
+   * bodies). "World-inherent" (Calendar) gets no clause at all — a
+   * meeting's own time and title are already self-evident, nothing else
+   * to add.
+   */
+  function recognitionReasonFor(signalId: string): string | null {
+    const record = recognisedSignals.find((r) => r.signalId === signalId);
+    if (!record || record.reason !== 'owner-declared') return null;
+
+    if (record.matchedPersonId) {
+      const person = people.find((p) => p.id === record.matchedPersonId);
+      return person ? `from ${person.name}, recorded in your Business Memory` : 'from someone recorded in your Business Memory';
+    }
+    if (record.matchedGoalId) {
+      return 'touched wording from a stated priority';
+    }
+    return null;
+  }
 
   return (
     <div className="rounded-lg border border-surface-border bg-surface-card p-8">
@@ -116,14 +146,24 @@ export function MorningBriefCard({
             toward zero urgency. This heading and the border above it make
             clear these are other things Business Partner is tracking, not
             a second batch of "worth acting on" items.
+
+            Renamed from "Also tracking" to "Recognised Signals," per the
+            CPO's terminology direction, 20 July 2026 — Business Partner's
+            architecture is increasingly centred on signals, not
+            activities, and product language should stay consistent with
+            that throughout.
           */}
-          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Also tracking</p>
+          <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">Recognised Signals</p>
           <ul className="mt-2 flex flex-col gap-1">
-            {relatedSignals.slice(0, 2).map((signal) => (
-              <li key={signal.id} className="text-sm text-ink-faint">
-                {describeSignalPlainly(signal, generatedAt, people)} ({relativeDatePhrase(generatedAt, signal.occurredAt)})
-              </li>
-            ))}
+            {relatedSignals.slice(0, 2).map((signal) => {
+              const reason = recognitionReasonFor(signal.id);
+              return (
+                <li key={signal.id} className="text-sm text-ink-faint">
+                  {describeSignalPlainly(signal, generatedAt, people)} ({relativeDatePhrase(generatedAt, signal.occurredAt)})
+                  {reason && <> — {reason}</>}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

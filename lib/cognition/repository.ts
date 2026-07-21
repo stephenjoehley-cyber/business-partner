@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type { MorningBriefResult } from './types';
+import type { MorningBriefResult, RecognisedSignal } from './types';
 import { isDemoMode } from '@/lib/demo/config';
 import { getLatestDemoMorningBrief, saveDemoMorningBrief } from '@/lib/demo/store';
 
@@ -40,6 +40,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: result.supportingSignalIds,
         message: null,
         continuityNote: result.continuityNote ?? null,
+        recognisedSignals: result.recognisedSignals ?? null,
       };
     case 'low_confidence_insight':
       return {
@@ -51,6 +52,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: result.supportingSignalIds,
         message: null,
         continuityNote: result.continuityNote ?? null,
+        recognisedSignals: result.recognisedSignals ?? null,
       };
     case 'all_clear':
       return {
@@ -62,6 +64,7 @@ function toRow(businessId: string, result: MorningBriefResult) {
         supportingSignalIds: [],
         message: result.message,
         continuityNote: null,
+        recognisedSignals: null,
       };
   }
 }
@@ -87,6 +90,7 @@ export function toResult(row: MorningBriefRow): MorningBriefResult {
       confidence: row.confidence,
       supportingSignalIds: row.supportingSignalIds,
       continuityNote: row.continuityNote ?? undefined,
+      recognisedSignals: (row.recognisedSignals as unknown as RecognisedSignal[] | null) ?? undefined,
       generatedAt,
     };
   }
@@ -102,6 +106,7 @@ export function toResult(row: MorningBriefRow): MorningBriefResult {
       confidence: row.confidence,
       supportingSignalIds: row.supportingSignalIds,
       continuityNote: row.continuityNote ?? undefined,
+      recognisedSignals: (row.recognisedSignals as unknown as RecognisedSignal[] | null) ?? undefined,
       generatedAt,
     };
   }

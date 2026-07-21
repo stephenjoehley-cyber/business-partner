@@ -17,7 +17,7 @@ import { EMAIL_GOAL_KEYWORDS } from './interpreters/email';
  * unchanged by this stage's existence.
  */
 export type QualificationOutcome =
-  | { status: 'qualified'; reason: 'owner-declared' | 'world-inherent' }
+  | { status: 'qualified'; reason: 'owner-declared' | 'world-inherent'; matchedPersonId?: string; matchedGoalId?: string }
   | { status: 'not-yet-assessable' };
 
 export interface QualificationRecord {
@@ -75,7 +75,15 @@ export function qualify(observations: Observation[], context: BusinessContext): 
 
       if (grounded) {
         admitted.push(signal);
-        log.push({ signal, outcome: { status: 'qualified', reason: 'owner-declared' } });
+        log.push({
+          signal,
+          outcome: {
+            status: 'qualified',
+            reason: 'owner-declared',
+            matchedPersonId: matchedPerson?.id,
+            matchedGoalId: matchedGoals[0]?.id,
+          },
+        });
       } else {
         log.push({ signal, outcome: { status: 'not-yet-assessable' } });
       }

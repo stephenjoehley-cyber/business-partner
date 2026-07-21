@@ -90,6 +90,22 @@ export type MorningBriefTier = 'confident_recommendation' | 'low_confidence_insi
  * Narrative Layer and UI cannot accidentally read a `recommendedAction`
  * that a low-confidence or all-clear brief was never entitled to have.
  */
+/**
+ * Production Implementation Contract, Point 6 (Evidence Chain), 20 July
+ * 2026 — the grounding reason for a signal that qualified (see
+ * lib/cognition/qualify.ts) but did not win the recommendation, so it's
+ * inspectable after the fact rather than only used in-memory for one
+ * generation. Deliberately narrow: an id and a reason, never a
+ * conclusion about whether the signal matters — see the Executive Signal
+ * Capability & Claims Audit's claim-boundary findings.
+ */
+export interface RecognisedSignal {
+  signalId: string;
+  reason: 'owner-declared' | 'world-inherent';
+  matchedPersonId?: string;
+  matchedGoalId?: string;
+}
+
 export type MorningBriefResult =
   | {
       tier: 'confident_recommendation';
@@ -101,6 +117,8 @@ export type MorningBriefResult =
       supportingSignalIds: string[];
       /** Executive Presence Increment 1 — Demonstrating Understanding (per the Executive Presence Audit, 19 July 2026) — a timeless, truthful acknowledgment of what's been added to Business Memory since the previous brief (e.g. "Since we last spoke, you've added a new goal."). Never a promise tied to a specific future moment. Undefined whenever nothing genuinely changed, or this is the business's first brief. */
       continuityNote?: string;
+      /** Production Implementation Contract, Point 6, 20 July 2026 — one entry per supportingSignalIds entry other than the winner itself, with its qualification reason. Undefined/empty when nothing else qualified. */
+      recognisedSignals?: RecognisedSignal[];
       generatedAt: Date;
     }
   | {
@@ -111,6 +129,7 @@ export type MorningBriefResult =
       confidence: number;
       supportingSignalIds: string[];
       continuityNote?: string;
+      recognisedSignals?: RecognisedSignal[];
       generatedAt: Date;
     }
   | {

@@ -198,6 +198,7 @@ export default async function MorningBriefPage() {
           supportingSignals={supportingSignals}
           people={business.people}
           continuityNote={latestBrief.continuityNote}
+          recognisedSignals={latestBrief.recognisedSignals}
         />
       )}
       </div>

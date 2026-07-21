@@ -69,6 +69,7 @@ describe('saveMorningBrief', () => {
         supportingSignalIds: confidentBrief.supportingSignalIds,
         message: null,
         continuityNote: null,
+        recognisedSignals: null,
       },
     });
   });
@@ -88,6 +89,7 @@ describe('saveMorningBrief', () => {
         supportingSignalIds: lowConfidenceBrief.supportingSignalIds,
         message: null,
         continuityNote: null,
+        recognisedSignals: null,
       },
     });
   });
@@ -107,6 +109,7 @@ describe('saveMorningBrief', () => {
         supportingSignalIds: [],
         message: allClearBrief.message,
         continuityNote: null,
+        recognisedSignals: null,
       },
     });
   });

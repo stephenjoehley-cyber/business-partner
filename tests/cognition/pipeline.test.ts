@@ -227,4 +227,36 @@ describe('generateMorningBrief', () => {
 
     expect(result.tier).not.toBe('all_clear');
   });
+
+  it('populates recognisedSignals with the qualification reason for supporting signals other than the winner — Production Implementation Contract, Point 6 (Evidence Chain), 20 July 2026', async () => {
+    const calendarSignal: Signal = {
+      id: 'sig-cal-today',
+      businessId: 'biz-1',
+      domain: 'calendar',
+      type: 'meeting_upcoming',
+      occurredAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now — should win
+      relatedEntities: { personId: 'person-1' },
+      payload: { title: 'Quarterly check-in', startTime: '', durationMinutes: 30, attendees: ['Jane Cooper'], isFirstMeetingWithPerson: false },
+      sourceProviderId: 'seeded-calendar',
+      externalRef: 'ref-cal-today',
+      confidence: 1.0,
+      createdAt: new Date(),
+    };
+    const emailSignal = makeEmailSignal(3); // matched to person-1 by default — related evidence, not the winner
+
+    getBusinessByIdMock.mockResolvedValue(BUSINESS);
+    getSignalsForBusinessMock.mockResolvedValue([calendarSignal, emailSignal]);
+
+    const result = await generateMorningBrief('biz-1');
+
+    expect(result.tier).not.toBe('all_clear');
+    if (result.tier !== 'all_clear') {
+      expect(result.supportingSignalIds[0]).toBe('sig-cal-today'); // the winner
+      expect(result.recognisedSignals).toBeDefined();
+      const emailEntry = result.recognisedSignals?.find((r) => r.signalId === 'sig-email-1');
+      expect(emailEntry).toBeDefined();
+      expect(emailEntry?.reason).toBe('owner-declared');
+      expect(emailEntry?.matchedPersonId).toBe('person-1');
+    }
+  });
 });

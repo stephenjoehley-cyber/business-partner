@@ -64,7 +64,12 @@ describe('qualify', () => {
     const result = qualify([signal], context);
 
     expect(result.admitted).toEqual([signal]);
-    expect(result.log[0].outcome).toEqual({ status: 'qualified', reason: 'owner-declared' });
+    expect(result.log[0].outcome).toEqual({
+      status: 'qualified',
+      reason: 'owner-declared',
+      matchedPersonId: 'person-1',
+      matchedGoalId: undefined,
+    });
   });
 
   it('qualifies an email as owner-declared when its subject touches a stated Goal, even from an unmatched sender', () => {
@@ -77,7 +82,12 @@ describe('qualify', () => {
     const result = qualify([signal], context);
 
     expect(result.admitted).toEqual([signal]);
-    expect(result.log[0].outcome).toEqual({ status: 'qualified', reason: 'owner-declared' });
+    expect(result.log[0].outcome).toEqual({
+      status: 'qualified',
+      reason: 'owner-declared',
+      matchedPersonId: undefined,
+      matchedGoalId: 'g1',
+    });
   });
 
   it('resolves an ungrounded email to not-yet-assessable, and excludes it from the admitted set entirely — found live, 20 July 2026: a genuinely irrelevant email should not enter the Brief at all, not merely be decayed toward the bottom', () => {

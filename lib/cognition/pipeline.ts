@@ -54,23 +54,49 @@ export async function generateMorningBrief(businessId: string): Promise<MorningB
     people: business.people,
   };
 
-  const { admitted } = qualify(observations, context);
+  const { admitted, log } = qualify(observations, context);
 
   const understood = understand(admitted, context);
   const prioritised = prioritise(understood);
   const morningBrief = recommend(prioritised);
 
+  // Production Implementation Contract, Point 6 (Evidence Chain), 20 July
+  // 2026 — every supporting signal other than the winner itself (always
+  // supportingSignalIds[0], per recommend.ts's own construction), with
+  // its qualification reason attached from the same log entry Qualify
+  // already computed. No new selection logic: this enriches exactly the
+  // signals recommend.ts already chose to show, rather than picking a
+  // different set.
+  const recognisedSignals =
+    morningBrief.tier === 'all_clear'
+      ? undefined
+      : morningBrief.supportingSignalIds.slice(1).flatMap((signalId) => {
+          const record = log.find((entry) => entry.signal.id === signalId);
+          if (!record || record.outcome.status !== 'qualified') return [];
+          return [
+            {
+              signalId,
+              reason: record.outcome.reason,
+              matchedPersonId: record.outcome.matchedPersonId,
+              matchedGoalId: record.outcome.matchedGoalId,
+            },
+          ];
+        });
+
   // Executive Presence Increment 1 — Demonstrating Understanding (per the
   // Executive Presence Audit, 19 July 2026) — never attached to
-  // all_clear, which already has Business Memory Reflection dedicated to
-  // exactly this purpose; adding it there too would say the same thing
-  // twice.
+  // all_clear. Since the Production Implementation Contract (20 July
+  // 2026), all_clear's own message is the only business-understanding-
+  // adjacent content the Morning Brief shows at all — Business Memory
+  // now owns that responsibility completely, so adding a continuity note
+  // there too would duplicate a job that no longer belongs to this page.
   const withContinuity: MorningBriefResult =
     morningBrief.tier === 'all_clear'
       ? morningBrief
       : {
           ...morningBrief,
           continuityNote: buildContinuityNote(business.goals, business.people, previousBrief?.generatedAt ?? null),
+          recognisedSignals: recognisedSignals && recognisedSignals.length > 0 ? recognisedSignals : undefined,
         };
 
   await saveMorningBrief(businessId, withContinuity);
