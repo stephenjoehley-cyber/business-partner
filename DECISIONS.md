@@ -1144,3 +1144,29 @@ Objective: fix a real, confirmed defect found live — a meeting genuinely 10.6 
 **Test/type status:** 333 tests passing (327 before this work). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed. Verification of the Executive Awareness line's actual presence in production is still pending a direct answer from the Founder about what the top of the real page shows.
+
+## Production Implementation Contract — Delivered (Founder + CPO)
+
+Objective: implement the full contract approved 20 July 2026, following the Executive Signal Capability & Claims Audit.
+
+### Phase 1 — Living Business Memory
+"Settings" renamed to "Business Memory" throughout every visible label. "Goals" → "Current Priorities," "People" → "Relationships." Internal variable/prop names deliberately unchanged; the route remains `/settings` — a URL change is a separate, larger decision this contract didn't require.
+
+### Phase 2 — Morning Brief / Business Memory separation
+`BusinessMemoryReflection` removed entirely from the Morning Brief, per the CPO's explicit resolution: "Business Memory now owns that responsibility completely." Business name and industry, which previously appeared only inside that component, relocated to a new "Business" section on the Business Memory page — confirmed nothing was lost, only moved. The now fully-unused component and its test deleted outright.
+
+### Phase 3 — Awareness accuracy
+The email count fixed to be a genuine "since we last spoke" delta (comparing each signal's ingestion time against the previous Brief's `generatedAt`), not the rolling snapshot the Capability Audit identified as inaccurate. Wording updated to match ("Since we last spoke, I've reviewed...").
+
+### Phase 4 — Recognised Signals and the Evidence Chain (Point 6)
+New `MorningBrief.recognisedSignals` column (JSONB) persists, for every supporting signal other than the winner, its qualification reason and matched Person/Goal id — inspectable after the fact, not just used in-memory for one generation. No new selection logic: enriches exactly the signals `recommend.ts` already chose to show; `Prioritise` and `Recommend` remain genuinely unchanged.
+
+"Also tracking" renamed to "Recognised Signals" per the CPO's terminology direction. Each item now states honestly *why* it was recognised, worded exactly to the Capability & Claims Audit's boundary: a matched Person proves the sender is recorded in Business Memory (named where available); a subject-line match proves shared vocabulary with a stated priority, never that the message concerns it. Calendar's world-inherent qualification gets no reason clause — a meeting's own time and title are already self-evident.
+
+### Two real Vercel build failures during Phase 4, both fixed and recorded
+1. Prisma's typed `Json?` field does not accept a literal `null` — it requires the `Prisma.JsonNull` sentinel specifically, to distinguish a JSON null value from a SQL NULL. This sandbox's own Prisma Client was too stale to catch it (the same recurring limitation as the `demoPeople`/`Person.company` incident); Vercel's freshly-generated client is the actual source of truth for this category of error.
+2. A second, distinct issue in the same line: `RecognisedSignal[]` (a plain named interface) isn't structurally assignable to Prisma's `InputJsonObject` without an explicit index signature — fixed with an explicit cast (`as unknown as Prisma.InputJsonValue`), the standard escape hatch for this well-known Prisma+TypeScript friction point.
+
+**Test/type status:** 334 tests passing. `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only — now also covering `Prisma.JsonNull`, confirmed genuinely harmless both times via the real Vercel build succeeding once each specific issue was fixed.
+
+**Status:** Delivered and deployed, all four phases. This closes out the Production Implementation Contract.
