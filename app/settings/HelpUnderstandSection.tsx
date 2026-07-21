@@ -323,7 +323,7 @@ export function HelpUnderstandSection({
           </ul>
         )}
 
-        <FormField label="Add a goal" htmlFor="goalDescription">
+        <FormField label="Add a priority" htmlFor="goalDescription">
           <input
             id="goalDescription"
             type="text"
@@ -343,7 +343,7 @@ export function HelpUnderstandSection({
             disabled={isSavingGoal || !goalDescription.trim()}
             className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
           >
-            {isSavingGoal ? 'Saving…' : 'Add goal'}
+            {isSavingGoal ? 'Saving…' : 'Add priority'}
           </button>
           {goalStatus === 'saved' && (
             <p className="text-sm text-ink-faint">Saved. I&apos;ll take this into account in future recommendations.</p>
@@ -438,7 +438,7 @@ export function HelpUnderstandSection({
           </ul>
         )}
 
-        <FormField label="Add a person" htmlFor="personName">
+        <FormField label="Add a relationship" htmlFor="personName">
           <input
             id="personName"
             type="text"
@@ -503,7 +503,7 @@ export function HelpUnderstandSection({
             disabled={isSavingPerson || !personName.trim()}
             className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
           >
-            {isSavingPerson ? 'Saving…' : 'Add person'}
+            {isSavingPerson ? 'Saving…' : 'Add relationship'}
           </button>
           {personStatus === 'saved' && (
             <p className="text-sm text-ink-faint">Saved. I&apos;ll take this into account in future recommendations.</p>

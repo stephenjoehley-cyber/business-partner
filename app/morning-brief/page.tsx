@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { getSignalsByIds, getSignalsForBusiness } from '@/lib/signals/repository';
-import { getLatestMorningBrief } from '@/lib/cognition/repository';
+import { getLatestMorningBrief, getAllMorningBriefsForBusiness } from '@/lib/cognition/repository';
 import { observe } from '@/lib/cognition/observe';
 import { getConfiguredProviderId } from '@/lib/signals/config-repository';
 import { generateNarrative } from '@/lib/narrative/generate';
@@ -15,7 +15,6 @@ import { AccountBlock } from '@/components/foundation/AccountBlock';
 import { RecommendationTrigger } from './RecommendationTrigger';
 import { MorningBriefCard } from './MorningBriefCard';
 import { AllClearCard } from './AllClearCard';
-import { BusinessMemoryReflection } from './BusinessMemoryReflection';
 import { AwarenessLine } from './AwarenessLine';
 import { Greeting } from './Greeting';
 import { DemoModeBadge, DemoModeBanner } from './DemoModeBanner';
@@ -92,27 +91,30 @@ export default async function MorningBriefPage() {
   const today = new Date();
   const todaysAgenda = signals.filter((signal) => signal.domain === 'calendar' && isSameDay(signal.occurredAt, today));
 
-  // Executive Awareness, 20 July 2026 — unlike calendarConnected below
-  // (only ever needed for BusinessMemoryReflection's all_clear-specific
-  // closing sentence), both connection states are needed on every tier
-  // now, since AwarenessLine appears regardless of which tier renders.
+  // Executive Awareness, 20 July 2026 — both connection states are
+  // needed on every tier, since AwarenessLine appears regardless of
+  // which tier renders.
   const isCalendarConnectedNow =
     !demoMode && (await getConfiguredProviderId(business.id, 'calendar')) === 'google-calendar';
   const isEmailConnectedNow = !demoMode && (await getConfiguredProviderId(business.id, 'email')) === 'google-gmail';
 
-  // Found live, 20 July 2026, hours after Awareness first shipped:
-  // "I've been watching" needs something behind it — reusing observe()
-  // (the exact same scoping the real Cognitive Engine pipeline applies:
-  // calendar future-only, email within the 90-day safety net) keeps this
-  // count honestly consistent with what the pipeline itself actually
-  // considered, rather than a separate, potentially-diverging query.
-  const emailSignalCount = observe(signals).filter((s) => s.domain === 'email').length;
-
-  // Only computed when actually needed (the all_clear tier, real accounts
-  // only) — determines which closing sentence BusinessMemoryReflection
-  // shows. Demo Mode never reaches the all_clear tier, so this is never
-  // evaluated for it.
-  const calendarConnected = latestBrief?.tier === 'all_clear' && isCalendarConnectedNow;
+  // Found in the Executive Signal Capability & Claims Audit, 20 July
+  // 2026: the original count was a rolling snapshot (whatever currently
+  // sits within Observe's 90-day safety net), not genuinely "since your
+  // last Brief" — the count could include the same emails across many
+  // consecutive days. Fixed by comparing each email signal's own
+  // ingestion time (createdAt — when Business Partner actually reviewed
+  // it) against the previous Brief's generatedAt, the same comparison
+  // continuity.ts already uses for the same reason. Falls back to the
+  // full current count only when there is no previous Brief to compare
+  // against at all (the business's first-ever generation).
+  const allBriefs = await getAllMorningBriefsForBusiness(business.id);
+  const previousBriefGeneratedAt =
+    allBriefs.length >= 2 ? allBriefs[allBriefs.length - 2].generatedAt : null;
+  const observedEmailSignals = observe(signals).filter((s) => s.domain === 'email');
+  const emailSignalCount = previousBriefGeneratedAt
+    ? observedEmailSignals.filter((s) => s.createdAt > previousBriefGeneratedAt).length
+    : observedEmailSignals.length;
 
   return (
     <AppShell
@@ -178,20 +180,11 @@ export default async function MorningBriefPage() {
       )}
 
       {latestBrief?.tier === 'all_clear' && (
-        <>
-          <BusinessMemoryReflection
-            businessName={business.name}
-            industry={business.industry}
-            goals={business.goals}
-            people={business.people}
-            calendarConnected={calendarConnected}
-          />
-          <AllClearCard
-            message={latestBrief.message}
-            generatedAt={latestBrief.generatedAt}
-            todaysAgenda={todaysAgenda}
-          />
-        </>
+        <AllClearCard
+          message={latestBrief.message}
+          generatedAt={latestBrief.generatedAt}
+          todaysAgenda={todaysAgenda}
+        />
       )}
 
       {latestBrief && latestBrief.tier !== 'all_clear' && narrative && (

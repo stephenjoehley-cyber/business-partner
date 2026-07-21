@@ -65,6 +65,20 @@ import { asOfPhrase } from '@/lib/ui/time';
  * from a cached render. The Goal/Person lists appeared to update
  * correctly regardless, because those specific updates render via
  * client-side state, not this page's own server render.
+ *
+ * 2026-07-20: Production Implementation Contract (Founder + CPO) —
+ * "Settings" renamed to "Business Memory" throughout every visible
+ * label. Settings is no longer a configuration page; it is the
+ * permanent, owner-facing representation of Business Partner's current
+ * understanding of the business — "This is what I currently understand
+ * about your business," never "Please configure me." Goals renamed to
+ * Current Priorities, People renamed to Relationships, in every visible
+ * label (see HelpUnderstandSection.tsx) — internal variable/prop names
+ * (goals, people) deliberately left unchanged, since renaming those
+ * throughout the codebase is pure risk with zero owner-visible benefit.
+ * The route itself remains /settings — changing URLs is a separate,
+ * larger decision than renaming what's displayed on the page, and
+ * nothing in the Production Implementation Contract required it.
  */
 export const dynamic = 'force-dynamic';
 
@@ -139,7 +153,7 @@ export default async function SettingsPage({
         Back to your Morning Brief
       </a>
 
-      <h1 className="font-body text-ink text-xl font-semibold">Settings</h1>
+      <h1 className="font-body text-ink text-xl font-semibold">Business Memory</h1>
 
       <section className="flex flex-col gap-4">
         <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Personal</h2>
@@ -150,8 +164,35 @@ export default async function SettingsPage({
       </section>
 
       <section className="flex flex-col gap-4">
+        <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Business</h2>
+
+        {/*
+          Production Implementation Contract, 20 July 2026: business name
+          and industry previously appeared only inside the Morning
+          Brief's BusinessMemoryReflection (now removed from the Brief
+          entirely, per the CPO's explicit resolution) — relocated here
+          rather than simply dropped, since Business Memory now owns
+          "what Business Partner knows" completely. Read-only for now;
+          editing the business's own profile after onboarding is a
+          separate, larger question than this rename.
+        */}
+        <div className="rounded-lg border border-surface-border bg-surface-card p-6">
+          <dl className="flex flex-col gap-4">
+            <div>
+              <dt className="font-mono text-xs uppercase tracking-wide text-ink-faint">Business</dt>
+              <dd className="text-ink">{business.name}</dd>
+            </div>
+            <div>
+              <dt className="font-mono text-xs uppercase tracking-wide text-ink-faint">Industry</dt>
+              <dd className="text-ink">{business.industry}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
         <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">
-          Help Business Partner Understand Your Business
+          This is what I currently understand about your business
         </h2>
 
         <div className="rounded-lg border border-surface-border bg-surface-card p-6">
