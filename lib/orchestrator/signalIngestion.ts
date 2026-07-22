@@ -81,20 +81,23 @@ export async function ingestDocument(
   // Multi-format CSV Understanding, 22 July 2026 (Founder Decision 1 —
   // Confirmed Mapping Memory). A cheap header-only peek (Papa's preview
   // option limits parsing regardless of file size) so any previously
-  // confirmed mapping for this exact header set can be merged in before
+  // confirmed mapping for this exact header set can be found before
   // extraction runs — the extractor itself never touches the database;
-  // this is the one place that lookup happens. Merging remembered
-  // mappings with this round's fresh answers is conflict-free by
-  // construction: a header already resolved from memory at 'high'
-  // confidence is never re-asked about (buildMappingQuestions only asks
-  // about medium/low resolutions), so confirmation.columnMapping can
-  // only ever contain answers for headers memory didn't already cover.
+  // this is the one place that lookup happens.
+  //
+  // Found live during Founder Acceptance, 22 July 2026: memory and the
+  // owner's fresh answer must stay in two separate fields all the way
+  // to the extractor, never merged here. An earlier version merged them
+  // into one columnMapping before this point, which made the extractor
+  // unable to tell "the owner just confirmed this" apart from "this was
+  // already remembered" — the "I'll remember this" notice repeated on
+  // every upload from an already-known source instead of only the first.
   const headerPeek = Papa.parse<string[]>(input.content, { skipEmptyLines: true, preview: 1 }).data[0];
   const peekedSignature = headerPeek?.length ? computeSourceSignature(headerPeek) : undefined;
   const confirmedMemory = peekedSignature ? await findConfirmedColumnMapping(businessId, documentType, peekedSignature) : undefined;
   const mergedConfirmation: OwnerConfirmation | undefined =
     confirmation || confirmedMemory
-      ? { ...confirmation, columnMapping: { ...(confirmedMemory?.columnMapping ?? {}), ...(confirmation?.columnMapping ?? {}) } }
+      ? { ...confirmation, confirmedMemoryMapping: confirmedMemory?.columnMapping }
       : undefined;
 
   const outcome = extractor.extract(input, context, mergedConfirmation);

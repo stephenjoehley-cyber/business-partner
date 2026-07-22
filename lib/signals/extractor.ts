@@ -30,18 +30,24 @@ export interface DocumentSignalExtractor {
  * (Audit v2 §3, §7 — currency and/or reporting date could not be reliably
  * extracted). All optional: a file might be missing only one.
  *
- * columnMapping (Multi-format CSV Understanding, 22 July 2026) — the
- * merged, currently-known raw-header-to-canonical-field mapping for this
- * call: Confirmed Mapping Memory plus whatever the owner has just
- * answered this round, already combined by the caller. The extractor
- * itself doesn't distinguish "remembered" from "just told me" — both are
- * simply known mappings to use directly, never re-guessed (Refinement 2:
- * owner-confirmed understanding always takes precedence over inference).
+ * columnMapping and confirmedMemoryMapping (Multi-format CSV
+ * Understanding, 22 July 2026) are deliberately kept separate — found
+ * live during Founder Acceptance, 22 July 2026: an earlier version
+ * merged them into one field before this point, which meant the
+ * extractor could no longer tell "the owner just confirmed this" apart
+ * from "this was already remembered," and repeated the "I'll remember
+ * this" notice on every upload from an already-known source instead of
+ * only the first. Both feed the same resolution (Refinement 2: owner-
+ * confirmed understanding always takes precedence over inference), but
+ * only columnMapping is ever treated as newly worth remembering.
  */
 export interface OwnerConfirmation {
   currency?: string;
   reportingDate?: Date;
+  /** The owner's fresh answers this specific round — never includes anything already known from Confirmed Mapping Memory. */
   columnMapping?: Record<string, string>;
+  /** Everything already confirmed for this business+source, supplied by the caller for resolution purposes only — never treated as "new" by the extractor. */
+  confirmedMemoryMapping?: Record<string, string>;
 }
 
 /**

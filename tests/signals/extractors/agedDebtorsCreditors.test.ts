@@ -336,3 +336,36 @@ describe('agedDebtorsExtractor — Multi-format CSV Understanding', () => {
     expect(outcome.resolvedColumnMapping).toBeUndefined();
   });
 });
+
+describe('agedDebtorsExtractor — remembered-mapping notice is not repeated (Founder Acceptance finding, 22 July 2026)', () => {
+  it('does not report a resolvedColumnMapping when the mapping came entirely from memory, not a fresh owner answer', () => {
+    const csv = `As At Date,Client,Invoice Reference,Invoice Date,Due Date,Amount,Currency\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+
+    // Simulates the real ingestion service's second call: memory is
+    // supplied via confirmedMemoryMapping, NOT columnMapping — the owner
+    // answered nothing fresh this round.
+    const outcome = agedDebtorsExtractor.extract(
+      { format: 'csv', content: csv },
+      makeContext(),
+      { confirmedMemoryMapping: { client: 'customer name' } }
+    );
+
+    expect(outcome.status).toBe('extracted');
+    if (outcome.status !== 'extracted') return;
+    expect(outcome.resolvedColumnMapping).toBeUndefined(); // nothing new to remember
+  });
+
+  it('still reports a resolvedColumnMapping when the owner freshly confirms this round, even if memory also happens to be present', () => {
+    const csv = `As At Date,Client,Invoice Reference,Invoice Date,Due Date,Amount,Currency\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+
+    const outcome = agedDebtorsExtractor.extract(
+      { format: 'csv', content: csv },
+      makeContext(),
+      { columnMapping: { client: 'customer name' } } // fresh this round
+    );
+
+    expect(outcome.status).toBe('extracted');
+    if (outcome.status !== 'extracted') return;
+    expect(outcome.resolvedColumnMapping).toEqual({ client: 'customer name' });
+  });
+});

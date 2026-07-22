@@ -109,7 +109,8 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
       // Every canonical CSV upload resolves every field at 'high'
       // confidence via exact match here, unchanged from F1 — this is a
       // pre-step, not a replacement of anything downstream.
-      const resolutions = resolveColumnMapping(documentType, rawHeaders, dataRows.slice(0, 3), confirmation?.columnMapping);
+      const knownMapping = { ...confirmation?.confirmedMemoryMapping, ...confirmation?.columnMapping };
+      const resolutions = resolveColumnMapping(documentType, rawHeaders, dataRows.slice(0, 3), knownMapping);
 
       if (hasNoMeaningfulMapping(resolutions)) {
         const label = documentType === 'aged_debtors' ? 'Aged Debtors' : 'Aged Creditors';
@@ -294,6 +295,13 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
       // Decision 1) when at least one field was resolved via something
       // other than an exact canonical match — an all-exact-match file
       // has nothing new to remember.
+      // Found live during Founder Acceptance, 22 July 2026: checking
+      // against confirmation.columnMapping here used to catch memory
+      // that had already been merged in upstream, causing the "I'll
+      // remember this" notice to repeat on every upload from an
+      // already-known source. Now checks only the owner's genuinely
+      // fresh answer this round — confirmedMemoryMapping is never
+      // treated as new, no matter what confidence it resolves at.
       const newlyResolvedMapping: Record<string, string> = {};
       for (const r of resolutions) {
         if (r.rawHeader && (r.confidence === 'medium' || confirmation?.columnMapping?.[r.rawHeader.trim().toLowerCase()])) {
