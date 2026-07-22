@@ -147,7 +147,7 @@ export function hasNoMeaningfulMapping(resolutions: FieldMappingResolution[]): b
 }
 
 export type ColumnMappingQuestion =
-  | { kind: 'confirm'; rawHeader: string; canonicalField: string; sampleValues: string[] }
+  | { kind: 'confirm'; rawHeader: string; canonicalField: string; sampleValues: string[]; candidateHeaders: string[] }
   | { kind: 'select'; canonicalField: string; candidateHeaders: string[] };
 
 /**
@@ -158,12 +158,24 @@ export type ColumnMappingQuestion =
  * owner to pick directly from the file's remaining, unclaimed headers.
  */
 export function buildMappingQuestions(rawHeaders: string[], resolutions: FieldMappingResolution[]): ColumnMappingQuestion[] {
-  const questions: ColumnMappingQuestion[] = resolutions
-    .filter((r) => r.confidence === 'medium' && r.rawHeader)
-    .map((r) => ({ kind: 'confirm' as const, rawHeader: r.rawHeader!, canonicalField: r.canonicalField, sampleValues: r.sampleValues }));
-
   const claimedHeaders = new Set(resolutions.filter((r) => r.rawHeader).map((r) => r.rawHeader));
   const candidateHeaders = rawHeaders.filter((h) => !claimedHeaders.has(h));
+
+  const questions: ColumnMappingQuestion[] = resolutions
+    .filter((r) => r.confidence === 'medium' && r.rawHeader)
+    .map((r) => ({
+      kind: 'confirm' as const,
+      rawHeader: r.rawHeader!,
+      canonicalField: r.canonicalField,
+      sampleValues: r.sampleValues,
+      // Found before the Founder tested this path, 22 July 2026: "No,
+      // let me choose" needs real alternatives — the file's headers not
+      // already claimed by another confident field, same set a 'select'
+      // question offers. An earlier version had nothing here at all,
+      // meaning declining a confirm question offered only the very
+      // column just declined.
+      candidateHeaders,
+    }));
 
   for (const r of resolutions) {
     if (r.required && r.confidence === 'low') {

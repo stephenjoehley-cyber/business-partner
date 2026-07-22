@@ -269,28 +269,21 @@ function ConfirmationForm({
 }) {
   const [currency, setCurrency] = useState('');
   const [reportingDate, setReportingDate] = useState('');
-  // rawHeader (confirm) or canonicalField (select) -> chosen raw header
+  // Keyed uniformly by canonicalField -> the raw header actually chosen
+  // for it, regardless of whether that came from "Yes," from picking an
+  // alternative after "No," or from a plain select question. '' means
+  // "declined, not yet re-chosen" — not a real answer yet.
   const [mappingAnswers, setMappingAnswers] = useState<Record<string, string>>({});
 
   const questions = mappingQuestions ?? [];
-  const allMappingQuestionsAnswered = questions.every((q) =>
-    q.kind === 'confirm' ? mappingAnswers[q.rawHeader!] !== undefined : mappingAnswers[q.canonicalField] !== undefined
-  );
+  const allMappingQuestionsAnswered = questions.every((q) => Boolean(mappingAnswers[q.canonicalField]));
 
   function buildColumnMapping(): Record<string, string> | undefined {
     if (questions.length === 0) return undefined;
     const result: Record<string, string> = {};
     for (const q of questions) {
-      if (q.kind === 'confirm') {
-        // "Yes" -> the raw header maps to the proposed field. "No, let me
-        // choose" is handled by turning this question into a select
-        // question in local state (see handleConfirmAnswer below).
-        const answer = mappingAnswers[q.rawHeader!];
-        if (answer) result[q.rawHeader!.trim().toLowerCase()] = answer;
-      } else {
-        const chosenHeader = mappingAnswers[q.canonicalField];
-        if (chosenHeader) result[chosenHeader.trim().toLowerCase()] = q.canonicalField;
-      }
+      const chosenHeader = mappingAnswers[q.canonicalField];
+      if (chosenHeader) result[chosenHeader.trim().toLowerCase()] = q.canonicalField;
     }
     return result;
   }
@@ -316,33 +309,41 @@ function ConfirmationForm({
           )}
 
           {q.kind === 'confirm' && (
-            <div className="mt-1 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setMappingAnswers((prev) => ({ ...prev, [q.rawHeader!]: q.canonicalField }))}
-                className={`focus-ring rounded-md border px-3 py-1.5 text-sm ${
-                  mappingAnswers[q.rawHeader!] === q.canonicalField ? 'border-ink bg-ink text-surface' : 'border-surface-border text-ink'
-                }`}
-              >
-                Yes, that&rsquo;s right
-              </button>
-              <button
-                type="button"
-                onClick={() => setMappingAnswers((prev) => ({ ...prev, [q.rawHeader!]: '' }))}
-                className="focus-ring rounded-md border border-surface-border px-3 py-1.5 text-sm text-ink"
-              >
-                No, let me choose
-              </button>
-              {mappingAnswers[q.rawHeader!] === '' && (
+            <div className="mt-1 flex flex-col gap-2">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMappingAnswers((prev) => ({ ...prev, [q.canonicalField]: q.rawHeader! }))}
+                  className={`focus-ring rounded-md border px-3 py-1.5 text-sm ${
+                    mappingAnswers[q.canonicalField] === q.rawHeader ? 'border-ink bg-ink text-surface' : 'border-surface-border text-ink'
+                  }`}
+                >
+                  Yes, that&rsquo;s right
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMappingAnswers((prev) => ({ ...prev, [q.canonicalField]: '' }))}
+                  className={`focus-ring rounded-md border px-3 py-1.5 text-sm ${
+                    mappingAnswers[q.canonicalField] === '' ? 'border-ink text-ink' : 'border-surface-border text-ink'
+                  }`}
+                >
+                  No, let me choose
+                </button>
+              </div>
+              {mappingAnswers[q.canonicalField] === '' && (
                 <select
                   className={inputClasses}
-                  onChange={(e) => setMappingAnswers((prev) => ({ ...prev, [q.rawHeader!]: e.target.value }))}
+                  onChange={(e) => setMappingAnswers((prev) => ({ ...prev, [q.canonicalField]: e.target.value }))}
                   defaultValue=""
                 >
                   <option value="" disabled>
                     Choose a column
                   </option>
-                  <option value={q.canonicalField}>{q.rawHeader}</option>
+                  {q.candidateHeaders?.map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
+                  ))}
                 </select>
               )}
             </div>

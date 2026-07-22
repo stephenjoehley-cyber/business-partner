@@ -159,6 +159,21 @@ describe('buildMappingQuestions', () => {
     const questions = buildMappingQuestions(headers, resolutions);
     expect(questions.some((q) => q.canonicalField === 'currency')).toBe(false);
   });
+
+  it('gives a confirm question real alternative headers, not just the one already declined — found before the Founder tested "No, let me choose"', () => {
+    const headersWithBackup = ['As At Date', 'Client', 'Invoice Reference', 'Due Date', 'Amount', 'Contact Name'];
+    const rowsWithBackup = [['2026-06-30', 'Jane Cooper', 'INV-1', '2026-06-15', '4500', 'Backup Name']];
+    const resolutionsWithBackup = resolveColumnMapping('aged_debtors', headersWithBackup, rowsWithBackup);
+
+    const questionsWithBackup = buildMappingQuestions(headersWithBackup, resolutionsWithBackup);
+    const confirmQuestion = questionsWithBackup.find((q) => q.kind === 'confirm' && q.canonicalField === 'customer name');
+
+    expect(confirmQuestion?.kind).toBe('confirm');
+    if (confirmQuestion?.kind === 'confirm') {
+      expect(confirmQuestion.candidateHeaders).toContain('Contact Name');
+      expect(confirmQuestion.candidateHeaders).not.toContain('Client'); // already claimed by this very question
+    }
+  });
 });
 
 describe('computeSourceSignature', () => {

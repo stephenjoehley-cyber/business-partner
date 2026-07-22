@@ -50,6 +50,7 @@ function translateMappingQuestions(questions: ColumnMappingQuestion[]) {
           question: MAPPING_COPY.confirmQuestion(canonicalFieldLabel(q.canonicalField)),
           explanation: MAPPING_COPY.confirmExplanation,
           sampleValues: q.sampleValues,
+          candidateHeaders: q.candidateHeaders,
         }
       : {
           kind: 'select' as const,

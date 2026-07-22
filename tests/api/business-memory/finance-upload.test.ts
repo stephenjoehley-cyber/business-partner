@@ -219,7 +219,9 @@ describe('POST /api/business-memory/finance/upload — Multi-format CSV Understa
       sourceId: 'source-1',
       needsCurrency: false,
       needsReportingDate: false,
-      columnMappingQuestions: [{ kind: 'confirm', rawHeader: 'Client', canonicalField: 'customer name', sampleValues: ['Jane Cooper'] }],
+      columnMappingQuestions: [
+        { kind: 'confirm', rawHeader: 'Client', canonicalField: 'customer name', sampleValues: ['Jane Cooper'], candidateHeaders: ['Contact Name'] },
+      ],
     });
 
     const res = await POST(makeUploadRequest({ file: VALID_CSV_FILE, documentType: 'aged_debtors' }));
@@ -227,6 +229,7 @@ describe('POST /api/business-memory/finance/upload — Multi-format CSV Understa
 
     expect(body.mappingQuestions[0].question).toContain('customer');
     expect(body.mappingQuestions[0].explanation).toContain("remember this");
+    expect(body.mappingQuestions[0].candidateHeaders).toEqual(['Contact Name']); // found before the Founder tested "No, let me choose"
     expect(JSON.stringify(body.mappingQuestions[0].question) + JSON.stringify(body.mappingQuestions[0].explanation)).not.toContain('mapping');
   });
 
