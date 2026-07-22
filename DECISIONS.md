@@ -1222,3 +1222,21 @@ Approved and considered complete, 22 July 2026. Delivered across the full govern
 **Founder/CPO decision, 22 July 2026:** durable persistence of excluded-row reasons is explicitly deferred to a new backlog item, **Financial Evidence History**, not required for F1's completion. F1 already delivers the executive outcome it was commissioned for — Business Partner understands uploaded financial evidence, executive reasoning improves, Morning Briefs become better informed. Row-level exclusion history improves transparency and auditability, but not executive judgement itself, and therefore doesn't block completion.
 
 **Status:** F1 closed. See the Business Partner Decision Backlog for the follow-on item.
+
+## Complete Demonstrable Executive Loop — Verified (Founder + CPO)
+
+Objective, per Founder/CPO direction 22 July 2026: confirm the full investor-demo sequence (Business Memory → upload → understanding → Morning Brief) works end to end, without explanation, before beginning the next Product Audit.
+
+**Method:** ran the real production functions directly in demo mode — `ingestDocument` and `generateMorningBrief`, not mocks — rather than reasoning about the code path from inspection alone.
+
+**Result, with real evidence:** a genuine two-row aged-debtors CSV upload correctly qualified both rows via the real Qualification Gate (not simulated). The next Morning Brief generation visibly pivoted its entire primary recommendation:
+- Before: *"A meeting with Jane Cooper is coming up tomorrow."*
+- After: *"An invoice from Jane Cooper for ZAR 45,000 is 51 days overdue."*
+
+Executive summary, reasoning, and recommended action all changed concretely — confirmed the loop delivers exactly the demonstrable moment requested.
+
+**One real gap found and fixed:** `app/morning-brief/page.tsx` only ever reads the last *persisted* brief — it never regenerates one on its own. The upload flow's "Take me there" button was a plain navigation link, which could have landed an investor on a stale, pre-upload brief if one had already run earlier that day. Fixed to refresh first (the same `/api/recommendations/generate` call `HelpUnderstandSection`'s own refresh button already uses), then hard-navigate — reusing the exact pattern (and the exact stale-client-router fix) already established there, not reinventing it.
+
+**Disclosed, not silently skipped:** this fix has no automated test — no component-testing infrastructure (testing-library, jsdom) exists anywhere in this codebase. Verified manually against the real functions instead. Introducing that infrastructure now would be new scope beyond what was asked.
+
+**Status:** the complete executive loop (Business Memory → Understanding → Executive Judgement → Morning Brief) is verified working and demo-ready. No further work required before the next Product Audit (F2 vs. Xero vs. Executive Insight Layer).
