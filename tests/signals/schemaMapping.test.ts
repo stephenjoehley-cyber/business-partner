@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveColumnMapping, hasNoMeaningfulMapping, buildMappingQuestions, computeSourceSignature } from '@/lib/signals/schemaMapping';
+import { resolveColumnMapping, hasNoMeaningfulMapping, buildMappingQuestions, computeSourceSignature, hasConflictingMapping } from '@/lib/signals/schemaMapping';
 
 describe('resolveColumnMapping', () => {
   it('resolves an exact canonical header with high confidence', () => {
@@ -172,5 +172,19 @@ describe('computeSourceSignature', () => {
     const a = computeSourceSignature(['As At Date', 'Customer Name', 'Amount']);
     const b = computeSourceSignature(['As At Date', 'Client', 'Amount']);
     expect(a).not.toBe(b);
+  });
+});
+
+describe('hasConflictingMapping', () => {
+  it('is false when the new mapping agrees with the existing one', () => {
+    expect(hasConflictingMapping({ client: 'customer name' }, { client: 'customer name' })).toBe(false);
+  });
+
+  it('is false when the new mapping only adds headers not previously confirmed', () => {
+    expect(hasConflictingMapping({ client: 'customer name' }, { vendor: 'supplier name' })).toBe(false);
+  });
+
+  it('is true when the new mapping disagrees with an already-confirmed header — Refinement 2: never silently overwritten', () => {
+    expect(hasConflictingMapping({ client: 'customer name' }, { client: 'invoice reference' })).toBe(true);
   });
 });

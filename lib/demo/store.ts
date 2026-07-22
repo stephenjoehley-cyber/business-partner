@@ -361,3 +361,71 @@ export function listDemoSignalSourcesForBusiness(businessId: string): DemoSignal
     .filter((s) => s.businessId === businessId)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
+
+// ---------------------------------------------------------------------------
+// ConfirmedColumnMapping (Multi-format CSV Understanding, 22 July 2026)
+// ---------------------------------------------------------------------------
+
+export interface DemoConfirmedColumnMapping {
+  id: string;
+  businessId: string;
+  documentType: string;
+  sourceSignature: string;
+  columnMapping: Record<string, string>;
+  confirmedAt: Date;
+  updatedAt: Date;
+}
+
+const demoConfirmedColumnMappings = new Map<string, DemoConfirmedColumnMapping>();
+let demoConfirmedColumnMappingSequence = 0;
+
+function demoMappingKey(businessId: string, documentType: string, sourceSignature: string): string {
+  return `${businessId}|${documentType}|${sourceSignature}`;
+}
+
+export function findDemoConfirmedColumnMapping(
+  businessId: string,
+  documentType: string,
+  sourceSignature: string
+): DemoConfirmedColumnMapping | undefined {
+  return demoConfirmedColumnMappings.get(demoMappingKey(businessId, documentType, sourceSignature));
+}
+
+/**
+ * Refinement 2 (Founder + CPO): owner-confirmed understanding always
+ * takes precedence over inference, never silently overwritten. This
+ * function does not itself detect conflicts — that's
+ * hasConflictingMapping's job (lib/signals/schemaMapping.ts), a pure
+ * function the caller (the Signal Ingestion Service) must call first.
+ * This function assumes it is only ever called with entries already
+ * confirmed safe to write — a genuinely new header, or one that agrees
+ * with what's already stored. It merges, it never resolves a conflict.
+ */
+export function upsertDemoConfirmedColumnMapping(
+  businessId: string,
+  documentType: string,
+  sourceSignature: string,
+  newMappingEntries: Record<string, string>
+): DemoConfirmedColumnMapping {
+  const key = demoMappingKey(businessId, documentType, sourceSignature);
+  const existing = demoConfirmedColumnMappings.get(key);
+
+  if (existing) {
+    const merged = { ...existing.columnMapping, ...newMappingEntries };
+    const updated = { ...existing, columnMapping: merged, updatedAt: new Date() };
+    demoConfirmedColumnMappings.set(key, updated);
+    return updated;
+  }
+
+  const record: DemoConfirmedColumnMapping = {
+    id: `demo-mapping-${++demoConfirmedColumnMappingSequence}`,
+    businessId,
+    documentType,
+    sourceSignature,
+    columnMapping: { ...newMappingEntries },
+    confirmedAt: new Date(),
+    updatedAt: new Date(),
+  };
+  demoConfirmedColumnMappings.set(key, record);
+  return record;
+}

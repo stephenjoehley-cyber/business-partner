@@ -14,9 +14,26 @@ vi.mock('@/lib/signals/sourceRepository', () => ({
   updateSignalSource: vi.fn(),
 }));
 
+vi.mock('@/lib/signals/confirmedColumnMappingRepository', () => {
+  class ConfirmedMappingConflictError extends Error {
+    conflictingHeaders: string[];
+    constructor(conflictingHeaders: string[]) {
+      super(`Confirmed mapping conflict for headers: ${conflictingHeaders.join(', ')}`);
+      this.name = 'ConfirmedMappingConflictError';
+      this.conflictingHeaders = conflictingHeaders;
+    }
+  }
+  return {
+    findConfirmedColumnMapping: vi.fn(),
+    upsertConfirmedColumnMapping: vi.fn(),
+    ConfirmedMappingConflictError,
+  };
+});
+
 import { getBusinessById } from '@/lib/brain/repository';
 import { persistSignals } from '@/lib/signals/repository';
 import { createSignalSource, findSignalSourceByChecksum, updateSignalSource } from '@/lib/signals/sourceRepository';
+import { findConfirmedColumnMapping, upsertConfirmedColumnMapping, ConfirmedMappingConflictError } from '@/lib/signals/confirmedColumnMappingRepository';
 import { ingestDocument } from '@/lib/orchestrator/signalIngestion';
 
 const getBusinessByIdMock = getBusinessById as unknown as ReturnType<typeof vi.fn>;
@@ -24,6 +41,8 @@ const persistSignalsMock = persistSignals as unknown as ReturnType<typeof vi.fn>
 const createSignalSourceMock = createSignalSource as unknown as ReturnType<typeof vi.fn>;
 const findSignalSourceByChecksumMock = findSignalSourceByChecksum as unknown as ReturnType<typeof vi.fn>;
 const updateSignalSourceMock = updateSignalSource as unknown as ReturnType<typeof vi.fn>;
+const findConfirmedColumnMappingMock = findConfirmedColumnMapping as unknown as ReturnType<typeof vi.fn>;
+const upsertConfirmedColumnMappingMock = upsertConfirmedColumnMapping as unknown as ReturnType<typeof vi.fn>;
 
 const BUSINESS = { id: 'biz-1', name: 'Meridian Gearboxes', industry: 'Automotive', goals: [], people: [] };
 
@@ -36,9 +55,13 @@ describe('ingestDocument', () => {
     createSignalSourceMock.mockReset();
     findSignalSourceByChecksumMock.mockReset();
     updateSignalSourceMock.mockReset();
+    findConfirmedColumnMappingMock.mockReset();
+    upsertConfirmedColumnMappingMock.mockReset();
 
     getBusinessByIdMock.mockResolvedValue(BUSINESS);
     findSignalSourceByChecksumMock.mockResolvedValue(undefined);
+    findConfirmedColumnMappingMock.mockResolvedValue(undefined);
+    upsertConfirmedColumnMappingMock.mockResolvedValue(undefined);
     createSignalSourceMock.mockImplementation(async (input) => ({ id: 'source-1', ...input, createdAt: new Date() }));
     updateSignalSourceMock.mockImplementation(async (id, updates) => ({ id, ...updates }));
     persistSignalsMock.mockResolvedValue([]);
@@ -150,6 +173,53 @@ describe('ingestDocument', () => {
     const result = await ingestDocument('biz-1', 'aged_debtors', { filename: 'different-name.csv', content: VALID_CSV });
 
     expect(result.status).toBe('duplicate');
+  });
+
+  it('looks up a Confirmed Mapping Memory record for this header set before extraction, and remembers a new mapping after a successful upload', async () => {
+    const csvWithSynonym = `As At Date,Client,Invoice Reference,Invoice Date,Due Date,Amount,Currency\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+
+    // Owner supplies the confirmation this round.
+    const result = await ingestDocument(
+      'biz-1',
+      'aged_debtors',
+      { filename: 'x.csv', content: csvWithSynonym },
+      { columnMapping: { client: 'customer name' } }
+    );
+
+    expect(findConfirmedColumnMappingMock).toHaveBeenCalledWith('biz-1', 'aged_debtors', expect.any(String));
+    expect(result.status).toBe('completed');
+    expect(upsertConfirmedColumnMappingMock).toHaveBeenCalledWith('biz-1', 'aged_debtors', expect.any(String), { client: 'customer name' });
+  });
+
+  it('merges a remembered mapping into extraction without the owner supplying anything this round', async () => {
+    const csvWithSynonym = `As At Date,Client,Invoice Reference,Invoice Date,Due Date,Amount,Currency\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+    findConfirmedColumnMappingMock.mockResolvedValue({
+      id: 'mapping-1',
+      businessId: 'biz-1',
+      documentType: 'aged_debtors',
+      sourceSignature: 'whatever',
+      columnMapping: { client: 'customer name' },
+      confirmedAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const result = await ingestDocument('biz-1', 'aged_debtors', { filename: 'x.csv', content: csvWithSynonym });
+
+    expect(result.status).toBe('completed'); // no confirmation needed — memory already covers it
+  });
+
+  it('does not fail the upload when Confirmed Mapping Memory write hits a real conflict — the extraction the owner just completed still stands', async () => {
+    upsertConfirmedColumnMappingMock.mockRejectedValue(new ConfirmedMappingConflictError(['client']));
+    const csvWithSynonym = `As At Date,Client,Invoice Reference,Invoice Date,Due Date,Amount,Currency\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+
+    const result = await ingestDocument(
+      'biz-1',
+      'aged_debtors',
+      { filename: 'x.csv', content: csvWithSynonym },
+      { columnMapping: { client: 'customer name' } }
+    );
+
+    expect(result.status).toBe('completed');
   });
 
   it('a rejected prior attempt does not block a corrected retry of the same file — the exact defect found live, 22 July 2026 (Founder Acceptance Test)', async () => {

@@ -181,6 +181,17 @@ export function buildMappingQuestions(rawHeaders: string[], resolutions: FieldMa
  * structural patterns, without ConfirmedColumnMapping itself changing
  * shape). V1: a hash of the sorted, normalised header set.
  */
+/**
+ * Refinement 2 (Founder + CPO): owner-confirmed understanding always
+ * takes precedence over inference, and is never silently overwritten.
+ * True when a newly-resolved mapping disagrees with an already-confirmed
+ * one for the same raw header — the caller must treat this as a new
+ * conversation with the owner, never merge it silently.
+ */
+export function hasConflictingMapping(existingMapping: Record<string, string>, newMapping: Record<string, string>): boolean {
+  return Object.entries(newMapping).some(([header, field]) => existingMapping[header] !== undefined && existingMapping[header] !== field);
+}
+
 export function computeSourceSignature(rawHeaders: string[]): string {
   const normalized = rawHeaders.map(normalize).sort().join('|');
   return createHash('sha256').update(normalized).digest('hex');

@@ -1,6 +1,8 @@
 import { createHash } from 'crypto';
+import Papa from 'papaparse';
 import { agedDebtorsExtractor, agedCreditorsExtractor } from '@/lib/signals/extractors/agedDebtorsCreditors';
 import type { DocumentSignalExtractor, OwnerConfirmation, ExcludedRow, RejectionKind } from '@/lib/signals/extractor';
+import { computeSourceSignature, type ColumnMappingQuestion } from '@/lib/signals/schemaMapping';
 import type { RawDocumentInput } from '@/lib/signals/types';
 import { persistSignals } from '@/lib/signals/repository';
 import {
@@ -9,6 +11,11 @@ import {
   updateSignalSource,
   type SignalSourceRecord,
 } from '@/lib/signals/sourceRepository';
+import {
+  findConfirmedColumnMapping,
+  upsertConfirmedColumnMapping,
+  ConfirmedMappingConflictError,
+} from '@/lib/signals/confirmedColumnMappingRepository';
 import { getBusinessById } from '@/lib/brain/repository';
 import { qualify } from '@/lib/cognition/qualify';
 
@@ -31,7 +38,13 @@ const EXTRACTORS: Record<'aged_debtors' | 'aged_creditors', DocumentSignalExtrac
 export type IngestionResult =
   | { status: 'duplicate'; source: SignalSourceRecord }
   | { status: 'rejected'; kind: RejectionKind; reason: string }
-  | { status: 'pending_confirmation'; sourceId: string; needsCurrency: boolean; needsReportingDate: boolean }
+  | {
+      status: 'pending_confirmation';
+      sourceId: string;
+      needsCurrency: boolean;
+      needsReportingDate: boolean;
+      columnMappingQuestions?: ColumnMappingQuestion[];
+    }
   | { status: 'completed'; source: SignalSourceRecord; excludedRows: ExcludedRow[]; qualifiedCount: number };
 
 export async function ingestDocument(
@@ -64,7 +77,27 @@ export async function ingestDocument(
   const extractor = EXTRACTORS[documentType];
   const context = { business, goals: business.goals, people: business.people };
   const input: RawDocumentInput = { format: 'csv', content: file.content };
-  const outcome = extractor.extract(input, context, confirmation);
+
+  // Multi-format CSV Understanding, 22 July 2026 (Founder Decision 1 —
+  // Confirmed Mapping Memory). A cheap header-only peek (Papa's preview
+  // option limits parsing regardless of file size) so any previously
+  // confirmed mapping for this exact header set can be merged in before
+  // extraction runs — the extractor itself never touches the database;
+  // this is the one place that lookup happens. Merging remembered
+  // mappings with this round's fresh answers is conflict-free by
+  // construction: a header already resolved from memory at 'high'
+  // confidence is never re-asked about (buildMappingQuestions only asks
+  // about medium/low resolutions), so confirmation.columnMapping can
+  // only ever contain answers for headers memory didn't already cover.
+  const headerPeek = Papa.parse<string[]>(input.content, { skipEmptyLines: true, preview: 1 }).data[0];
+  const peekedSignature = headerPeek?.length ? computeSourceSignature(headerPeek) : undefined;
+  const confirmedMemory = peekedSignature ? await findConfirmedColumnMapping(businessId, documentType, peekedSignature) : undefined;
+  const mergedConfirmation: OwnerConfirmation | undefined =
+    confirmation || confirmedMemory
+      ? { ...confirmation, columnMapping: { ...(confirmedMemory?.columnMapping ?? {}), ...(confirmation?.columnMapping ?? {}) } }
+      : undefined;
+
+  const outcome = extractor.extract(input, context, mergedConfirmation);
 
   // Every branch below reuses (updates) an existing rejected/pending
   // record for this checksum rather than creating a second one —
@@ -111,6 +144,7 @@ export async function ingestDocument(
       sourceId: source.id,
       needsCurrency: outcome.needsCurrency,
       needsReportingDate: outcome.needsReportingDate,
+      columnMappingQuestions: outcome.columnMappingQuestions,
     };
   }
 
@@ -133,6 +167,23 @@ export async function ingestDocument(
   const persisted = await persistSignals(businessId, signalsWithSource);
 
   const completed = await updateSignalSource(source.id, { status: 'completed' });
+
+  // Confirmed Mapping Memory write (Founder Decision 1). Refinement 2:
+  // never silently overwrite. A genuine conflict here would mean this
+  // exact header set was previously confirmed to mean something
+  // different — a real, rare edge case. The extraction the owner just
+  // completed still stands (it used this round's answers, which are
+  // authoritative for this upload); the conflicting memory write is
+  // simply skipped rather than silently applied, so a future upload of
+  // this same source is asked fresh rather than inheriting a resolved
+  // disagreement neither the code nor the owner actually settled.
+  if (outcome.resolvedColumnMapping && outcome.sourceSignature) {
+    try {
+      await upsertConfirmedColumnMapping(businessId, documentType, outcome.sourceSignature, outcome.resolvedColumnMapping);
+    } catch (err) {
+      if (!(err instanceof ConfirmedMappingConflictError)) throw err;
+    }
+  }
 
   // "A few of these are worth your attention" vs "Nothing here needs you
   // right now" (approved copy, Section 6) requires knowing how many of
