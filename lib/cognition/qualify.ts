@@ -1,9 +1,11 @@
 import type { BusinessContext } from '@/lib/signals/provider';
-import type { EmailSignalPayload, Signal } from '@/lib/signals/types';
+import type { EmailSignalPayload, Signal, SnapshotProvenance } from '@/lib/signals/types';
 import type { Observation } from './types';
 import { findMatchedPerson, isOwnerDeclaredGrounded } from './grounding';
 import { matchGoalsForSignal } from './interpreters/util';
 import { EMAIL_GOAL_KEYWORDS } from './interpreters/email';
+import { isSnapshotProvenanceTrustworthy } from './provenance';
+import { hasWorldInherentConsequence } from './financeQualificationPolicy';
 
 /**
  * Executive Intervention Qualification — Product Audit and Implementation
@@ -90,12 +92,57 @@ export function qualify(observations: Observation[], context: BusinessContext): 
       continue;
     }
 
-    // Any other domain (not yet live) is admitted unchanged for now —
-    // Qualification's per-domain rules are added deliberately, one domain
-    // at a time, not assumed for a domain that doesn't have live signals
-    // yet to reason about.
-    admitted.push(signal);
-    log.push({ signal, outcome: { status: 'qualified', reason: 'world-inherent' } });
+    if (signal.domain === 'finance') {
+      // Product Audit — F0: Signal Temporality, 22 July 2026 (Founder +
+      // CPO). Three steps, in order, per the audit's corrected sequence:
+      // (1) is the extracted representation trustworthy enough to reason
+      // over at all, (2) is it owner-grounded OR does it carry a specific
+      // world-inherent consequence — either is sufficient, neither is
+      // assumed, (3) qualified evidence proceeds to Understand, where
+      // freshness/relevance/significance are assessed from
+      // reportingPeriod.end (see snapshotAge.ts), never here.
+      const provenance = signal.provenance as SnapshotProvenance | undefined;
+      if (!isSnapshotProvenanceTrustworthy(provenance)) {
+        log.push({ signal, outcome: { status: 'not-yet-assessable' } });
+        continue;
+      }
+
+      // Goal-matching (as email does via EMAIL_GOAL_KEYWORDS against
+      // payload.subject) is deliberately not attempted here — no finance
+      // document type has a goal-relevant text field or an approved
+      // keyword set yet. Faking it with an unrelated keyword list would
+      // be dishonest, not simple. Person-grounding alone is checked; goal
+      // grounding for finance is F1 scope, decided per document type.
+      const matchedPerson = findMatchedPerson(signal, context.people);
+      const groundedByOwner = isOwnerDeclaredGrounded(matchedPerson, 0);
+      const worldInherent = hasWorldInherentConsequence(signal);
+
+      if (groundedByOwner || worldInherent) {
+        admitted.push(signal);
+        log.push({
+          signal,
+          outcome: {
+            status: 'qualified',
+            reason: groundedByOwner ? 'owner-declared' : 'world-inherent',
+            matchedPersonId: matchedPerson?.id,
+          },
+        });
+      } else {
+        log.push({ signal, outcome: { status: 'not-yet-assessable' } });
+      }
+      continue;
+    }
+
+    // Product Audit — F0 correction, 22 July 2026 (Founder + CPO): fail
+    // closed, systemically. Any domain without an explicitly approved
+    // qualification policy above resolves to not-yet-assessable and is
+    // never admitted — this was previously an unconditional admit, which
+    // meant a new SignalProvider for any unhandled domain (e.g. finance,
+    // before this correction) would have bypassed Qualification entirely
+    // the moment it existed. No present or future domain is admitted
+    // merely because it lacks a domain-specific branch; each domain earns
+    // admission only once its policy is written above, deliberately.
+    log.push({ signal, outcome: { status: 'not-yet-assessable' } });
   }
 
   return { admitted, log };

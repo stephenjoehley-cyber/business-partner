@@ -87,6 +87,16 @@ function toSignal(row: PrismaSignal): Signal {
     externalRef: row.externalRef,
     confidence: row.confidence,
     createdAt: row.createdAt,
+    // F0, 22 July 2026: temporality defaults to 'continuous' at the DB
+    // level, so every existing row (calendar, email) round-trips
+    // unaffected. reportingPeriod is only assembled when both bounds are
+    // present — a partially-populated period is not a valid one.
+    temporality: (row.temporality as Signal['temporality']) ?? 'continuous',
+    reportingPeriod:
+      row.reportingPeriodStart && row.reportingPeriodEnd
+        ? { start: row.reportingPeriodStart, end: row.reportingPeriodEnd }
+        : undefined,
+    provenance: (row.provenance as Signal['provenance']) ?? undefined,
   };
 }
 
@@ -105,6 +115,10 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]):
           payload: draft.payload as object,
           confidence: draft.confidence,
           personId: draft.relatedEntities.personId,
+          temporality: draft.temporality ?? 'continuous',
+          reportingPeriodStart: draft.reportingPeriod?.start,
+          reportingPeriodEnd: draft.reportingPeriod?.end,
+          provenance: draft.provenance as object | undefined,
         },
         create: {
           businessId,
@@ -116,6 +130,10 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]):
           sourceProviderId: draft.sourceProviderId,
           externalRef: draft.externalRef,
           confidence: draft.confidence,
+          temporality: draft.temporality ?? 'continuous',
+          reportingPeriodStart: draft.reportingPeriod?.start,
+          reportingPeriodEnd: draft.reportingPeriod?.end,
+          provenance: draft.provenance as object | undefined,
         },
       })
     )

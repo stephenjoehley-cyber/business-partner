@@ -15,6 +15,45 @@ export interface RelatedEntities {
   projectId?: string;
 }
 
+/**
+ * Product Audit — F0: Signal Temporality, 22 July 2026 (Founder + CPO).
+ *
+ * Every signal built so far (calendar, email) is `continuous`: it describes
+ * something occurring at a point in time, and relevance decays from
+ * `occurredAt`. Financial documents break that assumption — a P&L's
+ * *acquisition* time and the *reporting period* it describes are two
+ * different clocks, and conflating them lets a stale document masquerade
+ * as current. `snapshot` signals carry a `reportingPeriod` and are reasoned
+ * about relative to `reportingPeriod.end`, never `occurredAt` (Founder/CPO
+ * decision: no hard staleness expiry — fresh/aging/historical framing is
+ * defined per document type at the Understand stage, when the first real
+ * extractor is built — see lib/cognition/snapshotAge.ts).
+ */
+export const SIGNAL_TEMPORALITIES = ['continuous', 'snapshot'] as const;
+export type SignalTemporality = (typeof SIGNAL_TEMPORALITIES)[number];
+
+export interface ReportingPeriod {
+  start: Date;
+  end: Date;
+}
+
+/**
+ * Attached by every DocumentSignalExtractor to every snapshot signal it
+ * produces. Deliberately not a confidence score: Founder/CPO decision (F0
+ * audit) — qualification for snapshot evidence is based on provenance and
+ * evidence quality, not a fixed extraction-confidence percentage. Structured
+ * CSV extraction is not assumed immune to silent semantic error — parsing
+ * can succeed while mappings, formats, completeness, or reconciliation are
+ * still wrong. `structurallyComplete` is the extractor's own honest
+ * assertion that it found every field its document type requires and
+ * passed its own reconciliation checks — never a heuristic guess.
+ */
+export interface SnapshotProvenance {
+  extractionMethod: 'structured_export' | 'pdf_parsed' | 'api';
+  sourceDocumentType: string; // e.g. 'aged_debtors', 'bank_statement'
+  structurallyComplete: boolean;
+}
+
 /** A Signal as produced by a provider, before it has been persisted. */
 export interface DraftSignal<TPayload = Record<string, unknown>> {
   domain: SignalDomain;
@@ -31,6 +70,16 @@ export interface DraftSignal<TPayload = Record<string, unknown>> {
   externalRef: string;
   /** 1.0 for real data; seeded data may vary to simulate real-world uncertainty. */
   confidence: number;
+  /**
+   * Defaults to 'continuous' at the repository layer when omitted, so every
+   * existing provider (calendar, email) needs no changes. Only extractors
+   * producing document-derived signals set this to 'snapshot'.
+   */
+  temporality?: SignalTemporality;
+  /** Present only when temporality === 'snapshot'. */
+  reportingPeriod?: ReportingPeriod;
+  /** Present only when temporality === 'snapshot'. */
+  provenance?: SnapshotProvenance;
 }
 
 /** A Signal once persisted (adds database identity and businessId scope). */

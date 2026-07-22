@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { qualify } from '@/lib/cognition/qualify';
 import type { BusinessContext } from '@/lib/signals/provider';
-import type { EmailSignalPayload, CalendarSignalPayload, Signal } from '@/lib/signals/types';
+import type { EmailSignalPayload, CalendarSignalPayload, FinanceSignalPayload, Signal } from '@/lib/signals/types';
 
 function makeContext(overrides?: Partial<BusinessContext>): BusinessContext {
   return {
@@ -42,6 +42,26 @@ function makeCalendarSignal(overrides: Partial<Signal<CalendarSignalPayload>> = 
     externalRef: 'ref-cal-1',
     confidence: 1.0,
     createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+function makeFinanceSignal(overrides: Partial<Signal<FinanceSignalPayload>> = {}): Signal<FinanceSignalPayload> {
+  return {
+    id: 'sig-finance-1',
+    businessId: 'biz-1',
+    domain: 'finance',
+    type: 'invoice_overdue',
+    occurredAt: new Date(),
+    relatedEntities: {},
+    payload: { invoiceId: 'INV-001', amount: 4500, daysOverdue: 12, customerName: 'Jane Cooper' },
+    sourceProviderId: 'upload-csv',
+    externalRef: 'ref-finance-1',
+    confidence: 1.0,
+    createdAt: new Date(),
+    temporality: 'snapshot',
+    reportingPeriod: { start: new Date('2026-06-01'), end: new Date('2026-06-30') },
+    provenance: { extractionMethod: 'structured_export', sourceDocumentType: 'aged_debtors', structurallyComplete: true },
     ...overrides,
   };
 }
@@ -121,5 +141,64 @@ describe('qualify', () => {
     expect(result.admitted).toHaveLength(2);
     expect(result.admitted.map((s) => s.id)).toEqual(['sig-grounded', 'sig-cal-1']);
     expect(result.log).toHaveLength(3);
+  });
+
+  // --- F0: Signal Temporality, 22 July 2026 (Founder + CPO) ---------------
+
+  it('resolves a finance signal with untrustworthy provenance to not-yet-assessable, even when grounded to a known Person — Founder/CPO F0 correction: trustworthiness is checked before grounding, not instead of it', () => {
+    const context = makeContext();
+    const signal = makeFinanceSignal({
+      relatedEntities: { personId: 'person-1' },
+      provenance: { extractionMethod: 'structured_export', sourceDocumentType: 'aged_debtors', structurallyComplete: false },
+    });
+
+    const result = qualify([signal], context);
+
+    expect(result.admitted).toEqual([]);
+    expect(result.log[0].outcome).toEqual({ status: 'not-yet-assessable' });
+  });
+
+  it('resolves a finance signal with no provenance at all to not-yet-assessable', () => {
+    const context = makeContext();
+    const signal = makeFinanceSignal({ provenance: undefined });
+
+    const result = qualify([signal], context);
+
+    expect(result.admitted).toEqual([]);
+    expect(result.log[0].outcome).toEqual({ status: 'not-yet-assessable' });
+  });
+
+  it('qualifies a finance signal as owner-declared when trustworthy and matched to a known Person', () => {
+    const context = makeContext();
+    const signal = makeFinanceSignal({ relatedEntities: { personId: 'person-1' } });
+
+    const result = qualify([signal], context);
+
+    expect(result.admitted).toEqual([signal]);
+    expect(result.log[0].outcome).toEqual({
+      status: 'qualified',
+      reason: 'owner-declared',
+      matchedPersonId: 'person-1',
+    });
+  });
+
+  it('resolves a trustworthy but ungrounded finance signal to not-yet-assessable in F0 — no world-inherent-consequence rule has been approved for any finance document type yet (see financeQualificationPolicy.ts, F1 scope)', () => {
+    const context = makeContext({ people: [] });
+    const signal = makeFinanceSignal();
+
+    const result = qualify([signal], context);
+
+    expect(result.admitted).toEqual([]);
+    expect(result.log[0].outcome).toEqual({ status: 'not-yet-assessable' });
+  });
+
+  it('fails closed for any domain without an explicitly approved qualification policy — Founder/CPO F0 correction: no domain is admitted merely because it lacks a domain-specific branch', () => {
+    const context = makeContext();
+    const signal = makeCalendarSignal({ id: 'sig-tasks-1', externalRef: 'ref-tasks-1', domain: 'tasks' });
+
+    const result = qualify([signal], context);
+
+    expect(result.admitted).toEqual([]);
+    expect(result.log[0].outcome).toEqual({ status: 'not-yet-assessable' });
   });
 });

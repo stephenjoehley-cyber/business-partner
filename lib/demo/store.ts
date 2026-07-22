@@ -223,6 +223,9 @@ export function persistDemoSignals(businessId: string, drafts: DraftSignal[]): S
       externalRef: draft.externalRef,
       confidence: draft.confidence,
       createdAt: existing?.createdAt ?? new Date(),
+      temporality: draft.temporality ?? 'continuous',
+      reportingPeriod: draft.reportingPeriod,
+      provenance: draft.provenance,
     };
     demoSignals.set(draft.externalRef, signal);
     return signal;
