@@ -71,6 +71,19 @@ model Signal {
   externalRef      String
   confidence       Float    @default(1.0)
   createdAt        DateTime @default(now())
+  // Product Audit — F0: Signal Temporality, 22 July 2026 (Founder + CPO).
+  // 'continuous' (default) | 'snapshot'. Existing signals (calendar, email)
+  // are unaffected — the default preserves current behaviour exactly.
+  temporality          String    @default("continuous")
+  // Populated only when temporality === 'snapshot'. Staleness for a
+  // snapshot signal is always derived from reportingPeriodEnd, never
+  // acquisitionTime/occurredAt/createdAt — see lib/cognition/snapshotAge.ts.
+  reportingPeriodStart DateTime?
+  reportingPeriodEnd   DateTime?
+  // SnapshotProvenance (lib/signals/types.ts) — extractionMethod,
+  // sourceDocumentType, structurallyComplete. Attached by every
+  // DocumentSignalExtractor; consulted by qualify.ts, never by Prioritise.
+  provenance           Json?
 
   @@unique([businessId, externalRef])
 }
