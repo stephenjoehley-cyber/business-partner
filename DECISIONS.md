@@ -1276,3 +1276,15 @@ Following the Financial Evidence Acquisition Product Audit, 22 July 2026: **Evid
 This was not a minor addition. It surfaced a real asymmetry already present in the product: Calendar and Gmail are both continuous, connected sources requiring zero ongoing owner action; finance (via any CSV-based acquisition method) is currently the only domain that depends on the owner remembering to act. Restated against the Founder's own framing of Business Partner as an Executive Operating System rather than a collection of document importers, this dimension is close to a defining property of that identity, not a tie-breaker among others.
 
 **Sequencing decision, Financial Evidence Acquisition specifically:** reach (multi-format CSV) and continuity (native accounting integration) are two distinct strategic objectives, not necessarily served by the same capability or the same sequence. Multi-format CSV proceeds next. Native integration (Xero or otherwise) is deliberately sequenced second — not deprioritized, but held pending real evidence: once a genuine customer base exists via the reach-first path, its actual accounting-platform distribution should determine which native integration is built, rather than committing to Xero specifically ahead of that evidence. Reach-first is itself how that evidence gets generated.
+
+## Multi-format CSV Understanding — Product Audit Approved, Three Founder Decisions Recorded
+
+Product Audit approved by Founder + CPO, 22 July 2026. The Validation-stage question is confirmed to remain exactly where F0 left it — Schema Mapping Resolution (this capability) and Validation (extraction fidelity, still specifically a PDF/OCR question) are different problems, kept deliberately separate rather than overloading Validation with responsibility it was never designed to carry.
+
+**Decision 1 — Confirmed Mapping Memory: approved for Version 1**, not deferred. Once an owner confirms a column's meaning for a given business and source format, Business Partner remembers it — future uploads from the same source never ask again. The Founder's explicit requirement: the confirmation prompt must state *why* it's asking, e.g. "I think this column contains your invoice amounts. Once you've confirmed it, I'll remember this for future uploads." — framing the question as a small one-time investment, not repeated friction.
+
+**Decision 2 — Assisted mapping vs. rejection: no arbitrary threshold.** Governing principle instead: *"Business Partner should ask the fewest questions necessary to reach certainty."* Ask only about genuinely uncertain required fields; reject outright only when no meaningful mapping can be inferred at all (the same behaviour F1 already has for a wrong document type). Minimise owner effort without ever compromising correctness.
+
+**Decision 3 — Initial synonym table: deliberately narrow, high-confidence only.** No attempt at broad industry coverage in Version 1. The table expands from real customer evidence gathered through production usage, exactly as F0 and F1's own scope decisions were made — evidence-driven, not assumed.
+
+**Status:** Product Audit complete. Proceeding to the Implementation Plan.
