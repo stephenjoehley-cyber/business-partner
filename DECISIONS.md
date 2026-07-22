@@ -1314,3 +1314,15 @@ Delivered end to end, following the full governed sequence: Product Audit → Im
 **450 tests total** (397 before this capability began — F1's close). Typecheck clean throughout. Every step deployed and verified independently before the next began.
 
 **Status:** Complete. Ready for Founder Acceptance.
+
+## Real Defect Found During Multi-format CSV Founder Acceptance — Fixed and Deployed
+
+Found live, 22 July 2026, during the Founder's own acceptance testing of Multi-format CSV Understanding — exactly the discipline the Founder Acceptance Test process exists to catch, the second time it has done so.
+
+**What was found:** the core mechanism worked correctly — a second upload from an already-known source asked no question, exactly as designed. But the "I'll remember this for your next upload" notice repeated on that second upload too, as if the mapping were being newly confirmed, when it had already been remembered from the first.
+
+**Root cause:** `OwnerConfirmation.columnMapping` was merged with Confirmed Mapping Memory before reaching the extractor, so the extractor's "was this newly resolved this round" check could no longer distinguish "the owner just confirmed this" from "this was already remembered" — both looked identical by the time they arrived at the check.
+
+**Fix:** kept genuinely fresh confirmation and remembered memory in two separate fields all the way from the Signal Ingestion Service through to the extractor — `columnMapping` (fresh, this round only) and `confirmedMemoryMapping` (everything already known, used for resolution but never treated as new). Verified against the real ingestion pipeline, reproducing the Founder's exact two-upload scenario.
+
+**Status:** fixed and deployed. 452 tests total. To be raised explicitly with the CPO next session, per the Founder's request — recorded here so it isn't lost in the meantime.
