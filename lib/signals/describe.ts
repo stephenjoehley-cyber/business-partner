@@ -95,7 +95,15 @@ export function describeSignalPlainly(signal: Signal, now: Date = new Date(), pe
     }
     case 'finance': {
       const payload = signal.payload as FinanceSignalPayload;
-      return `An invoice for ${payload.customerName}, ${pluralDays(payload.daysOverdue)} overdue`;
+      const daysOverdue = Math.floor((now.getTime() - new Date(payload.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+      if (payload.role === 'debtor') {
+        return daysOverdue > 0
+          ? `An invoice from ${payload.counterpartyName}, ${pluralDays(daysOverdue)} overdue`
+          : `An invoice from ${payload.counterpartyName}, due ${relativeDatePhrase(now, new Date(payload.dueDate))}`;
+      }
+      return daysOverdue > 0
+        ? `An amount owed to ${payload.counterpartyName}, ${pluralDays(daysOverdue)} overdue`
+        : `An amount owed to ${payload.counterpartyName}, due ${relativeDatePhrase(now, new Date(payload.dueDate))}`;
     }
     case 'proposals': {
       const payload = signal.payload as ProposalSignalPayload;

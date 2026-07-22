@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { qualify } from '@/lib/cognition/qualify';
 import type { BusinessContext } from '@/lib/signals/provider';
 import type { EmailSignalPayload, CalendarSignalPayload, FinanceSignalPayload, Signal } from '@/lib/signals/types';
@@ -51,16 +51,23 @@ function makeFinanceSignal(overrides: Partial<Signal<FinanceSignalPayload>> = {}
     id: 'sig-finance-1',
     businessId: 'biz-1',
     domain: 'finance',
-    type: 'invoice_overdue',
+    type: 'debtor_overdue',
     occurredAt: new Date(),
     relatedEntities: {},
-    payload: { invoiceId: 'INV-001', amount: 4500, daysOverdue: 12, customerName: 'Jane Cooper' },
+    payload: {
+      role: 'debtor',
+      counterpartyName: 'Jane Cooper',
+      invoiceReference: 'INV-001',
+      amount: 4500,
+      currency: 'ZAR',
+      dueDate: '2026-06-15',
+    },
     sourceProviderId: 'upload-csv',
     externalRef: 'ref-finance-1',
     confidence: 1.0,
     createdAt: new Date(),
     temporality: 'snapshot',
-    reportingPeriod: { start: new Date('2026-06-01'), end: new Date('2026-06-30') },
+    reportingPeriod: { start: new Date('2026-06-30'), end: new Date('2026-06-30') },
     provenance: { extractionMethod: 'structured_export', sourceDocumentType: 'aged_debtors', structurallyComplete: true },
     ...overrides,
   };
@@ -182,14 +189,33 @@ describe('qualify', () => {
     });
   });
 
-  it('resolves a trustworthy but ungrounded finance signal to not-yet-assessable in F0 — no world-inherent-consequence rule has been approved for any finance document type yet (see financeQualificationPolicy.ts, F1 scope)', () => {
+  it('resolves an ungrounded finance signal with no world-inherent consequence to not-yet-assessable', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-20T09:00:00.000Z'));
     const context = makeContext({ people: [] });
-    const signal = makeFinanceSignal();
+    // Default fixture's dueDate (2026-06-15) is before this fixed 'now' —
+    // override it to a date not yet due, so this test isolates "neither
+    // grounded nor world-inherent" from F1's real overdue rule.
+    const signal = makeFinanceSignal({ payload: { ...makeFinanceSignal().payload, dueDate: '2026-08-01' } });
 
     const result = qualify([signal], context);
 
     expect(result.admitted).toEqual([]);
     expect(result.log[0].outcome).toEqual({ status: 'not-yet-assessable' });
+    vi.useRealTimers();
+  });
+
+  it('qualifies an ungrounded finance signal as world-inherent once it is genuinely overdue — F1\'s real rule, no grounding required', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-20T09:00:00.000Z'));
+    const context = makeContext({ people: [] });
+    const signal = makeFinanceSignal({ payload: { ...makeFinanceSignal().payload, dueDate: '2026-07-01' } });
+
+    const result = qualify([signal], context);
+
+    expect(result.admitted).toEqual([signal]);
+    expect(result.log[0].outcome).toEqual({ status: 'qualified', reason: 'world-inherent', matchedPersonId: undefined });
+    vi.useRealTimers();
   });
 
   it('fails closed for any domain without an explicitly approved qualification policy — Founder/CPO F0 correction: no domain is admitted merely because it lacks a domain-specific branch', () => {

@@ -98,6 +98,8 @@ function toSignal(row: PrismaSignal): Signal {
         ? { start: row.reportingPeriodStart, end: row.reportingPeriodEnd }
         : undefined,
     provenance: (row.provenance as unknown as SnapshotProvenance | null) ?? undefined,
+    sourceId: row.sourceId ?? undefined,
+    sourceRowNumber: row.sourceRowNumber ?? undefined,
   };
 }
 
@@ -120,6 +122,8 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]):
           reportingPeriodStart: draft.reportingPeriod?.start,
           reportingPeriodEnd: draft.reportingPeriod?.end,
           provenance: (draft.provenance as unknown as Prisma.InputJsonValue) ?? undefined,
+          sourceId: draft.sourceId,
+          sourceRowNumber: draft.sourceRowNumber,
         },
         create: {
           businessId,
@@ -135,6 +139,8 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]):
           reportingPeriodStart: draft.reportingPeriod?.start,
           reportingPeriodEnd: draft.reportingPeriod?.end,
           provenance: (draft.provenance as unknown as Prisma.InputJsonValue) ?? undefined,
+          sourceId: draft.sourceId,
+          sourceRowNumber: draft.sourceRowNumber,
         },
       })
     )

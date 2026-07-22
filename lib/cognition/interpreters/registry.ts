@@ -3,6 +3,7 @@ import type { Signal } from '@/lib/signals/types';
 import type { InterpretedSignal, SignalInterpreter } from './types';
 import { emailAwaitingReplyInterpreter, emailAwaitingReplyOverdueInterpreter } from './email';
 import { meetingUpcomingInterpreter } from './calendar';
+import { debtorOverdueInterpreter, creditorDueInterpreter } from './finance';
 import { interpretUnknown } from './fallback';
 
 /**
@@ -16,6 +17,8 @@ const INTERPRETERS: SignalInterpreter[] = [
   emailAwaitingReplyInterpreter,
   emailAwaitingReplyOverdueInterpreter,
   meetingUpcomingInterpreter,
+  debtorOverdueInterpreter,
+  creditorDueInterpreter,
 ];
 
 const REGISTRY = new Map<string, SignalInterpreter>(

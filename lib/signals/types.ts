@@ -80,6 +80,15 @@ export interface DraftSignal<TPayload = Record<string, unknown>> {
   reportingPeriod?: ReportingPeriod;
   /** Present only when temporality === 'snapshot'. */
   provenance?: SnapshotProvenance;
+  /**
+   * Product Audit — F1: Aged Debtors/Creditors, 22 July 2026 (Founder +
+   * CPO). References the SignalSource this signal was extracted from —
+   * only DocumentSignalExtractor-produced signals set this. sourceRowNumber
+   * is the row within that source's file, 1-indexed, matching what an
+   * owner would see if they opened the original CSV.
+   */
+  sourceId?: string;
+  sourceRowNumber?: number;
 }
 
 /** A Signal once persisted (adds database identity and businessId scope). */
@@ -127,13 +136,44 @@ export interface CrmSignalPayload {
   dealValue: number;
 }
 
-export interface FinanceSignalPayload {
+/**
+ * Product Audit — F1: Aged Debtors/Creditors, 22 July 2026 (Founder + CPO).
+ * Replaces the original MVP Blueprint placeholder `FinanceSignalPayload`
+ * (invoiceId/daysOverdue/customerName), which carried the same
+ * frozen-day-count flaw already found and fixed once for email
+ * (daysSinceReceived) — dueDate is a real date, staleness/overdue status
+ * is always computed fresh, never stored.
+ *
+ * This is the canonical downstream contract every finance acquisition
+ * method produces, regardless of source — the F1 CSV extractor today, a
+ * future accounting-API adapter or PDF extractor later. Deliberately
+ * carries no acquisition-method-specific concepts (no row numbers, no
+ * column names, no raw text) — those live on Signal.sourceRowNumber and
+ * SignalSource, kept separate from the payload on purpose.
+ */
+export interface DebtorSignalPayload {
   [key: string]: unknown;
-  invoiceId: string;
+  role: 'debtor';
+  counterpartyName: string;
+  invoiceReference: string;
   amount: number;
-  daysOverdue: number;
-  customerName: string;
+  currency: string;
+  dueDate: string; // ISO 8601
+  invoiceDate?: string; // ISO 8601
 }
+
+export interface CreditorSignalPayload {
+  [key: string]: unknown;
+  role: 'creditor';
+  counterpartyName: string;
+  invoiceReference: string;
+  amount: number;
+  currency: string;
+  dueDate: string; // ISO 8601
+  invoiceDate?: string; // ISO 8601
+}
+
+export type FinanceSignalPayload = DebtorSignalPayload | CreditorSignalPayload;
 
 export interface ProposalSignalPayload {
   [key: string]: unknown;
@@ -141,3 +181,18 @@ export interface ProposalSignalPayload {
   daysSinceSent: number;
   viewed: boolean;
 }
+
+/**
+ * Product Audit — F1: Aged Debtors/Creditors, 22 July 2026 (Founder + CPO
+ * architectural provisioning). The extractor contract's input is
+ * deliberately not `csvText: string` — that would embed a CSV assumption
+ * into a shared contract PDF and API-backed extractors will also need to
+ * satisfy. F1 only ever implements the 'csv' branch; 'pdf' and 'api' exist
+ * here only as the type-level seam their own future extractors will need,
+ * per the Founder/CPO's explicit instruction not to build speculative
+ * logic — only the honest shape.
+ */
+export type RawDocumentInput =
+  | { format: 'csv'; content: string }
+  | { format: 'pdf'; content: Buffer }
+  | { format: 'api'; content: unknown };

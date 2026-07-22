@@ -125,15 +125,44 @@ describe('describeSignalPlainly', () => {
     expect(description).not.toContain('a new contact at mzansichat.co.za');
   });
 
-  it('describes an overdue invoice without exposing raw payload structure', () => {
+  it('describes an overdue debtor invoice without exposing raw payload structure', () => {
+    const now = new Date('2026-07-20T00:00:00.000Z');
     const signal = baseSignal({
       domain: 'finance',
-      type: 'invoice_overdue',
-      payload: { invoiceId: 'INV-1', amount: 500, daysOverdue: 12, customerName: 'Acme Co' },
+      type: 'debtor_overdue',
+      payload: {
+        role: 'debtor',
+        counterpartyName: 'Acme Co',
+        invoiceReference: 'INV-1',
+        amount: 500,
+        currency: 'ZAR',
+        dueDate: '2026-07-08T00:00:00.000Z', // exactly 12 days before 'now'
+      },
     });
 
-    const description = describeSignalPlainly(signal);
+    const description = describeSignalPlainly(signal, now);
     expect(description).toContain('Acme Co');
+    expect(description).toContain('12 days overdue');
+  });
+
+  it('describes an overdue creditor obligation distinctly from a debtor invoice', () => {
+    const now = new Date('2026-07-20T00:00:00.000Z');
+    const signal = baseSignal({
+      domain: 'finance',
+      type: 'creditor_due',
+      payload: {
+        role: 'creditor',
+        counterpartyName: 'Office Supplies Ltd',
+        invoiceReference: 'PO-9',
+        amount: 300,
+        currency: 'ZAR',
+        dueDate: '2026-07-08T00:00:00.000Z',
+      },
+    });
+
+    const description = describeSignalPlainly(signal, now);
+    expect(description).toContain('Office Supplies Ltd');
+    expect(description).toContain('owed to');
     expect(description).toContain('12 days overdue');
   });
 });

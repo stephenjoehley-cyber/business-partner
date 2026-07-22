@@ -299,8 +299,15 @@ describe('fallback interpreter', () => {
     const context = makeContext();
     const signal = makeEmailSignal({
       domain: 'finance',
-      type: 'invoice_overdue',
-      payload: { invoiceId: 'INV-1', amount: 500, daysOverdue: 12, customerName: 'Acme Co' } as never,
+      type: 'invoice_overdue', // deliberately still unregistered — F1 registered 'debtor_overdue'/'creditor_due', not this
+      payload: {
+        role: 'debtor',
+        counterpartyName: 'Acme Co',
+        invoiceReference: 'INV-1',
+        amount: 500,
+        currency: 'ZAR',
+        dueDate: '2026-06-15',
+      } as never,
     } as never);
     const result = interpretSignal(signal, context);
 

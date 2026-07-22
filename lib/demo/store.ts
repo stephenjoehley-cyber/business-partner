@@ -226,6 +226,8 @@ export function persistDemoSignals(businessId: string, drafts: DraftSignal[]): S
       temporality: draft.temporality ?? 'continuous',
       reportingPeriod: draft.reportingPeriod,
       provenance: draft.provenance,
+      sourceId: draft.sourceId,
+      sourceRowNumber: draft.sourceRowNumber,
     };
     demoSignals.set(draft.externalRef, signal);
     return signal;
@@ -293,4 +295,69 @@ export function isDemoSeeded(): boolean {
 
 export function markDemoSeeded(): void {
   seeded = true;
+}
+
+// ---------------------------------------------------------------------------
+// SignalSource (F1 — Aged Debtors/Creditors, 22 July 2026)
+// ---------------------------------------------------------------------------
+
+export interface DemoSignalSource {
+  id: string;
+  businessId: string;
+  documentType: string;
+  acquisitionMethod: string;
+  originalFilename: string;
+  checksum: string;
+  reportingDate?: Date;
+  fileLevelCurrency?: string;
+  externalSourceRef?: string;
+  totalRowCount: number;
+  processedRowCount: number;
+  excludedRowCount: number;
+  reconciliationResult: string;
+  status: string;
+  createdAt: Date;
+}
+
+const demoSignalSources = new Map<string, DemoSignalSource>();
+let demoSignalSourceSequence = 0;
+
+export function createDemoSignalSource(
+  input: Omit<DemoSignalSource, 'id' | 'createdAt'>
+): DemoSignalSource {
+  const record: DemoSignalSource = {
+    ...input,
+    id: `demo-source-${++demoSignalSourceSequence}`,
+    createdAt: new Date(),
+  };
+  demoSignalSources.set(record.id, record);
+  return record;
+}
+
+export function findDemoSignalSourceByChecksum(
+  businessId: string,
+  checksum: string
+): DemoSignalSource | undefined {
+  return [...demoSignalSources.values()].find((s) => s.businessId === businessId && s.checksum === checksum);
+}
+
+export function updateDemoSignalSource(
+  id: string,
+  updates: Partial<Omit<DemoSignalSource, 'id' | 'businessId' | 'createdAt'>>
+): DemoSignalSource | undefined {
+  const existing = demoSignalSources.get(id);
+  if (!existing) return undefined;
+  const updated = { ...existing, ...updates };
+  demoSignalSources.set(id, updated);
+  return updated;
+}
+
+export function getDemoSignalSource(id: string): DemoSignalSource | undefined {
+  return demoSignalSources.get(id);
+}
+
+export function listDemoSignalSourcesForBusiness(businessId: string): DemoSignalSource[] {
+  return [...demoSignalSources.values()]
+    .filter((s) => s.businessId === businessId)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
