@@ -11,7 +11,7 @@ export interface NavItem {
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/morning-brief', label: 'Morning Brief' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/settings', label: 'Memory' },
 ];
 
 /** Pure so it's testable without rendering — Next's usePathname wraps this. */
