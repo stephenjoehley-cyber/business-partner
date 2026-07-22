@@ -1214,3 +1214,11 @@ A real architectural finding made during implementation, not assumed in the F1 a
 **Test/type status:** 397 tests passing (345 before this work — 52 new: 21 extractor, 7 qualification policy, 6 supersession, 9 finance interpreter, 7 ingestion service, plus fixes to 2 pre-existing tests using the retired `FinanceSignalPayload` shape). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only — no new `Json`-typed Prisma fields in this increment (`SignalSource` is all scalar columns), which is why this deployment had none of F0's Vercel-only cast failures.
 
 **Status:** Delivered and deployed. Upload API routes and UI deliberately withheld pending copy review, per standing practice — see the F1 upload-flow copy draft for the next step.
+
+## F1 — Aged Debtors/Creditors Structured Extractor: Complete (Founder + CPO)
+
+Approved and considered complete, 22 July 2026. Delivered across the full governance sequence: Product Audit v1 → Founder/CPO amendments → Product Audit v2 → Implementation Plan + Addendum (architectural provisioning for PDF/API acquisition methods, without building them) → Step A (schema) → Step B (extractor, qualification, supersession, interpreter, ingestion service) → approved customer-facing copy (four refinements) → routes and UI.
+
+**Founder/CPO decision, 22 July 2026:** durable persistence of excluded-row reasons is explicitly deferred to a new backlog item, **Financial Evidence History**, not required for F1's completion. F1 already delivers the executive outcome it was commissioned for — Business Partner understands uploaded financial evidence, executive reasoning improves, Morning Briefs become better informed. Row-level exclusion history improves transparency and auditability, but not executive judgement itself, and therefore doesn't block completion.
+
+**Status:** F1 closed. See the Business Partner Decision Backlog for the follow-on item.
