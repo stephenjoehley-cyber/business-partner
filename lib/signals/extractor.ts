@@ -34,14 +34,35 @@ export interface OwnerConfirmation {
   reportingDate?: Date;
 }
 
+/**
+ * Reason codes, not owner-facing copy — translated to plain language at
+ * the route layer (Section 19 of the approved copy draft), keeping the
+ * extractor itself free of presentation concerns, same separation as
+ * everywhere else in this codebase.
+ */
+export type ExcludedRowReason =
+  | 'missing_required_field'
+  | 'unparseable_amount'
+  | 'unparseable_due_date'
+  | 'missing_currency'
+  | 'conflicting_duplicate';
+
+export interface ExcludedRow {
+  rowNumber: number;
+  reason: ExcludedRowReason;
+}
+
+export type RejectionKind = 'wrong_document_type' | 'empty_file' | 'too_many_rows' | 'ambiguous_reporting_date';
+
 export type ExtractionOutcome =
-  | { status: 'rejected'; reason: string }
+  | { status: 'rejected'; kind: RejectionKind; reason: string }
   | { status: 'pending_confirmation'; needsCurrency: boolean; needsReportingDate: boolean }
   | {
       status: 'extracted';
       signals: DraftSignal[];
       totalRowCount: number;
       excludedRowCount: number;
+      excludedRows: ExcludedRow[];
       reconciliationResult: 'passed' | 'failed' | 'unavailable';
       reportingDate: Date;
       fileLevelCurrency?: string;

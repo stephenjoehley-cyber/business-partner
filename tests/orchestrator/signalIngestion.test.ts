@@ -112,6 +112,37 @@ describe('ingestDocument', () => {
     expect(updateSignalSourceMock).toHaveBeenCalledWith('source-new', { status: 'completed' });
   });
 
+  it('computes qualifiedCount from real Qualification, not just how many signals were persisted', async () => {
+    createSignalSourceMock.mockResolvedValue({ id: 'source-new', status: 'processing' });
+    updateSignalSourceMock.mockResolvedValue({ id: 'source-new', status: 'completed' });
+    // Overdue by well over a day as of any real test-run date — qualifies
+    // as world-inherent regardless of grounding, per F1's real rule.
+    persistSignalsMock.mockResolvedValue([
+      {
+        id: 'sig-1',
+        businessId: 'biz-1',
+        domain: 'finance',
+        type: 'debtor_overdue',
+        occurredAt: new Date('2026-06-30'),
+        relatedEntities: {},
+        payload: { role: 'debtor', counterpartyName: 'Jane Cooper', invoiceReference: 'INV-1', amount: 4500, currency: 'ZAR', dueDate: '2020-01-01' },
+        sourceProviderId: 'csv_upload',
+        externalRef: 'ref-1',
+        confidence: 1,
+        createdAt: new Date(),
+        temporality: 'snapshot',
+        reportingPeriod: { start: new Date('2026-06-30'), end: new Date('2026-06-30') },
+        provenance: { extractionMethod: 'structured_export', sourceDocumentType: 'aged_debtors', structurallyComplete: true },
+      },
+    ]);
+
+    const result = await ingestDocument('biz-1', 'aged_debtors', { filename: 'x.csv', content: VALID_CSV });
+
+    expect(result.status).toBe('completed');
+    if (result.status !== 'completed') return;
+    expect(result.qualifiedCount).toBe(1);
+  });
+
   it('short-circuits on an existing completed duplicate even before the extractor runs — checksum is content-based, not filename-based', async () => {
     findSignalSourceByChecksumMock.mockResolvedValue({ id: 'source-dup', status: 'completed' });
 

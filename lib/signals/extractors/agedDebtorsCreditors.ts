@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import Papa from 'papaparse';
-import type { DocumentSignalExtractor, ExtractionOutcome, OwnerConfirmation } from '@/lib/signals/extractor';
+import type { DocumentSignalExtractor, ExtractionOutcome, OwnerConfirmation, ExcludedRow } from '@/lib/signals/extractor';
 import type { BusinessContext } from '@/lib/signals/provider';
 import type { DebtorSignalPayload, CreditorSignalPayload, DraftSignal, RawDocumentInput, SnapshotProvenance } from '@/lib/signals/types';
 import type { Person } from '@prisma/client';
@@ -18,6 +18,9 @@ const NAME_COLUMN: Record<'aged_debtors' | 'aged_creditors', string> = {
 };
 
 const REQUIRED_COLUMNS = ['as at date', 'invoice reference', 'due date', 'amount'] as const;
+
+/** Founder/CPO decision, F1 Implementation Plan: 5 MB / 10,000 data rows, CSV only. */
+const MAX_DATA_ROWS = 10_000;
 
 function normalizeHeader(h: string): string {
   return h.trim().toLowerCase();
@@ -87,13 +90,16 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
         // Defensive only — the Signal Ingestion Service routes by
         // acquisitionMethod, so this extractor is never actually invoked
         // with a non-csv input. Not a real code path in F1.
-        return { status: 'rejected', reason: 'This extractor only accepts CSV input.' };
+        return { status: 'rejected', kind: 'wrong_document_type', reason: 'This extractor only accepts CSV input.' };
       }
 
       const parsed = Papa.parse<string[]>(input.content, { skipEmptyLines: true });
       const rows = parsed.data;
       if (rows.length < 2) {
-        return { status: 'rejected', reason: 'The file is empty or contains no data rows.' };
+        return { status: 'rejected', kind: 'empty_file', reason: 'The file is empty or contains no data rows.' };
+      }
+      if (rows.length - 1 > MAX_DATA_ROWS) {
+        return { status: 'rejected', kind: 'too_many_rows', reason: `This file has more than ${MAX_DATA_ROWS.toLocaleString()} rows, which is more than can be read right now.` };
       }
 
       const headerRow = rows[0].map(normalizeHeader);
@@ -104,6 +110,7 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
         const label = documentType === 'aged_debtors' ? 'Aged Debtors' : 'Aged Creditors';
         return {
           status: 'rejected',
+          kind: 'wrong_document_type',
           reason: `This file doesn't match the ${label} format — missing column(s): ${missingHeaders.join(', ')}.`,
         };
       }
@@ -135,6 +142,7 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
       if (distinctAsAtDates.length > 1) {
         return {
           status: 'rejected',
+          kind: 'ambiguous_reporting_date',
           reason: 'The "As At Date" column contains more than one date — this looks like more than one export combined into a single file.',
         };
       } else if (distinctAsAtDates.length === 1) {
@@ -166,10 +174,26 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
       const type = documentType === 'aged_debtors' ? 'debtor_overdue' : 'creditor_due';
       const role: 'debtor' | 'creditor' = documentType === 'aged_debtors' ? 'debtor' : 'creditor';
 
+      const excludedRows: ExcludedRow[] = [];
       const validRows = parsedRows.filter((r) => {
-        if (!r.counterpartyName || !r.invoiceReference || !r.dueDate || r.amount === undefined) return false;
+        if (!r.counterpartyName || !r.invoiceReference) {
+          excludedRows.push({ rowNumber: r.rowNumber, reason: 'missing_required_field' });
+          return false;
+        }
+        if (r.amount === undefined) {
+          excludedRows.push({ rowNumber: r.rowNumber, reason: 'unparseable_amount' });
+          return false;
+        }
+        if (!r.dueDate) {
+          excludedRows.push({ rowNumber: r.rowNumber, reason: 'unparseable_due_date' });
+          return false;
+        }
         const currency = r.currency ?? fileLevelCurrency;
-        return Boolean(currency);
+        if (!currency) {
+          excludedRows.push({ rowNumber: r.rowNumber, reason: 'missing_currency' });
+          return false;
+        }
+        return true;
       });
 
       const groups = new Map<string, ParsedRow[]>();
@@ -189,11 +213,15 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
         const allIdentical = group.every((r) => r.amount === group[0].amount && r.dueDate === group[0].dueDate);
         if (allIdentical) {
           acceptedRows.push(group[0]); // silent dedupe — harmless export artefact
+        } else {
+          // Conflicting duplicates: excluded entirely, not guessed at.
+          for (const row of group) {
+            excludedRows.push({ rowNumber: row.rowNumber, reason: 'conflicting_duplicate' });
+          }
         }
-        // Conflicting duplicates: excluded entirely, not guessed at.
       }
 
-      const excludedRowCount = parsedRows.length - acceptedRows.length;
+      const excludedRowCount = excludedRows.length;
 
       // --- Reconciliation (Audit v2 §5) ---------------------------------
       // The canonical CSV contract has no stated-total field to reconcile
@@ -241,6 +269,7 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
         signals,
         totalRowCount: parsedRows.length,
         excludedRowCount,
+        excludedRows,
         reconciliationResult,
         reportingDate: new Date(`${reportingDateIso}T00:00:00.000Z`),
         fileLevelCurrency,

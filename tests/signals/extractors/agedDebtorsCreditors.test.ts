@@ -53,6 +53,16 @@ describe('agedDebtorsExtractor', () => {
     expect(outcome.status).toBe('rejected');
   });
 
+  it('rejects a file with more than 10,000 data rows', () => {
+    const rows = Array.from({ length: 10_001 }, (_, i) => `2026-06-30,Jane Cooper,INV-${i},,2026-06-15,100,ZAR`);
+    const csv = `${HEADER}\n${rows.join('\n')}`;
+    const outcome = agedDebtorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
+
+    expect(outcome.status).toBe('rejected');
+    if (outcome.status !== 'rejected') return;
+    expect(outcome.reason).toContain('10,000');
+  });
+
   // --- Currency resolution (Audit v2 §3) ----------------------------------
 
   it('requests confirmation when no row carries currency and none is supplied', () => {
@@ -145,6 +155,20 @@ describe('agedDebtorsExtractor', () => {
     expect(outcome.status).toBe('extracted');
     if (outcome.status !== 'extracted') return;
     expect(outcome.signals).toHaveLength(1);
+    // A harmless, silently-merged duplicate is not something the owner
+    // "couldn't use" — it should not inflate the exclusion count or
+    // appear in the disclosure detail.
+    expect(outcome.excludedRowCount).toBe(0);
+    expect(outcome.excludedRows).toHaveLength(0);
+  });
+
+  it('records a plain reason code for each excluded row, not just a count', () => {
+    const csv = `${HEADER}\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,not-a-number,ZAR`;
+    const outcome = agedDebtorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
+
+    expect(outcome.status).toBe('extracted');
+    if (outcome.status !== 'extracted') return;
+    expect(outcome.excludedRows).toEqual([{ rowNumber: 1, reason: 'unparseable_amount' }]);
   });
 
   it('excludes both rows of a conflicting duplicate (same reference, different amount) rather than guessing which is correct', () => {

@@ -6,6 +6,7 @@ import { ExportDataLink } from './ExportDataLink';
 import { DeleteBusinessSection } from './DeleteBusinessSection';
 import { PreferredNameSection } from './PreferredNameSection';
 import { HelpUnderstandSection } from './HelpUnderstandSection';
+import { FinanceUploadSection } from './FinanceUploadSection';
 import { asOfPhrase } from '@/lib/ui/time';
 
 /**
@@ -211,6 +212,14 @@ export default async function SettingsPage({
               })
             )}
           />
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Business Finances</h2>
+
+        <div className="rounded-lg border border-surface-border bg-surface-card p-6">
+          <FinanceUploadSection />
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { agedDebtorsExtractor, agedCreditorsExtractor } from '@/lib/signals/extractors/agedDebtorsCreditors';
-import type { DocumentSignalExtractor, OwnerConfirmation } from '@/lib/signals/extractor';
+import type { DocumentSignalExtractor, OwnerConfirmation, ExcludedRow, RejectionKind } from '@/lib/signals/extractor';
 import type { RawDocumentInput } from '@/lib/signals/types';
 import { persistSignals } from '@/lib/signals/repository';
 import {
@@ -10,6 +10,7 @@ import {
   type SignalSourceRecord,
 } from '@/lib/signals/sourceRepository';
 import { getBusinessById } from '@/lib/brain/repository';
+import { qualify } from '@/lib/cognition/qualify';
 
 /**
  * Product Audit — F1: Aged Debtors/Creditors, 22 July 2026 (Founder + CPO
@@ -29,9 +30,9 @@ const EXTRACTORS: Record<'aged_debtors' | 'aged_creditors', DocumentSignalExtrac
 
 export type IngestionResult =
   | { status: 'duplicate'; source: SignalSourceRecord }
-  | { status: 'rejected'; reason: string }
+  | { status: 'rejected'; kind: RejectionKind; reason: string }
   | { status: 'pending_confirmation'; sourceId: string; needsCurrency: boolean; needsReportingDate: boolean }
-  | { status: 'completed'; source: SignalSourceRecord };
+  | { status: 'completed'; source: SignalSourceRecord; excludedRows: ExcludedRow[]; qualifiedCount: number };
 
 export async function ingestDocument(
   businessId: string,
@@ -71,7 +72,7 @@ export async function ingestDocument(
       reconciliationResult: 'unavailable',
       status: 'rejected',
     });
-    return { status: 'rejected', reason: outcome.reason };
+    return { status: 'rejected', kind: outcome.kind, reason: outcome.reason };
   }
 
   if (outcome.status === 'pending_confirmation') {
@@ -122,8 +123,22 @@ export async function ingestDocument(
     : await createSignalSource(sourceData);
 
   const signalsWithSource = outcome.signals.map((s) => ({ ...s, sourceId: source.id }));
-  await persistSignals(businessId, signalsWithSource);
+  const persisted = await persistSignals(businessId, signalsWithSource);
 
   const completed = await updateSignalSource(source.id, { status: 'completed' });
-  return { status: 'completed', source: completed ?? { ...source, status: 'completed' } };
+
+  // "A few of these are worth your attention" vs "Nothing here needs you
+  // right now" (approved copy, Section 6) requires knowing how many of
+  // these signals actually qualify — not just how many were written.
+  // Reuses the real Qualification Gate directly, the same admission
+  // logic the next Morning Brief cycle will apply, rather than
+  // duplicating or approximating it here.
+  const { admitted } = qualify(persisted, context);
+
+  return {
+    status: 'completed',
+    source: completed ?? { ...source, status: 'completed' },
+    excludedRows: outcome.excludedRows,
+    qualifiedCount: admitted.length,
+  };
 }
