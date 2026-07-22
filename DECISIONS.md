@@ -1252,3 +1252,19 @@ Found live, 22 July 2026, during the Founder's own acceptance testing — exactl
 Two new regression tests cover this exactly: a rejected-then-corrected retry now processes successfully; a rejected-then-rejected-again retry reuses rather than duplicates. 418 tests total. Deployed and verified.
 
 **No manual data correction needed** — the Founder's existing rejected record will be found and correctly reused on his next retry with the same file, now that the fix is live.
+
+## F1 — Formally Closed: Engineering, Product, and Founder Acceptance (22 July 2026)
+
+F1 (Aged Debtors/Creditors Structured Extractor) is closed, having achieved all three required perspectives:
+
+- **Engineering Acceptance:** 418 tests passing, typecheck clean beyond the documented Prisma-sandbox baseline, full governed sequence followed (Product Audit → Implementation Plan → Founder/CPO approval → implementation → two-step migration discipline → deployment verification).
+- **Product Acceptance:** the approved copy (four refinements incorporated), the executive tone maintained throughout the owner-facing flow, the complete demonstrable loop (Business Memory → Understanding → Executive Judgement → Morning Brief) verified with real evidence — a genuine before/after change in the Morning Brief's primary recommendation.
+- **Founder Acceptance:** completed by the Founder personally, on his own real production account, on the live `business-partner.co.za` domain (confirmed working for the first time as a side effect of this test) — exercising the complete workflow end to end and observing the Morning Brief change as a direct, personal result.
+
+**Founder Acceptance also surfaced one real production defect, found and fixed live:** a rejected upload (wrong document type selected) incorrectly blocked a corrected retry of the same file, since checksum-based idempotency didn't distinguish a genuinely completed upload from a merely rejected one. Fixed and deployed — see the entry above ("Real Defect Found During Founder Acceptance Test"). No engineering-side defect was found beyond that one; the two further upload failures during acceptance testing were both traced to how the CSV file itself had been prepared (each row quoted as a single field, from pasting into one spreadsheet cell rather than across columns) — confirmed by testing the Founder's actual uploaded file bytes directly, not assumed.
+
+**Two Founder Acceptance observations recorded to the Decision Backlog, not blocking F1's closure** (see Q24 and Q25 in the canonical Decision Backlog):
+- Detecting and specifically diagnosing a whole-row-quoted CSV, rather than a generic wrong-document-type message
+- A candidate general product principle: before recommending an action, Business Partner should silently ask whether it knows enough to help the owner carry it out, and say so plainly when it doesn't — surfaced directly from watching a real recommendation ("Follow up with Acceptance Test Customer...") that named an action without acknowledging Business Partner has no contact information for that customer
+
+**Status:** F1 closed. Next Product Audit reframed by the Founder from "PDF vs. Xero" to **"Financial Evidence Acquisition"** — comparing the canonical CSV (current state), multi-format CSV understanding with intelligent header mapping, native Xero integration, and PDF/OCR acquisition, evaluated by customer friction and executive judgement gained, not acquisition breadth for its own sake. To be opened in the next session.
