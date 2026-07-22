@@ -1170,3 +1170,32 @@ New `MorningBrief.recognisedSignals` column (JSONB) persists, for every supporti
 **Test/type status:** 334 tests passing. `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only — now also covering `Prisma.JsonNull`, confirmed genuinely harmless both times via the real Vercel build succeeding once each specific issue was fixed.
 
 **Status:** Delivered and deployed, all four phases. This closes out the Production Implementation Contract.
+
+## F0 — Signal Temporality (Delivered, Founder + CPO)
+
+Objective: introduce the architectural distinction between `continuous` signals (calendar, email — relevance decays from `occurredAt`) and `snapshot` signals (financial documents — relevance governed by `reportingPeriod.end`, never acquisition time), plus the qualification and provenance foundation Financial Signal Acquisition depends on. Full detail in the approved F0 Product Audit.
+
+### 2026-07-22 — Qualification: systemic fail-closed default
+`qualify.ts`'s fallthrough for any domain without an explicit branch previously admitted unconditionally as `world-inherent` — confirmed via the real code that this was a live gap: a new `finance` `SignalProvider`, had one existed before this fix, would have bypassed Qualification entirely. Corrected so any domain lacking an explicitly approved policy resolves to `not-yet-assessable` and is never admitted, by design, not merely for finance. Confirmed via `lib/signals/providers/` that only `calendar` and `email` currently produce any real signals, so this changes nothing about current production behaviour.
+
+### 2026-07-22 — Finance qualification: provenance-then-grounding, not confidence-percentage
+Founder/CPO correction to the original audit draft: qualification for snapshot evidence is based on provenance and evidence quality, not `Signal.confidence` (a float that already existed for an unrelated purpose — seeded-data realism). New `lib/cognition/provenance.ts` (`isSnapshotProvenanceTrustworthy`) checks `SnapshotProvenance.structurallyComplete`, an extractor's own honest assertion, explicitly not a numeric score. Only once that check passes does qualification proceed to grounding — a matched Person, **or** (Founder/CPO correction) a specific world-inherent consequence, which does not require owner-declared grounding in every case. `lib/cognition/financeQualificationPolicy.ts` (`hasWorldInherentConsequence`) is a deliberate, honest stub returning `false` in F0 — no such rule has been approved for any finance document type yet; this is F1 scope, decided per document type, the same way staleness bands are.
+
+### 2026-07-22 — No hard staleness expiry; staleness derives from reportingPeriod.end
+New `lib/cognition/snapshotAge.ts` (`daysSinceReportingPeriodEnd`) is the Understand-stage seam every future snapshot interpreter uses to measure staleness — always from the reporting period's own end date, never from `occurredAt`, `createdAt`, or upload time. Founder/CPO decision: no universal fresh/aging/historical bands and no hard expiry — an aged-debtors export and an annual financial statement age on different scales, so the actual bands are defined per document type when each real extractor is built (F1 onward), not invented generically here.
+
+### 2026-07-22 — Validation evaluated directly, not assumed; not built as a separate stage
+Founder/CPO explicitly asked the F0 audit to evaluate, not assume, whether a distinct Validation stage should precede Qualification for snapshot evidence ("can this representation be trusted?" vs "does this deserve executive attention?"). Conclusion: the distinction is real, but F1's extractor (structured CSV) can't produce a signal that "succeeds" while being silently wrong the way OCR/PDF parsing can — the two questions don't yet diverge in a way Qualification can't express on its own. **Revisit trigger, recorded explicitly so it's found rather than re-litigated:** reconsider a distinct Validation stage when multiple acquisition methods produce non-binary or materially different evidence-quality states that Qualification can no longer assess coherently without assuming responsibility for extraction integrity. PDF/OCR (F2) is the likely candidate; the trigger is architectural, not format-specific.
+
+### 2026-07-22 — Real Vercel build failure: the established Json-field cast pattern, now used twice
+A third occurrence of the same category of failure first recorded under the Production Implementation Contract (`recognisedSignals`, two build failures): Prisma's freshly-generated client types a `Json?` column as the broad `JsonValue` union, which cannot be cast directly to a specific interface — TypeScript rejects it as insufficiently overlapping. Not caught locally; this sandbox's stale Prisma Client cannot see this category of error, only Vercel's real build can.
+
+**This is now the established, precedent pattern for every future Json-typed Signal field (provenance and beyond) — to be reused deliberately in F1, not rediscovered:**
+- **Read** (DB → domain type): `(row.fieldName as unknown as SpecificType | null) ?? undefined`
+- **Write** (domain type → DB): `(value as unknown as Prisma.InputJsonValue) ?? undefined` (or `?? Prisma.JsonNull` where the field must always be explicitly set on every write, as `recognisedSignals` is)
+
+Applied to `lib/signals/repository.ts`'s `provenance` field (read + both write sites), matching `lib/cognition/repository.ts`'s existing `recognisedSignals` handling exactly.
+
+**Test/type status:** 345 tests passing (334 before this work — 11 new: 5 in `tests/cognition/qualify.test.ts`, 3 in `tests/cognition/provenance.test.ts`, 3 in `tests/cognition/snapshotAge.test.ts`). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
+
+**Status:** Delivered and deployed, in two steps per the established migration discipline — schema/migration confirmed applied by the Founder before application code was pushed. Closes the F0 Product Audit.
