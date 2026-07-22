@@ -1240,3 +1240,15 @@ Executive summary, reasoning, and recommended action all changed concretely — 
 **Disclosed, not silently skipped:** this fix has no automated test — no component-testing infrastructure (testing-library, jsdom) exists anywhere in this codebase. Verified manually against the real functions instead. Introducing that infrastructure now would be new scope beyond what was asked.
 
 **Status:** the complete executive loop (Business Memory → Understanding → Executive Judgement → Morning Brief) is verified working and demo-ready. No further work required before the next Product Audit (F2 vs. Xero vs. Executive Insight Layer).
+
+## Real Defect Found During Founder Acceptance Test — Fixed and Deployed
+
+Found live, 22 July 2026, during the Founder's own acceptance testing — exactly the discipline the Founder Acceptance Test process exists to catch. The Founder's first upload was rejected (wrong document type selected against the acceptance CSV's headers). A retry with the corrected document type was incorrectly told "I've already got this one" and never actually re-evaluated — **no signals were processed from either attempt.**
+
+**Root cause:** `findSignalSourceByChecksum`'s result was treated as a blocking duplicate whenever `status !== 'pending_confirmation'`, which incorrectly included `'rejected'`. Checksum is content-based, not document-type-based, so a corrected retry of the identical file hit the same checksum and short-circuited before the extractor ever ran again.
+
+**Fix:** only a genuinely `'completed'` prior upload counts as a duplicate. A rejected attempt produced no understanding at all, so it must always permit a fresh retry. Every branch (`rejected`/`pending_confirmation`/`extracted`) now reuses (updates) the existing record for a given checksum rather than creating a second row, regardless of its prior status — required either way by the `(businessId, checksum)` unique constraint. Always writes the *current* attempt's `documentType`/`filename`, since a retry may be correcting exactly those.
+
+Two new regression tests cover this exactly: a rejected-then-corrected retry now processes successfully; a rejected-then-rejected-again retry reuses rather than duplicates. 418 tests total. Deployed and verified.
+
+**No manual data correction needed** — the Founder's existing rejected record will be found and correctly reused on his next retry with the same file, now that the fix is live.
