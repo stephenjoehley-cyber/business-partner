@@ -48,9 +48,16 @@ export async function ingestDocument(
   const checksum = createHash('sha256').update(file.content).digest('hex');
 
   // File-level idempotency (Audit v2 §6) — checked before any extraction
-  // work happens.
+  // work happens. Only a genuinely *completed* prior upload counts as a
+  // real duplicate. A rejected attempt produced no understanding at all —
+  // treating it the same as a completed one would permanently block a
+  // retry of the same file under a corrected document-type selection,
+  // which is exactly the real defect found live, 22 July 2026 (Founder
+  // Acceptance Test): a first attempt rejected for the wrong document
+  // type, followed by a correct retry that was wrongly told "I've
+  // already got this one" and never actually re-evaluated.
   const existing = await findSignalSourceByChecksum(businessId, checksum);
-  if (existing && existing.status !== 'pending_confirmation') {
+  if (existing?.status === 'completed') {
     return { status: 'duplicate', source: existing };
   }
 
@@ -59,9 +66,21 @@ export async function ingestDocument(
   const input: RawDocumentInput = { format: 'csv', content: file.content };
   const outcome = extractor.extract(input, context, confirmation);
 
+  // Every branch below reuses (updates) an existing rejected/pending
+  // record for this checksum rather than creating a second one —
+  // required regardless of the prior status, since the
+  // (businessId, checksum) uniqueness constraint doesn't care why the
+  // earlier row exists. Always writes the *current* attempt's
+  // documentType/filename, since a retry may correct exactly those.
+  async function upsertSource(data: Omit<Parameters<typeof createSignalSource>[0], 'businessId'>) {
+    if (existing) {
+      return (await updateSignalSource(existing.id, data)) ?? { id: existing.id, businessId, createdAt: existing.createdAt, ...data };
+    }
+    return createSignalSource({ businessId, ...data });
+  }
+
   if (outcome.status === 'rejected') {
-    await createSignalSource({
-      businessId,
+    await upsertSource({
       documentType,
       acquisitionMethod: extractor.acquisitionMethod,
       originalFilename: file.filename,
@@ -76,22 +95,17 @@ export async function ingestDocument(
   }
 
   if (outcome.status === 'pending_confirmation') {
-    // Reuse the existing pending record on a follow-up confirmation call,
-    // rather than creating a second one for the same checksum.
-    const source =
-      existing ??
-      (await createSignalSource({
-        businessId,
-        documentType,
-        acquisitionMethod: extractor.acquisitionMethod,
-        originalFilename: file.filename,
-        checksum,
-        totalRowCount: 0,
-        processedRowCount: 0,
-        excludedRowCount: 0,
-        reconciliationResult: 'unavailable',
-        status: 'pending_confirmation',
-      }));
+    const source = await upsertSource({
+      documentType,
+      acquisitionMethod: extractor.acquisitionMethod,
+      originalFilename: file.filename,
+      checksum,
+      totalRowCount: 0,
+      processedRowCount: 0,
+      excludedRowCount: 0,
+      reconciliationResult: 'unavailable',
+      status: 'pending_confirmation',
+    });
     return {
       status: 'pending_confirmation',
       sourceId: source.id,
@@ -100,12 +114,8 @@ export async function ingestDocument(
     };
   }
 
-  // status === 'extracted'. Reuse the existing pending SignalSource on a
-  // confirmation follow-up, rather than creating a second row for the
-  // same checksum — creating here would violate the very
-  // (businessId, checksum) uniqueness the schema defines for idempotency.
-  const sourceData = {
-    businessId,
+  // status === 'extracted'
+  const source = await upsertSource({
     documentType,
     acquisitionMethod: extractor.acquisitionMethod,
     originalFilename: file.filename,
@@ -117,10 +127,7 @@ export async function ingestDocument(
     excludedRowCount: outcome.excludedRowCount,
     reconciliationResult: outcome.reconciliationResult,
     status: 'processing',
-  };
-  const source = existing
-    ? ((await updateSignalSource(existing.id, sourceData)) ?? { id: existing.id, ...sourceData, createdAt: existing.createdAt })
-    : await createSignalSource(sourceData);
+  });
 
   const signalsWithSource = outcome.signals.map((s) => ({ ...s, sourceId: source.id }));
   const persisted = await persistSignals(businessId, signalsWithSource);

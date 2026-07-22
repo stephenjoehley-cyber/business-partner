@@ -151,4 +151,37 @@ describe('ingestDocument', () => {
 
     expect(result.status).toBe('duplicate');
   });
+
+  it('a rejected prior attempt does not block a corrected retry of the same file — the exact defect found live, 22 July 2026 (Founder Acceptance Test)', async () => {
+    // The first attempt (wrong document type selected) was rejected and
+    // recorded with this checksum.
+    findSignalSourceByChecksumMock.mockResolvedValue({ id: 'source-rejected', status: 'rejected', checksum: 'whatever' });
+    createSignalSourceMock.mockReset();
+    updateSignalSourceMock.mockImplementation(async (id, updates) => ({ id, status: 'completed', ...updates }));
+
+    // Retry with the correct document type — same file content.
+    const result = await ingestDocument('biz-1', 'aged_debtors', { filename: 'x.csv', content: VALID_CSV });
+
+    expect(result.status).toBe('completed');
+    expect(persistSignalsMock).toHaveBeenCalledTimes(1);
+    // Must reuse the existing rejected record (update), never create a
+    // second row for the same checksum — that would violate the
+    // (businessId, checksum) unique constraint in production.
+    expect(createSignalSourceMock).not.toHaveBeenCalled();
+    expect(updateSignalSourceMock).toHaveBeenCalledWith('source-rejected', expect.objectContaining({ status: 'processing', documentType: 'aged_debtors' }));
+  });
+
+  it('a rejected prior attempt, retried and rejected again, updates the existing record rather than creating a duplicate row', async () => {
+    findSignalSourceByChecksumMock.mockResolvedValue({ id: 'source-rejected', status: 'rejected' });
+    createSignalSourceMock.mockReset();
+
+    const result = await ingestDocument('biz-1', 'aged_debtors', {
+      filename: 'wrong.csv',
+      content: 'Customer,Ref\nJane,INV-1',
+    });
+
+    expect(result.status).toBe('rejected');
+    expect(createSignalSourceMock).not.toHaveBeenCalled();
+    expect(updateSignalSourceMock).toHaveBeenCalledWith('source-rejected', expect.objectContaining({ status: 'rejected' }));
+  });
 });
