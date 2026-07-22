@@ -24,6 +24,7 @@ model Business {
   signals         Signal[]
   briefs          MorningBrief[]
   providerConfigs SignalProviderConfig[]
+  signalSources   SignalSource[]
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   onboardingCompletedAt DateTime?
@@ -84,8 +85,51 @@ model Signal {
   // sourceDocumentType, structurallyComplete. Attached by every
   // DocumentSignalExtractor; consulted by qualify.ts, never by Prioritise.
   provenance           Json?
+  // Product Audit — F1: Aged Debtors/Creditors, 22 July 2026 (Founder +
+  // CPO correction to F1 v1's flat provenance.sourceReference string,
+  // insufficient as durable identity for upload history/traceability).
+  // Nullable: only snapshot signals produced by a DocumentSignalExtractor
+  // populate these; calendar/email signals never do.
+  sourceId        String?
+  source          SignalSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  sourceRowNumber Int?
 
   @@unique([businessId, externalRef])
+}
+
+// Product Audit — F1: Aged Debtors/Creditors, 22 July 2026 (Founder + CPO).
+// The durable record of one upload/acquisition event — a business owner's
+// CSV upload today, an accounting-platform sync later. Every resulting
+// Signal references exactly one SignalSource via Signal.sourceId. Raw file
+// bytes are deliberately not retained here (Founder/CPO decision) —
+// checksum proves byte-identity for idempotency without storing content.
+model SignalSource {
+  id               String   @id @default(cuid())
+  businessId       String
+  business         Business @relation(fields: [businessId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  documentType     String   // 'aged_debtors' | 'aged_creditors'
+  // Recorded independently of documentType (Founder/CPO architectural
+  // provisioning, 22 July 2026) — so a future Xero-backed 'aged_debtors'
+  // source is a new acquisitionMethod value against the same documentType,
+  // never a schema change. F1 always writes 'csv_upload'.
+  acquisitionMethod    String
+  originalFilename     String
+  checksum             String    // sha256 of the raw upload — file-level idempotency, no raw-byte retention
+  reportingDate        DateTime? // confirmed "as at" date; null while status = 'pending_confirmation'
+  fileLevelCurrency    String?   // set only when no row-level currency applies — see the extractor
+  // Stable identifier from an API-backed source (e.g. a future Xero
+  // document id) — provisioned now (Founder/CPO, 22 July 2026), always
+  // null for F1's CSV uploads, since no such identifier exists for them.
+  externalSourceRef    String?
+  totalRowCount        Int
+  processedRowCount    Int
+  excludedRowCount     Int
+  reconciliationResult String    // 'passed' | 'failed' | 'unavailable'
+  status               String    // 'pending_confirmation' | 'processing' | 'completed' | 'rejected'
+  createdAt            DateTime  @default(now())
+  signals              Signal[]
+
+  @@unique([businessId, checksum])
 }
 
 model SignalProviderConfig {
