@@ -1,5 +1,6 @@
 import type { BusinessContext } from './provider';
 import type { DraftSignal, RawDocumentInput } from './types';
+import type { ColumnMappingQuestion } from './schemaMapping';
 
 /**
  * Product Audit — F1: Aged Debtors/Creditors, 22 July 2026 (Founder + CPO).
@@ -27,11 +28,20 @@ export interface DocumentSignalExtractor {
 /**
  * Supplied once an owner has resolved a pending_confirmation outcome
  * (Audit v2 §3, §7 — currency and/or reporting date could not be reliably
- * extracted). Both optional: a file might be missing only one.
+ * extracted). All optional: a file might be missing only one.
+ *
+ * columnMapping (Multi-format CSV Understanding, 22 July 2026) — the
+ * merged, currently-known raw-header-to-canonical-field mapping for this
+ * call: Confirmed Mapping Memory plus whatever the owner has just
+ * answered this round, already combined by the caller. The extractor
+ * itself doesn't distinguish "remembered" from "just told me" — both are
+ * simply known mappings to use directly, never re-guessed (Refinement 2:
+ * owner-confirmed understanding always takes precedence over inference).
  */
 export interface OwnerConfirmation {
   currency?: string;
   reportingDate?: Date;
+  columnMapping?: Record<string, string>;
 }
 
 /**
@@ -56,7 +66,15 @@ export type RejectionKind = 'wrong_document_type' | 'empty_file' | 'too_many_row
 
 export type ExtractionOutcome =
   | { status: 'rejected'; kind: RejectionKind; reason: string }
-  | { status: 'pending_confirmation'; needsCurrency: boolean; needsReportingDate: boolean }
+  | {
+      status: 'pending_confirmation';
+      needsCurrency: boolean;
+      needsReportingDate: boolean;
+      /** Multi-format CSV Understanding — present only when at least one column genuinely needs the owner's input (Refinement 4: asked together, one review). */
+      columnMappingQuestions?: ColumnMappingQuestion[];
+      /** The signature this file's header set produced — the route needs this to write ConfirmedColumnMapping once the owner answers. */
+      sourceSignature?: string;
+    }
   | {
       status: 'extracted';
       signals: DraftSignal[];
@@ -66,4 +84,7 @@ export type ExtractionOutcome =
       reconciliationResult: 'passed' | 'failed' | 'unavailable';
       reportingDate: Date;
       fileLevelCurrency?: string;
+      /** Multi-format CSV Understanding — present whenever any column was resolved via a synonym or memory match rather than an exact canonical name, so the ingestion service knows whether there's a new mapping worth remembering. */
+      sourceSignature?: string;
+      resolvedColumnMapping?: Record<string, string>;
     };

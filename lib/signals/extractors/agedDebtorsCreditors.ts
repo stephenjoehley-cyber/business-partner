@@ -4,6 +4,7 @@ import type { DocumentSignalExtractor, ExtractionOutcome, OwnerConfirmation, Exc
 import type { BusinessContext } from '@/lib/signals/provider';
 import type { DebtorSignalPayload, CreditorSignalPayload, DraftSignal, RawDocumentInput, SnapshotProvenance } from '@/lib/signals/types';
 import type { Person } from '@prisma/client';
+import { resolveColumnMapping, hasNoMeaningfulMapping, buildMappingQuestions, computeSourceSignature, CANONICAL_FIELDS } from '@/lib/signals/schemaMapping';
 
 /**
  * Product Audit — F1: Aged Debtors/Creditors Structured Extractor, 22 July
@@ -11,20 +12,18 @@ import type { Person } from '@prisma/client';
  * canonical Business Partner CSV contract, not compatibility with
  * unspecified third-party accounting exports. Header matching is
  * case/whitespace-tolerant; the column *names* themselves are fixed.
+ *
+ * Multi-format CSV Understanding, 22 July 2026 — the fixed exact-name
+ * lookup this file used to do directly is now Schema Mapping
+ * Resolution's job (lib/signals/schemaMapping.ts). This file no longer
+ * decides what "exact match" means on its own; it asks that module to
+ * resolve a mapping, then parses using whatever it resolves to — a
+ * canonical CSV upload still resolves every field at 'high' confidence
+ * via exact match, so it continues to ask zero questions, unchanged.
  */
-const NAME_COLUMN: Record<'aged_debtors' | 'aged_creditors', string> = {
-  aged_debtors: 'customer name',
-  aged_creditors: 'supplier name',
-};
-
-const REQUIRED_COLUMNS = ['as at date', 'invoice reference', 'due date', 'amount'] as const;
 
 /** Founder/CPO decision, F1 Implementation Plan: 5 MB / 10,000 data rows, CSV only. */
 const MAX_DATA_ROWS = 10_000;
-
-function normalizeHeader(h: string): string {
-  return h.trim().toLowerCase();
-}
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -102,29 +101,56 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
         return { status: 'rejected', kind: 'too_many_rows', reason: `This file has more than ${MAX_DATA_ROWS.toLocaleString()} rows, which is more than can be read right now.` };
       }
 
-      const headerRow = rows[0].map(normalizeHeader);
-      const nameColumn = NAME_COLUMN[documentType];
-      const requiredHeaders = [nameColumn, ...REQUIRED_COLUMNS];
-      const missingHeaders = requiredHeaders.filter((h) => !headerRow.includes(h));
-      if (missingHeaders.length > 0) {
+      const rawHeaders = rows[0];
+      const dataRows = rows.slice(1);
+      const sourceSignature = computeSourceSignature(rawHeaders);
+
+      // --- Schema Mapping Resolution (Multi-format CSV Understanding) ---
+      // Every canonical CSV upload resolves every field at 'high'
+      // confidence via exact match here, unchanged from F1 — this is a
+      // pre-step, not a replacement of anything downstream.
+      const resolutions = resolveColumnMapping(documentType, rawHeaders, dataRows.slice(0, 3), confirmation?.columnMapping);
+
+      if (hasNoMeaningfulMapping(resolutions)) {
         const label = documentType === 'aged_debtors' ? 'Aged Debtors' : 'Aged Creditors';
         return {
           status: 'rejected',
           kind: 'wrong_document_type',
-          reason: `This file doesn't match the ${label} format — missing column(s): ${missingHeaders.join(', ')}.`,
+          reason: `This file doesn't match the ${label} format — I couldn't recognise any of the columns I'd expect.`,
         };
       }
 
-      const col = (name: string) => headerRow.indexOf(name);
-      const nameIdx = col(nameColumn);
-      const refIdx = col('invoice reference');
-      const invDateIdx = col('invoice date'); // optional — -1 if absent, handled below
-      const dueDateIdx = col('due date');
-      const amountIdx = col('amount');
-      const currencyIdx = col('currency'); // optional
-      const asAtIdx = col('as at date');
+      const mappingQuestions = buildMappingQuestions(rawHeaders, resolutions);
+      if (mappingQuestions.length > 0) {
+        // Two-round simplification, disclosed: currency/reporting-date
+        // needs can only be assessed once every column's meaning is
+        // settled, so a file needing both mapping *and* currency
+        // clarification asks in two rounds, not one combined round.
+        // Known, named limitation — not silently accepted as ideal.
+        return {
+          status: 'pending_confirmation',
+          needsCurrency: false,
+          needsReportingDate: false,
+          columnMappingQuestions: mappingQuestions,
+          sourceSignature,
+        };
+      }
 
-      const dataRows = rows.slice(1);
+      const colIndex = (canonicalField: string): number => {
+        const resolution = resolutions.find((r) => r.canonicalField === canonicalField);
+        return resolution?.rawHeader ? rawHeaders.indexOf(resolution.rawHeader) : -1;
+      };
+
+      const { required } = CANONICAL_FIELDS[documentType];
+      const nameColumn = required[1]; // 'customer name' | 'supplier name' — always index 1, see CANONICAL_FIELDS
+      const nameIdx = colIndex(nameColumn);
+      const refIdx = colIndex('invoice reference');
+      const invDateIdx = colIndex('invoice date'); // optional — -1 if absent, handled below
+      const dueDateIdx = colIndex('due date');
+      const amountIdx = colIndex('amount');
+      const currencyIdx = colIndex('currency'); // optional
+      const asAtIdx = colIndex('as at date');
+
       const parsedRows: ParsedRow[] = dataRows.map((cells, i) => ({
         rowNumber: i + 1,
         counterpartyName: cells[nameIdx]?.trim() || undefined,
@@ -167,7 +193,7 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
       const needsReportingDate = !reportingDateIso;
       const needsCurrency = noRowsHaveCurrency && !fileLevelCurrency;
       if (needsReportingDate || needsCurrency) {
-        return { status: 'pending_confirmation', needsCurrency, needsReportingDate };
+        return { status: 'pending_confirmation', needsCurrency, needsReportingDate, sourceSignature };
       }
 
       // --- Row-level validity + duplicate handling (Audit v2 §4) -------
@@ -264,6 +290,17 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
         };
       });
 
+      // Only worth remembering (Confirmed Mapping Memory, Founder
+      // Decision 1) when at least one field was resolved via something
+      // other than an exact canonical match — an all-exact-match file
+      // has nothing new to remember.
+      const newlyResolvedMapping: Record<string, string> = {};
+      for (const r of resolutions) {
+        if (r.rawHeader && (r.confidence === 'medium' || confirmation?.columnMapping?.[r.rawHeader.trim().toLowerCase()])) {
+          newlyResolvedMapping[r.rawHeader.trim().toLowerCase()] = r.canonicalField;
+        }
+      }
+
       return {
         status: 'extracted',
         signals,
@@ -273,6 +310,8 @@ function buildExtractor(documentType: 'aged_debtors' | 'aged_creditors'): Docume
         reconciliationResult,
         reportingDate: new Date(`${reportingDateIso}T00:00:00.000Z`),
         fileLevelCurrency,
+        sourceSignature,
+        resolvedColumnMapping: Object.keys(newlyResolvedMapping).length > 0 ? newlyResolvedMapping : undefined,
       };
     },
   };

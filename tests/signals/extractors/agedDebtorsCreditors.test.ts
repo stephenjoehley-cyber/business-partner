@@ -39,13 +39,22 @@ describe('agedDebtorsExtractor', () => {
     });
   });
 
-  it('rejects a file missing required columns, with a specific reason', () => {
-    const csv = `Customer,Ref,Amount\nJane,INV-1,100`;
+  it('rejects a file where genuinely nothing matches any expected column', () => {
+    const csv = `Foo,Bar,Baz\nx,y,z`;
     const outcome = agedDebtorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
 
     expect(outcome.status).toBe('rejected');
     if (outcome.status !== 'rejected') return;
     expect(outcome.reason).toContain('Aged Debtors');
+  });
+
+  it('asks assisted-mapping questions, rather than rejecting, when at least one column is recognisable (Founder Decision 2)', () => {
+    const csv = `Customer,Ref,Amount\nJane,INV-1,100`; // 'Amount' matches exactly; the rest do not
+    const outcome = agedDebtorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
+
+    expect(outcome.status).toBe('pending_confirmation');
+    if (outcome.status !== 'pending_confirmation') return;
+    expect(outcome.columnMappingQuestions?.length).toBeGreaterThan(0);
   });
 
   it('rejects an empty file', () => {
@@ -263,10 +272,67 @@ describe('agedCreditorsExtractor', () => {
     expect(outcome.signals[0].relatedEntities.personId).toBe('p1');
   });
 
-  it('rejects a file with Customer Name instead of Supplier Name', () => {
+  it('asks a direct mapping question for Supplier Name rather than rejecting outright, when every other required field matches confidently (Multi-format CSV Understanding, Founder Decision 2 — ask only what is genuinely unclear)', () => {
     const csv = `${HEADER}\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
     const outcome = agedCreditorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
 
+    expect(outcome.status).toBe('pending_confirmation');
+    if (outcome.status !== 'pending_confirmation') return;
+    const supplierQuestion = outcome.columnMappingQuestions?.find((q) => q.canonicalField === 'supplier name');
+    expect(supplierQuestion?.kind).toBe('select');
+  });
+
+  it('rejects outright when genuinely nothing in the file matches any expected creditor field', () => {
+    const csv = `Foo,Bar,Baz\nx,y,z`;
+    const outcome = agedCreditorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
+
     expect(outcome.status).toBe('rejected');
+  });
+});
+
+describe('agedDebtorsExtractor — Multi-format CSV Understanding', () => {
+  const MULTI_FORMAT_HEADER = 'As At Date,Client,Invoice Reference,Invoice Date,Due Date,Amount,Currency';
+
+  it('asks a confirm question for a synonym match, and asks nothing at all once that same mapping is remembered', () => {
+    const csv = `${MULTI_FORMAT_HEADER}\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+
+    const firstAttempt = agedDebtorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
+    expect(firstAttempt.status).toBe('pending_confirmation');
+    if (firstAttempt.status !== 'pending_confirmation') return;
+    const confirmQuestion = firstAttempt.columnMappingQuestions?.find((q) => q.canonicalField === 'customer name');
+    expect(confirmQuestion?.kind).toBe('confirm');
+
+    // Owner confirms "Client" means Customer Name — remembered mapping supplied on retry.
+    const secondAttempt = agedDebtorsExtractor.extract(
+      { format: 'csv', content: csv },
+      makeContext(),
+      { columnMapping: { client: 'customer name' } }
+    );
+    expect(secondAttempt.status).toBe('extracted');
+    if (secondAttempt.status !== 'extracted') return;
+    expect(secondAttempt.signals).toHaveLength(1);
+    expect(secondAttempt.resolvedColumnMapping).toEqual({ client: 'customer name' });
+  });
+
+  it('produces a stable sourceSignature for the same header set regardless of case', () => {
+    const csv1 = `${HEADER}\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+    const csv2 = `as at date,customer name,invoice reference,invoice date,due date,amount,currency\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+
+    const outcome1 = agedDebtorsExtractor.extract({ format: 'csv', content: csv1 }, makeContext());
+    const outcome2 = agedDebtorsExtractor.extract({ format: 'csv', content: csv2 }, makeContext());
+
+    expect(outcome1.status).toBe('extracted');
+    expect(outcome2.status).toBe('extracted');
+    if (outcome1.status !== 'extracted' || outcome2.status !== 'extracted') return;
+    expect(outcome1.sourceSignature).toBe(outcome2.sourceSignature);
+  });
+
+  it('does not record a resolvedColumnMapping for a fully exact-match canonical file — nothing new to remember', () => {
+    const csv = `${HEADER}\n2026-06-30,Jane Cooper,INV-1,,2026-06-15,4500,ZAR`;
+    const outcome = agedDebtorsExtractor.extract({ format: 'csv', content: csv }, makeContext());
+
+    expect(outcome.status).toBe('extracted');
+    if (outcome.status !== 'extracted') return;
+    expect(outcome.resolvedColumnMapping).toBeUndefined();
   });
 });
