@@ -272,6 +272,22 @@ function ConfirmationForm({
 
 function ResultView({ result, onDone }: { result: UploadResult; onDone: () => void }) {
   const [showDetail, setShowDetail] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  async function handleTakeMeThere() {
+    // Found while verifying the complete demonstrable loop, 22 July 2026:
+    // the Morning Brief page only ever reads the last *persisted* brief —
+    // it never regenerates one on its own (app/morning-brief/page.tsx
+    // calls getLatestMorningBrief, never generateMorningBrief). A plain
+    // link here could land on a stale, pre-upload Brief if one had
+    // already run today. Refreshing first, then hard-navigating, is the
+    // same pattern already established (and already fixed once for a
+    // stale-client-router bug) in HelpUnderstandSection's own refresh —
+    // reused deliberately, not reinvented.
+    setIsNavigating(true);
+    await fetch('/api/recommendations/generate', { method: 'POST' });
+    window.location.href = '/morning-brief';
+  }
 
   if (result.status === 'rejected') {
     return (
@@ -320,9 +336,14 @@ function ResultView({ result, onDone }: { result: UploadResult; onDone: () => vo
       )}
 
       <div className="mt-2 flex gap-3">
-        <a href="/morning-brief" className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface">
-          Take me there
-        </a>
+        <button
+          type="button"
+          onClick={handleTakeMeThere}
+          disabled={isNavigating}
+          className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
+        >
+          {isNavigating ? 'Preparing your brief…' : 'Take me there'}
+        </button>
         <button type="button" onClick={onDone} className="focus-ring text-sm text-ink-faint underline">
           Back to Business Memory
         </button>
