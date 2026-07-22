@@ -1338,3 +1338,12 @@ Found 22 July 2026, in the course of checking this path before the Founder teste
 **Fix:** both question kinds now share the same "not yet claimed by another field" header set. The UI's answer state is now keyed uniformly by canonical field throughout, correct regardless of which path (confirm-yes, confirm-no-then-pick, or select) the owner takes.
 
 **Status:** fixed and deployed before being tested, not after — the intended benefit of reviewing a path proactively once it's known to be about to be exercised.
+
+## Multi-format CSV Understanding — Both Fixes Confirmed by the Founder Directly
+
+22 July 2026 — the Founder personally re-tested both defects found during this capability's acceptance:
+
+1. The repetitive "I'll remember this" notice, confirmed resolved on a fresh two-file sequence.
+2. "No, let me choose" now offers a genuine alternative column ("Primary Contact") rather than the one just declined, and the resulting signal correctly used the chosen column's value, not the originally-proposed one — confirmed via the actual production upload flow, on the Founder's own account.
+
+**Status:** Multi-format CSV Understanding — Founder Acceptance substantively complete. Both real defects found during testing are now fixed and independently confirmed.
