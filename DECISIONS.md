@@ -1288,3 +1288,17 @@ Product Audit approved by Founder + CPO, 22 July 2026. The Validation-stage ques
 **Decision 3 — Initial synonym table: deliberately narrow, high-confidence only.** No attempt at broad industry coverage in Version 1. The table expands from real customer evidence gathered through production usage, exactly as F0 and F1's own scope decisions were made — evidence-driven, not assumed.
 
 **Status:** Product Audit complete. Proceeding to the Implementation Plan.
+
+## Multi-format CSV Understanding — Implementation Plan Approved, Five Refinements Recorded
+
+**Refinement 1 — sourceSignature is an internal implementation detail, not a product contract.** Version 1 uses a hash of the normalised header set. This may evolve (e.g. incorporating column count or structural patterns) if real evidence shows header names alone are insufficient — `ConfirmedColumnMapping` as a durable concept must remain stable across that evolution; only the signature algorithm underneath it is free to change.
+
+**Refinement 2 — owner-confirmed understanding always takes precedence over inference; never silently overwritten.** If a future upload shares a source signature but its columns conflict with an already-confirmed mapping, that is treated as a new conversation with the owner, never an automatic replacement of what was previously confirmed. What the owner has taught Business Partner is remembered, not silently revised out from under them.
+
+**Refinement 3 — complete confirmation copy required before any UI implementation**, covering all seven states named explicitly: high confidence (silent), medium confidence confirmation, direct mapping questions, multiple simultaneous questions, successful confirmation, mapping remembered for future uploads, and rejection. Same discipline as F1 — a full draft-and-review cycle, not an extrapolation from one example sentence.
+
+**Refinement 4 — assisted mapping presents as one coherent conversation, not sequential prompts.** When multiple questions genuinely need asking, the owner reviews the file once, not a questionnaire one field at a time. Directly serves both Executive Presence and the "ask the fewest questions necessary" principle from Decision 2.
+
+**Refinement 5 — additional integration test required:** a confirmed mapping must continue working correctly across subsequent deployments and database migrations — a durability property of Business Memory itself, not of the mapping-resolution logic.
+
+**Status:** Implementation Plan approved in full. Proceeding to Step A (schema).
