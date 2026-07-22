@@ -1199,3 +1199,18 @@ Applied to `lib/signals/repository.ts`'s `provenance` field (read + both write s
 **Test/type status:** 345 tests passing (334 before this work — 11 new: 5 in `tests/cognition/qualify.test.ts`, 3 in `tests/cognition/provenance.test.ts`, 3 in `tests/cognition/snapshotAge.test.ts`). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only.
 
 **Status:** Delivered and deployed, in two steps per the established migration discipline — schema/migration confirmed applied by the Founder before application code was pushed. Closes the F0 Product Audit.
+
+## F1 Step B — Aged Debtors/Creditors Extractor (Delivered, Founder + CPO)
+
+### 2026-07-22 — Supersession: pre-filter before per-signal interpretation, not inside an interpreter
+A real architectural finding made during implementation, not assumed in the F1 audit: `understand()` calls `interpretSignal` once per signal (`interpreters/registry.ts` dispatches by (domain, type) to a function that only ever sees the one signal it was given). Supersession — when the same obligation appears in more than one upload, reason only about the most recent — cannot live inside a per-signal interpreter under that architecture; there is no visibility across signals at that point in the pipeline.
+
+**Established precedent for any future snapshot domain requiring latest-period selection:** supersession runs as a small pre-filtering step in `understand.ts`, ahead of the existing per-signal dispatch loop (`lib/cognition/supersession.ts`), operating only on the relevant domain's snapshot signals — every other signal passes through unchanged. This is now the pattern to reuse, not rediscover, the next time a domain needs "pick the latest of several qualified snapshots" logic (e.g. a future bank-statement or P&L domain in F2).
+
+### 2026-07-22 — Two real bugs found by the test suite before production, not after
+1. **Calendar-date-boundary bug** in `hasWorldInherentConsequence` and the finance interpreter's `daysOverdue` — both diffed raw timestamps and floored, giving a wrong answer whenever "now" has a nonzero time-of-day and the due date sits exactly on a boundary (an invoice due today, checked at noon, floored to -0.5 days and registered as already overdue). The identical bug class already found and fixed once this session for calendar (`relativeDayPhrase` → `relativeDatePhrase`). Fixed both to compare calendar-date boundaries (UTC midnight to UTC midnight), not raw durations.
+2. **Idempotency bug** in the Signal Ingestion Service: the success path unconditionally created a new `SignalSource` even when a `pending_confirmation` record already existed for the same checksum — every confirmation follow-up (currency or reporting date) would have violated the `(businessId, checksum)` unique constraint in production. Caught by the ingestion service's own test suite; fixed to reuse (update) the existing record rather than creating a second one.
+
+**Test/type status:** 397 tests passing (345 before this work — 52 new: 21 extractor, 7 qualification policy, 6 supersession, 9 finance interpreter, 7 ingestion service, plus fixes to 2 pre-existing tests using the retired `FinanceSignalPayload` shape). `npx tsc --noEmit` shows the same pre-existing, documented Prisma-sandbox category only — no new `Json`-typed Prisma fields in this increment (`SignalSource` is all scalar columns), which is why this deployment had none of F0's Vercel-only cast failures.
+
+**Status:** Delivered and deployed. Upload API routes and UI deliberately withheld pending copy review, per standing practice — see the F1 upload-flow copy draft for the next step.
