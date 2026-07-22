@@ -25,6 +25,7 @@ model Business {
   briefs          MorningBrief[]
   providerConfigs SignalProviderConfig[]
   signalSources   SignalSource[]
+  confirmedColumnMappings ConfirmedColumnMapping[]
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   onboardingCompletedAt DateTime?
@@ -170,4 +171,34 @@ model MorningBrief {
   ownerResponse       String? 
   continuityNote      String? // Executive Presence Audit, 19 July 2026 — an optional, timeless sentence acknowledging what's been added to Business Memory since the previous brief. Never present for all_clear (Business Memory Reflection already covers that tier fully). Null whenever nothing genuinely changed.
   recognisedSignals   Json? // Production Implementation Contract, Point 6 (Evidence Chain), 20 July 2026. Every signal that qualified (see lib/cognition/qualify.ts) but did not win the recommendation, with its grounding reason and matched Person/Goal id — so "Recognised Signals" is inspectable after the fact, not just used in-memory for one generation. Array of {signalId, reason, matchedPersonId?, matchedGoalId?}. Null/empty when nothing else qualified.
+}
+
+// Multi-format CSV Understanding — Implementation Plan, 22 July 2026
+// (Founder + CPO). Confirmed Mapping Memory (Founder Decision 1): once an
+// owner confirms a column's meaning for a given business and source
+// format, Business Partner remembers it — future uploads from the same
+// source never ask again. Owner-confirmed understanding always takes
+// precedence over inference and is never silently overwritten
+// (Refinement 2) — a conflicting future upload is a new conversation
+// with the owner, not an automatic replacement.
+model ConfirmedColumnMapping {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  documentType String   // 'aged_debtors' | 'aged_creditors'
+  // Refinement 1: an internal implementation detail, not a long-term
+  // product contract. V1 is a hash of the normalised header set. This
+  // may evolve (e.g. incorporating column count or structural patterns)
+  // if real evidence shows header names alone are insufficient — this
+  // model's durability as a concept does not depend on the signature
+  // algorithm staying the same.
+  sourceSignature String
+  // Raw header name -> canonical field name. Only ever written once a
+  // column has been explicitly confirmed by the owner — never populated
+  // speculatively.
+  columnMapping Json
+  confirmedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([businessId, documentType, sourceSignature])
 }
