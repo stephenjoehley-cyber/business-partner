@@ -1347,3 +1347,14 @@ Found 22 July 2026, in the course of checking this path before the Founder teste
 2. "No, let me choose" now offers a genuine alternative column ("Primary Contact") rather than the one just declined, and the resulting signal correctly used the chosen column's value, not the originally-proposed one — confirmed via the actual production upload flow, on the Founder's own account.
 
 **Status:** Multi-format CSV Understanding — Founder Acceptance substantively complete. Both real defects found during testing are now fixed and independently confirmed.
+
+## Multi-format CSV Understanding — Formally Closed (Founder Acceptance Complete)
+
+All steps delivered (A–G), both real defects found during Founder Acceptance testing independently confirmed fixed by the Founder directly on his own production account. This capability is closed.
+
+Two product questions surfaced during acceptance testing, deliberately not resolved as quick fixes — reframed by the Founder into properly-scoped future Product Audits, recorded in the Decision Backlog as Q28 and Q29:
+
+- **Q28 — Executive Memory Experience Redesign.** What looked like a finance-specific "how do I manage uploaded cards" question (Archive vs. Delete) was recognised as evidence of a larger Information Architecture problem: Business Memory has grown well beyond its original conception as a settings page, and will keep growing. Archive vs. Delete becomes one part of that broader redesign, not an isolated finance feature — Archive remains the Founder's inclination, but sequenced within the larger work, not ahead of it.
+- **Q29 — Executive Communication Intelligence.** What looked like a missing-qualification-rule question for email was reframed by the Founder into a genuinely deeper one: not "should email get a world-inherent path," but "what are the inherent executive truths contained within communication behaviour when Business Partner only has access to metadata" — finance and calendar have structural truths because invoices and meetings are objective; email's structural truths, if they exist, more likely emerge from communication *behaviour* (response patterns, silence, ongoing conversations, relationship history) than from elapsed time alone. Deserves its own dedicated Product Audit, not an answer arrived at today.
+
+**Founder's own observation, worth preserving verbatim in spirit:** both the long Memory page and the missing email signals initially looked like small, isolated fixes, and both revealed themselves to be larger product questions once actually discussed — exactly what this methodology exists to catch before implementation, not after.
