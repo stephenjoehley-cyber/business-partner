@@ -97,6 +97,10 @@ export default async function MorningBriefPage() {
   const isCalendarConnectedNow =
     !demoMode && (await getConfiguredProviderId(business.id, 'calendar')) === 'google-calendar';
   const isEmailConnectedNow = !demoMode && (await getConfiguredProviderId(business.id, 'email')) === 'google-gmail';
+  // Finance has no OAuth connection to check — it's upload-based. True
+  // once at least one finance signal exists on record, from the same
+  // signals list already loaded for the Brief itself, not a new query.
+  const hasFinanceSignal = signals.some((signal) => signal.domain === 'finance');
 
   // Found in the Executive Signal Capability & Claims Audit, 20 July
   // 2026: the original count was a rolling snapshot (whatever currently
@@ -152,6 +156,7 @@ export default async function MorningBriefPage() {
             calendarConnected={isCalendarConnectedNow}
             emailConnected={isEmailConnectedNow}
             emailCount={emailSignalCount}
+            financeConnected={hasFinanceSignal}
           />
         )}
 

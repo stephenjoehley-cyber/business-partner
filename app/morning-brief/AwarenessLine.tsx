@@ -2,6 +2,16 @@ interface AwarenessLineProps {
   calendarConnected: boolean;
   emailConnected: boolean;
   emailCount: number;
+  /**
+   * Multi-format CSV Understanding, 22 July 2026 — Founder request to
+   * reflect finance in this sentence. Deliberately not modelled the same
+   * way as calendarConnected/emailConnected: finance has no OAuth
+   * connection to check — it's upload-based. This is true only once the
+   * business has at least one finance signal on record, computed by the
+   * caller from the same signals list already loaded for the Brief
+   * itself, not a new query.
+   */
+  financeConnected: boolean;
 }
 
 /**
@@ -28,7 +38,7 @@ interface AwarenessLineProps {
  * it. A count is a plain structural fact, not a judgement about any of
  * the emails it counts.
  */
-export function awarenessText(calendarConnected: boolean, emailConnected: boolean, emailCount: number): string {
+export function awarenessText(calendarConnected: boolean, emailConnected: boolean, emailCount: number, financeConnected: boolean): string {
   const parts: string[] = [];
 
   if (emailConnected) {
@@ -37,12 +47,20 @@ export function awarenessText(calendarConnected: boolean, emailConnected: boolea
   if (calendarConnected) {
     parts.push('your calendar');
   }
+  if (financeConnected) {
+    parts.push('finances');
+  }
 
   if (parts.length === 0) {
     return "I'm working from what you've told me so far — connect your calendar or inbox in Settings so I can start watching more.";
   }
 
-  const joined = parts.length === 2 ? `${parts[0]} and ${parts[1]}` : parts[0];
+  const joined =
+    parts.length === 1
+      ? parts[0]
+      : parts.length === 2
+        ? `${parts[0]} and ${parts[1]}`
+        : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
   return `Since we last spoke, I've reviewed ${joined}.`;
 }
 
@@ -61,8 +79,8 @@ export function awarenessText(calendarConnected: boolean, emailConnected: boolea
  * verifiable, and — as of the Capability & Claims Audit — made
  * genuinely accurate to what "since we last spoke" actually means.
  */
-export function AwarenessLine({ calendarConnected, emailConnected, emailCount }: AwarenessLineProps) {
+export function AwarenessLine({ calendarConnected, emailConnected, emailCount, financeConnected }: AwarenessLineProps) {
   return (
-    <p className="mb-6 text-sm text-ink-faint">{awarenessText(calendarConnected, emailConnected, emailCount)}</p>
+    <p className="mb-6 text-sm text-ink-faint">{awarenessText(calendarConnected, emailConnected, emailCount, financeConnected)}</p>
   );
 }
