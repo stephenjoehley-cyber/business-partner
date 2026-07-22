@@ -45,7 +45,7 @@ export type IngestionResult =
       needsReportingDate: boolean;
       columnMappingQuestions?: ColumnMappingQuestion[];
     }
-  | { status: 'completed'; source: SignalSourceRecord; excludedRows: ExcludedRow[]; qualifiedCount: number };
+  | { status: 'completed'; source: SignalSourceRecord; excludedRows: ExcludedRow[]; qualifiedCount: number; mappingRemembered: boolean };
 
 export async function ingestDocument(
   businessId: string,
@@ -177,9 +177,11 @@ export async function ingestDocument(
   // simply skipped rather than silently applied, so a future upload of
   // this same source is asked fresh rather than inheriting a resolved
   // disagreement neither the code nor the owner actually settled.
+  let mappingRemembered = false;
   if (outcome.resolvedColumnMapping && outcome.sourceSignature) {
     try {
       await upsertConfirmedColumnMapping(businessId, documentType, outcome.sourceSignature, outcome.resolvedColumnMapping);
+      mappingRemembered = true;
     } catch (err) {
       if (!(err instanceof ConfirmedMappingConflictError)) throw err;
     }
@@ -198,5 +200,6 @@ export async function ingestDocument(
     source: completed ?? { ...source, status: 'completed' },
     excludedRows: outcome.excludedRows,
     qualifiedCount: admitted.length,
+    mappingRemembered,
   };
 }

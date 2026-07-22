@@ -203,3 +203,107 @@ describe('POST /api/business-memory/finance/upload', () => {
     expect(body.message).toContain("Something went wrong on my side");
   });
 });
+
+describe('POST /api/business-memory/finance/upload — Multi-format CSV Understanding', () => {
+  beforeEach(() => {
+    createClientMock.mockReset();
+    getBusinessByOwnerMock.mockReset();
+    ingestDocumentMock.mockReset();
+  });
+
+  it('translates a confirm-type column question into the approved copy, never using the word "mapping"', async () => {
+    mockAuthedUser('user-1');
+    getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
+    ingestDocumentMock.mockResolvedValue({
+      status: 'pending_confirmation',
+      sourceId: 'source-1',
+      needsCurrency: false,
+      needsReportingDate: false,
+      columnMappingQuestions: [{ kind: 'confirm', rawHeader: 'Client', canonicalField: 'customer name', sampleValues: ['Jane Cooper'] }],
+    });
+
+    const res = await POST(makeUploadRequest({ file: VALID_CSV_FILE, documentType: 'aged_debtors' }));
+    const body = await res.json();
+
+    expect(body.mappingQuestions[0].question).toContain('customer');
+    expect(body.mappingQuestions[0].explanation).toContain("remember this");
+    expect(JSON.stringify(body.mappingQuestions[0].question) + JSON.stringify(body.mappingQuestions[0].explanation)).not.toContain('mapping');
+  });
+
+  it('translates a select-type column question, offering the candidate headers', async () => {
+    mockAuthedUser('user-1');
+    getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
+    ingestDocumentMock.mockResolvedValue({
+      status: 'pending_confirmation',
+      sourceId: 'source-1',
+      needsCurrency: false,
+      needsReportingDate: false,
+      columnMappingQuestions: [{ kind: 'select', canonicalField: 'due date', candidateHeaders: ['Some Other Column'] }],
+    });
+
+    const res = await POST(makeUploadRequest({ file: VALID_CSV_FILE, documentType: 'aged_debtors' }));
+    const body = await res.json();
+
+    expect(body.mappingQuestions[0].candidateHeaders).toEqual(['Some Other Column']);
+    expect(body.mappingQuestions[0].question).toContain('due date');
+  });
+
+  it('uses the multiple-questions heading when more than one question is pending, together', async () => {
+    mockAuthedUser('user-1');
+    getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
+    ingestDocumentMock.mockResolvedValue({
+      status: 'pending_confirmation',
+      sourceId: 'source-1',
+      needsCurrency: true,
+      needsReportingDate: false,
+      columnMappingQuestions: [{ kind: 'confirm', rawHeader: 'Client', canonicalField: 'customer name', sampleValues: [] }],
+    });
+
+    const res = await POST(makeUploadRequest({ file: VALID_CSV_FILE, documentType: 'aged_debtors' }));
+    const body = await res.json();
+
+    expect(body.heading).toContain('A couple of things');
+  });
+
+  it('passes a JSON-encoded columnMapping through to ingestDocument on a confirmation follow-up', async () => {
+    mockAuthedUser('user-1');
+    getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
+    ingestDocumentMock.mockResolvedValue({
+      status: 'completed',
+      source: { processedRowCount: 1, totalRowCount: 1, reportingDate: new Date('2026-06-30') },
+      excludedRows: [],
+      qualifiedCount: 0,
+      mappingRemembered: false,
+    });
+
+    const formData = new FormData();
+    formData.set('file', VALID_CSV_FILE);
+    formData.set('documentType', 'aged_debtors');
+    formData.set('columnMapping', JSON.stringify({ client: 'customer name' }));
+    await POST(new Request('http://localhost/api/business-memory/finance/upload', { method: 'POST', body: formData }));
+
+    expect(ingestDocumentMock).toHaveBeenCalledWith(
+      'biz-1',
+      'aged_debtors',
+      expect.anything(),
+      expect.objectContaining({ columnMapping: { client: 'customer name' } })
+    );
+  });
+
+  it('includes the remembered-mapping notice only when the ingestion service reports a new mapping was actually remembered', async () => {
+    mockAuthedUser('user-1');
+    getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
+    ingestDocumentMock.mockResolvedValue({
+      status: 'completed',
+      source: { processedRowCount: 1, totalRowCount: 1, reportingDate: new Date('2026-06-30') },
+      excludedRows: [],
+      qualifiedCount: 0,
+      mappingRemembered: true,
+    });
+
+    const res = await POST(makeUploadRequest({ file: VALID_CSV_FILE, documentType: 'aged_debtors' }));
+    const body = await res.json();
+
+    expect(body.rememberedNotice).toContain("need to confirm it again");
+  });
+});

@@ -15,11 +15,29 @@ import { inputClasses } from '@/components/FormField';
 
 type DocumentType = 'aged_debtors' | 'aged_creditors';
 
+interface MappingQuestion {
+  kind: 'confirm' | 'select';
+  rawHeader?: string;
+  canonicalField: string;
+  question: string;
+  explanation?: string;
+  sampleValues?: string[];
+  candidateHeaders?: string[];
+}
+
 type Step =
   | { kind: 'select_type' }
   | { kind: 'select_file'; documentType: DocumentType }
   | { kind: 'uploading' }
-  | { kind: 'needs_confirmation'; documentType: DocumentType; file: File; currencyPrompt?: string; reportingDatePrompt?: string }
+  | {
+      kind: 'needs_confirmation';
+      documentType: DocumentType;
+      file: File;
+      heading?: string;
+      currencyPrompt?: string;
+      reportingDatePrompt?: string;
+      mappingQuestions?: MappingQuestion[];
+    }
   | { kind: 'result'; result: UploadResult };
 
 interface UploadResult {
@@ -27,6 +45,7 @@ interface UploadResult {
   message?: string;
   heading?: string;
   reinforcement?: string;
+  rememberedNotice?: string;
   reportingDate?: string;
   outcomeMessage?: string;
   processedCount?: number;
@@ -43,12 +62,17 @@ interface HistoryItem {
   needsConfirmation: boolean;
 }
 
-async function submitUpload(documentType: DocumentType, file: File, confirmation?: { currency?: string; reportingDate?: string }) {
+async function submitUpload(
+  documentType: DocumentType,
+  file: File,
+  confirmation?: { currency?: string; reportingDate?: string; columnMapping?: Record<string, string> }
+) {
   const formData = new FormData();
   formData.set('documentType', documentType);
   formData.set('file', file);
   if (confirmation?.currency) formData.set('currency', confirmation.currency);
   if (confirmation?.reportingDate) formData.set('reportingDate', confirmation.reportingDate);
+  if (confirmation?.columnMapping) formData.set('columnMapping', JSON.stringify(confirmation.columnMapping));
 
   const res = await fetch('/api/business-memory/finance/upload', { method: 'POST', body: formData });
   return res.json();
@@ -79,8 +103,10 @@ export function FinanceUploadSection() {
         kind: 'needs_confirmation',
         documentType,
         file,
+        heading: data.heading,
         currencyPrompt: data.currencyPrompt,
         reportingDatePrompt: data.reportingDatePrompt,
+        mappingQuestions: data.mappingQuestions,
       });
       return;
     }
@@ -89,9 +115,33 @@ export function FinanceUploadSection() {
     loadHistory();
   }
 
-  async function handleConfirmation(documentType: DocumentType, file: File, currency?: string, reportingDate?: string) {
+  async function handleConfirmation(
+    documentType: DocumentType,
+    file: File,
+    currency?: string,
+    reportingDate?: string,
+    columnMapping?: Record<string, string>
+  ) {
     setStep({ kind: 'uploading' });
-    const data = await submitUpload(documentType, file, { currency, reportingDate });
+    const data = await submitUpload(documentType, file, { currency, reportingDate, columnMapping });
+
+    // A file needing both column clarification and currency/date
+    // clarification asks in two rounds (disclosed simplification, see
+    // lib/signals/extractors/agedDebtorsCreditors.ts) — if this round's
+    // answer surfaces a second pending_confirmation, show it the same way.
+    if (data.status === 'pending_confirmation') {
+      setStep({
+        kind: 'needs_confirmation',
+        documentType,
+        file,
+        heading: data.heading,
+        currencyPrompt: data.currencyPrompt,
+        reportingDatePrompt: data.reportingDatePrompt,
+        mappingQuestions: data.mappingQuestions,
+      });
+      return;
+    }
+
     setStep({ kind: 'result', result: data });
     loadHistory();
   }
@@ -160,10 +210,12 @@ export function FinanceUploadSection() {
 
       {step.kind === 'needs_confirmation' && (
         <ConfirmationForm
+          heading={step.heading}
           currencyPrompt={step.currencyPrompt}
           reportingDatePrompt={step.reportingDatePrompt}
-          onSubmit={(currency, reportingDate) =>
-            handleConfirmation(step.documentType, step.file, currency, reportingDate)
+          mappingQuestions={step.mappingQuestions}
+          onSubmit={(currency, reportingDate, columnMapping) =>
+            handleConfirmation(step.documentType, step.file, currency, reportingDate, columnMapping)
           }
         />
       )}
@@ -203,26 +255,118 @@ export function FinanceUploadSection() {
 }
 
 function ConfirmationForm({
+  heading,
   currencyPrompt,
   reportingDatePrompt,
+  mappingQuestions,
   onSubmit,
 }: {
+  heading?: string;
   currencyPrompt?: string;
   reportingDatePrompt?: string;
-  onSubmit: (currency?: string, reportingDate?: string) => void;
+  mappingQuestions?: MappingQuestion[];
+  onSubmit: (currency?: string, reportingDate?: string, columnMapping?: Record<string, string>) => void;
 }) {
   const [currency, setCurrency] = useState('');
   const [reportingDate, setReportingDate] = useState('');
+  // rawHeader (confirm) or canonicalField (select) -> chosen raw header
+  const [mappingAnswers, setMappingAnswers] = useState<Record<string, string>>({});
+
+  const questions = mappingQuestions ?? [];
+  const allMappingQuestionsAnswered = questions.every((q) =>
+    q.kind === 'confirm' ? mappingAnswers[q.rawHeader!] !== undefined : mappingAnswers[q.canonicalField] !== undefined
+  );
+
+  function buildColumnMapping(): Record<string, string> | undefined {
+    if (questions.length === 0) return undefined;
+    const result: Record<string, string> = {};
+    for (const q of questions) {
+      if (q.kind === 'confirm') {
+        // "Yes" -> the raw header maps to the proposed field. "No, let me
+        // choose" is handled by turning this question into a select
+        // question in local state (see handleConfirmAnswer below).
+        const answer = mappingAnswers[q.rawHeader!];
+        if (answer) result[q.rawHeader!.trim().toLowerCase()] = answer;
+      } else {
+        const chosenHeader = mappingAnswers[q.canonicalField];
+        if (chosenHeader) result[chosenHeader.trim().toLowerCase()] = q.canonicalField;
+      }
+    }
+    return result;
+  }
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(currencyPrompt ? currency : undefined, reportingDatePrompt ? reportingDate : undefined);
+        onSubmit(currencyPrompt ? currency : undefined, reportingDatePrompt ? reportingDate : undefined, buildColumnMapping());
       }}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
     >
-      <p className="text-ink">{currencyPrompt && reportingDatePrompt ? 'A couple of things before I continue.' : currencyPrompt ? 'One thing before I continue.' : 'One more thing.'}</p>
+      <p className="text-ink">
+        {heading ?? (currencyPrompt && reportingDatePrompt ? 'A couple of things before I continue.' : 'One thing before I continue.')}
+      </p>
+
+      {questions.map((q, i) => (
+        <div key={i} className="flex flex-col gap-1.5 rounded-md border border-surface-border p-3">
+          <p className="text-sm text-ink">{q.question}</p>
+          {q.explanation && <p className="text-xs text-ink-faint">{q.explanation}</p>}
+          {q.sampleValues && q.sampleValues.length > 0 && (
+            <p className="text-xs text-ink-faint">e.g. {q.sampleValues.join(', ')}</p>
+          )}
+
+          {q.kind === 'confirm' && (
+            <div className="mt-1 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setMappingAnswers((prev) => ({ ...prev, [q.rawHeader!]: q.canonicalField }))}
+                className={`focus-ring rounded-md border px-3 py-1.5 text-sm ${
+                  mappingAnswers[q.rawHeader!] === q.canonicalField ? 'border-ink bg-ink text-surface' : 'border-surface-border text-ink'
+                }`}
+              >
+                Yes, that&rsquo;s right
+              </button>
+              <button
+                type="button"
+                onClick={() => setMappingAnswers((prev) => ({ ...prev, [q.rawHeader!]: '' }))}
+                className="focus-ring rounded-md border border-surface-border px-3 py-1.5 text-sm text-ink"
+              >
+                No, let me choose
+              </button>
+              {mappingAnswers[q.rawHeader!] === '' && (
+                <select
+                  className={inputClasses}
+                  onChange={(e) => setMappingAnswers((prev) => ({ ...prev, [q.rawHeader!]: e.target.value }))}
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    Choose a column
+                  </option>
+                  <option value={q.canonicalField}>{q.rawHeader}</option>
+                </select>
+              )}
+            </div>
+          )}
+
+          {q.kind === 'select' && (
+            <select
+              className={inputClasses}
+              onChange={(e) => setMappingAnswers((prev) => ({ ...prev, [q.canonicalField]: e.target.value }))}
+              defaultValue=""
+              required
+            >
+              <option value="" disabled>
+                Choose a column
+              </option>
+              {q.candidateHeaders?.map((h) => (
+                <option key={h} value={h}>
+                  {h}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      ))}
 
       {currencyPrompt && (
         <div className="flex flex-col gap-1">
@@ -262,7 +406,8 @@ function ConfirmationForm({
 
       <button
         type="submit"
-        className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+        disabled={!allMappingQuestionsAnswered}
+        className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
       >
         Continue
       </button>
@@ -317,6 +462,7 @@ function ResultView({ result, onDone }: { result: UploadResult; onDone: () => vo
     <div className="flex flex-col gap-3">
       <p className="font-medium text-ink">{result.heading}</p>
       <p className="text-ink-faint">{result.reinforcement}</p>
+      {result.rememberedNotice && <p className="text-xs text-ink-faint">{result.rememberedNotice}</p>}
       <p className="text-sm text-ink-faint">{result.outcomeMessage}</p>
 
       {hasExclusions && (

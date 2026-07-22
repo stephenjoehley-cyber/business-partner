@@ -30,6 +30,39 @@ export function excludedRowReasonText(reason: ExcludedRowReason): string {
   }
 }
 
+/**
+ * Multi-format CSV Understanding, 22 July 2026 — approved copy for column
+ * confirmation. The word "mapping" never reaches the owner anywhere
+ * here, per the Founder/CPO's explicit editorial decision: it describes
+ * an implementation, not an executive concept.
+ */
+const CANONICAL_FIELD_LABELS: Record<string, string> = {
+  'as at date': 'the date this file is current as at',
+  'customer name': 'your customer\u2019s name',
+  'supplier name': 'your supplier\u2019s name',
+  'invoice reference': 'the invoice reference',
+  'invoice date': 'the invoice date',
+  'due date': 'the due date',
+  amount: 'the amount',
+  currency: 'the currency',
+};
+
+export function canonicalFieldLabel(canonicalField: string): string {
+  return CANONICAL_FIELD_LABELS[canonicalField] ?? canonicalField;
+}
+
+export const MAPPING_COPY = {
+  multipleQuestionsHeading: 'A couple of things before I continue.',
+  singleQuestionHeading: 'One thing before I continue.',
+  confirmQuestion: (fieldLabel: string) => `I think this column is ${fieldLabel} — is that right?`,
+  confirmExplanation: 'Once you confirm, I\u2019ll remember this for every file like it in future.',
+  confirmYes: 'Yes, that\u2019s right',
+  confirmNo: 'No, let me choose',
+  selectQuestion: (fieldLabel: string) => `Which column is ${fieldLabel}?`,
+  rememberedNotice: 'I\u2019ll remember this for your next upload from the same file — you won\u2019t need to confirm it again.',
+  continueButton: 'Continue',
+} as const;
+
 export const UPLOAD_COPY = {
   pageTitle: 'Financial Understanding',
   pageIntro:
