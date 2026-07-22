@@ -1326,3 +1326,15 @@ Found live, 22 July 2026, during the Founder's own acceptance testing of Multi-f
 **Fix:** kept genuinely fresh confirmation and remembered memory in two separate fields all the way from the Signal Ingestion Service through to the extractor — `columnMapping` (fresh, this round only) and `confirmedMemoryMapping` (everything already known, used for resolution but never treated as new). Verified against the real ingestion pipeline, reproducing the Founder's exact two-upload scenario.
 
 **Status:** fixed and deployed. 452 tests total. To be raised explicitly with the CPO next session, per the Founder's request — recorded here so it isn't lost in the meantime.
+
+## Real Defect Found Before Testing — "No, let me choose" Offered Only the Column Just Declined
+
+Found 22 July 2026, in the course of checking this path before the Founder tested it (he had flagged intent to test it next) — caught by review, not by a second live incident.
+
+**What was wrong:** a confirm-type column question's "No, let me choose" picker offered exactly one option — the same raw header the owner had just said was wrong. There was no way to actually pick a different column.
+
+**Root cause:** `ColumnMappingQuestion`'s 'confirm' variant never carried the file's other, unclaimed headers at all — only 'select' questions did. Also found alongside it: the UI's answer-tracking state was keyed inconsistently between the two question kinds, meaning even a correctly-populated picker's answer wouldn't have been recorded properly.
+
+**Fix:** both question kinds now share the same "not yet claimed by another field" header set. The UI's answer state is now keyed uniformly by canonical field throughout, correct regardless of which path (confirm-yes, confirm-no-then-pick, or select) the owner takes.
+
+**Status:** fixed and deployed before being tested, not after — the intended benefit of reviewing a path proactively once it's known to be about to be exercised.
