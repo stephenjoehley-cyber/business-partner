@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import type { Signal as PrismaSignal } from '@prisma/client';
-import type { DraftSignal, Signal, SignalDomain } from './types';
+import type { DraftSignal, Signal, SignalDomain, SnapshotProvenance } from './types';
 import { isDemoMode } from '@/lib/demo/config';
 import { getDemoSignalsByIds, getDemoSignalsForBusiness, persistDemoSignals } from '@/lib/demo/store';
 
@@ -96,7 +97,7 @@ function toSignal(row: PrismaSignal): Signal {
       row.reportingPeriodStart && row.reportingPeriodEnd
         ? { start: row.reportingPeriodStart, end: row.reportingPeriodEnd }
         : undefined,
-    provenance: (row.provenance as Signal['provenance']) ?? undefined,
+    provenance: (row.provenance as unknown as SnapshotProvenance | null) ?? undefined,
   };
 }
 
@@ -118,7 +119,7 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]):
           temporality: draft.temporality ?? 'continuous',
           reportingPeriodStart: draft.reportingPeriod?.start,
           reportingPeriodEnd: draft.reportingPeriod?.end,
-          provenance: draft.provenance as object | undefined,
+          provenance: (draft.provenance as unknown as Prisma.InputJsonValue) ?? undefined,
         },
         create: {
           businessId,
@@ -133,7 +134,7 @@ export async function persistSignals(businessId: string, drafts: DraftSignal[]):
           temporality: draft.temporality ?? 'continuous',
           reportingPeriodStart: draft.reportingPeriod?.start,
           reportingPeriodEnd: draft.reportingPeriod?.end,
-          provenance: draft.provenance as object | undefined,
+          provenance: (draft.provenance as unknown as Prisma.InputJsonValue) ?? undefined,
         },
       })
     )
