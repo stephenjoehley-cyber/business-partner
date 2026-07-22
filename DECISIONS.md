@@ -1302,3 +1302,15 @@ Product Audit approved by Founder + CPO, 22 July 2026. The Validation-stage ques
 **Refinement 5 — additional integration test required:** a confirmed mapping must continue working correctly across subsequent deployments and database migrations — a durability property of Business Memory itself, not of the mapping-resolution logic.
 
 **Status:** Implementation Plan approved in full. Proceeding to Step A (schema).
+
+## Multi-format CSV Understanding — Complete (Steps A–G, Founder + CPO)
+
+Delivered end to end, following the full governed sequence: Product Audit → Implementation Plan (five refinements) → Step A (schema: `ConfirmedColumnMapping`) → Step B (Schema Mapping Resolution) → Step C (wired into the extractor) → Steps D+E (Confirmed Mapping Memory repository + Signal Ingestion Service wiring) → approved copy → Step G (UI).
+
+**Verified, not assumed:** a canonical CSV upload asks zero new questions (the exact-match path is unchanged). A file with a recognisable synonym asks once, and the confirmed answer is remembered — a second upload from the same source asks nothing, verified via a real end-to-end test. Refinement 2 (owner-confirmed understanding always takes precedence, never silently overwritten) is enforced at the actual write boundary — a genuine conflict throws rather than merging silently, and does not block the upload the owner just completed.
+
+**One disclosed simplification, named rather than hidden:** a file needing both column clarification and currency/reporting-date clarification currently asks in two rounds, not one combined round, since currency/date detection depends on the column mapping already being resolved. A real, small gap — not solved here, not silently accepted as ideal.
+
+**450 tests total** (397 before this capability began — F1's close). Typecheck clean throughout. Every step deployed and verified independently before the next began.
+
+**Status:** Complete. Ready for Founder Acceptance.
