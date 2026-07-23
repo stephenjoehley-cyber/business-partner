@@ -1448,3 +1448,13 @@ Four full revision passes across this review, each correcting a genuinely distin
 449 tests, typecheck clean throughout every pass. Every commit deployed and verified via GitHub commit status before the next began.
 
 **Status:** Complete. Website Narrative Alignment Review — Asset 023 Implementation closed.
+
+## Production SaaS Completion, Phase 1 — About and Contact Pages Complete
+
+Both live: /about (substantially expanded per Founder/CPO refinement — the homepage's job is recognition, About's job is conviction, and it now includes the fuller lived reality of the owner, the company's own philosophy separate from product description, and a fuller today/tomorrow distinction) and /contact (approved as proposed — simple, direct, real email, no form).
+
+New standing principle recorded, per the Founder/CPO: every page has its own distinct job (homepage: recognition; About: belief; Pricing: confidence; Contact: accessibility; Trust: reassurance; FAQ: certainty) — future pages should optimise for their own purpose, not repeat the homepage in a different order.
+
+451 tests, typecheck clean. Footer and header updated; nav-only-to-real-destinations principle maintained throughout.
+
+**Status:** About and Contact complete. Remaining Phase 1 candidates not yet scoped: dedicated Trust and FAQ pages (named by the Founder/CPO as having distinct jobs, don't appear to require Founder-gated commercial/legal decisions) — awaiting confirmation before starting.
