@@ -1425,3 +1425,16 @@ Delivered across three passes, each correcting a genuinely different concern, al
 449 tests, typecheck clean throughout — every pass was a pure copy change, no logic touched. Each commit deployed and verified via GitHub commit status before the next began.
 
 **Status:** Complete.
+
+## Investor Readiness Sprint 001, Priority 3 — Executive Experience Polish Complete
+
+Resumed and executed the four-step plan prepared earlier this sprint, interrupted by the Asset 023 narrative pivot before execution began. No new product decisions, no customer-facing copy changes — pure refinement of what already exists.
+
+1. Typography: `MorningBriefCard` and `AllClearCard` headlines now use `.text-editorial-headline` (Asset 021 names "Morning Brief headlines" as an editorial role directly; this is the single most important editorial moment on the page, yet was plain Interface typography while the Greeting above it already used the correct class). Settings' page title now uses `.text-editorial-title`.
+2. Interaction: `transition-colors` added to the shared `.focus-ring` class — applied to every button, link, and form control in the product (21+ files) — fixes a systemic gap (zero transition classes existed anywhere) at once.
+3. Hover feedback added to the repeated primary-button pattern across 8 files, replicating the exact pattern already proven live in `HeroSection`'s own buttons.
+4. Evidence disclosure element gains the same hover treatment for consistency.
+
+449 tests, typecheck clean. Visual/interaction only — no logic touched.
+
+**Status:** Priority 3 complete.
