@@ -12,6 +12,22 @@ import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
  * hexagon motif) is unchanged — this is a narrative update, not a
  * redesign.
  *
+ * Revised twice after the first version shipped, each time for a
+ * distinct, real reason — recorded here rather than left implicit:
+ * 1. Product Truth: the first draft's "nothing you need to act on"
+ *    described one possible daily outcome as if it were the guaranteed
+ *    capability. The QuickWin is that reviewing and separating has
+ *    already happened, regardless of what that review finds.
+ * 2. Commercial Storytelling: the corrected version was accurate but
+ *    described the product's internal process ("reviews," "shows
+ *    you") rather than what changes for the owner. Rewritten
+ *    benefit-first, anchored in the owner's own words from Asset 023
+ *    §11 ("I'm worried I'll forget something important").
+ * 3. No absolute claims: "you'll never have to wonder" was itself an
+ *    unqualified guarantee — corrected to "confident," a feeling
+ *    Asset 023 §5/§7/§9 all name directly, without claiming certainty
+ *    the product can't fully back in every case.
+ *
  * Deliberate mitigation of the standalone-ambiguity risk flagged in the
  * Website Narrative Alignment Review: the headline never appears without
  * its two explanatory lines directly beneath it in the rendered page —
@@ -45,13 +61,10 @@ export function HeroSection() {
           </h1>
 
           <div className="flex max-w-[560px] flex-col gap-3 text-lg text-ink-soft">
+            <p>Start your day confident you haven&rsquo;t missed what matters.</p>
             <p>
-              Business Partner quietly reviews what you&rsquo;ve connected and shows you what&rsquo;s
-              already been considered — nothing you need to act on.
-            </p>
-            <p>
-              When something genuinely needs you, it&rsquo;s brought to the surface, with the
-              reasoning and the next step already worked out.
+              When something genuinely needs you, you&rsquo;ll know exactly why — and exactly what
+              to do next.
             </p>
           </div>
 

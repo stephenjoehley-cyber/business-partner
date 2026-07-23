@@ -1,18 +1,18 @@
 const CAPABILITIES = [
   {
     label: 'See what\u2019s done',
-    title: 'Nothing you need to act on',
-    body: 'Business Partner quietly reviews what you\u2019ve connected and shows you what\u2019s already been considered.',
+    title: 'One less thing to worry about',
+    body: 'You can stop double-checking what\u2019s already been handled — whether today brings nothing at all, or several things that genuinely need you.',
   },
   {
     label: 'Focus on what matters',
     title: 'A clear next step, not another dashboard',
-    body: 'When something genuinely needs you, it\u2019s brought to the surface, with the reasoning already worked out.',
+    body: 'You don\u2019t have to dig for what matters or work out why — that part\u2019s already done.',
   },
   {
     label: 'Gets to know your business',
-    title: 'Better judgement over time',
-    body: 'The more Business Partner understands about your business, the more it can rule out on its own.',
+    title: 'Quieter every month',
+    body: 'The longer you use it, the less you\u2019ll need to explain — and the less noise you\u2019ll have to sort through yourself.',
   },
 ] as const;
 
@@ -33,6 +33,16 @@ const CAPABILITIES = [
  * Asset 023 §18 states this directly: "Understanding deepens over time.
  * Recommendations improve over time. Business Memory becomes richer
  * over time."
+ *
+ * Revised again, same day, for Commercial Storytelling and Product
+ * Truth together (see HeroSection.tsx for the fuller history — this
+ * section went through the identical two corrections): card copy
+ * rewritten from mechanism ("reviews," "shows you," "rule out") to
+ * owner benefit, and absolute claims ("you'll never have to...")
+ * softened to describe the product's actual design ("you can stop...",
+ * "you don't have to...") rather than an unqualified future guarantee.
+ * The section intro paragraph updated to match, for consistency with
+ * the cards directly beneath it.
  */
 export function ProductRoleSection() {
   return (
@@ -43,8 +53,8 @@ export function ProductRoleSection() {
         </h2>
 
         <p className="mt-6 max-w-[620px] text-lg text-ink-soft">
-          Business Partner considers what is happening across the information you choose to
-          connect and helps bring the most important matters to the surface.
+          Every day, some things need you and some things don&rsquo;t. Business Partner tells you
+          which is which — so you can stop trying to hold it all together yourself.
         </p>
 
         <div className="mt-12 grid gap-10 md:grid-cols-3">
