@@ -5,6 +5,26 @@ import { PublicFooter } from '@/components/public/PublicFooter';
 export const metadata: Metadata = {
   title: 'About Business Partner',
   description: 'Why Business Partner exists, and the kind of company we\u2019re building.',
+  alternates: { canonical: '/about' },
+  openGraph: {
+    title: 'About Business Partner',
+    description: 'Why Business Partner exists, and the kind of company we\u2019re building.',
+    type: 'website',
+    url: '/about',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Business Partner',
+    description: 'Why Business Partner exists, and the kind of company we\u2019re building.',
+  },
+};
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: 'About Business Partner',
+  description: 'Why Business Partner exists, and the kind of company we\u2019re building.',
+  url: 'https://business-partner.co.za/about',
 };
 
 /**
@@ -24,6 +44,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-surface">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <a
         href="#main-content"
         className="focus-ring sr-only rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"

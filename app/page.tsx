@@ -8,12 +8,45 @@ export const metadata: Metadata = {
   title: 'Business Partner: You\u2019re not disorganised. You\u2019re just carrying too much.',
   description:
     'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
+  alternates: { canonical: '/' },
   openGraph: {
     title: 'Business Partner: You\u2019re not disorganised. You\u2019re just carrying too much.',
     description:
       'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
     type: 'website',
+    url: '/',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Business Partner: You\u2019re not disorganised. You\u2019re just carrying too much.',
+    description:
+      'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
+  },
+};
+
+/**
+ * Search Presence, 23 July 2026 (Founder + CPO) — Organization and
+ * WebSite structured data, matched exactly to what the page and About
+ * page actually say (Product Truth applies to structured data as much
+ * as visible copy — a search engine or AI system reading this should
+ * never be told something different from what a visitor reads).
+ */
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      name: 'Business Partner',
+      url: 'https://business-partner.co.za',
+      description:
+        'Business Partner shows business owners what has already been considered and brings forward only what genuinely needs their attention today.',
+    },
+    {
+      '@type': 'WebSite',
+      name: 'Business Partner',
+      url: 'https://business-partner.co.za',
+    },
+  ],
 };
 
 /**
@@ -35,5 +68,10 @@ export default async function RootPage() {
     redirect(business ? '/morning-brief' : '/onboarding');
   }
 
-  return <Homepage />;
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+      <Homepage />
+    </>
+  );
 }

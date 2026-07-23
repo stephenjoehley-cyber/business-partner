@@ -24,8 +24,12 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://business-partner.co.za'),
   title: 'Business Partner',
   description: 'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
+  twitter: {
+    card: 'summary_large_image',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

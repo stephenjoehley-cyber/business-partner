@@ -5,6 +5,30 @@ import { PublicFooter } from '@/components/public/PublicFooter';
 export const metadata: Metadata = {
   title: 'Contact Business Partner',
   description: 'Get in touch with Business Partner directly.',
+  alternates: { canonical: '/contact' },
+  openGraph: {
+    title: 'Contact Business Partner',
+    description: 'Get in touch with Business Partner directly.',
+    type: 'website',
+    url: '/contact',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact Business Partner',
+    description: 'Get in touch with Business Partner directly.',
+  },
+};
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'ContactPage',
+  name: 'Contact Business Partner',
+  url: 'https://business-partner.co.za/contact',
+  mainEntity: {
+    '@type': 'Organization',
+    name: 'Business Partner',
+    email: 'investment@business-partner.co.za',
+  },
 };
 
 /**
@@ -19,6 +43,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <div className="min-h-screen bg-surface">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <a
         href="#main-content"
         className="focus-ring sr-only rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
