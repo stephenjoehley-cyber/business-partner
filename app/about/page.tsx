@@ -3,7 +3,7 @@ import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
 
 export const metadata: Metadata = {
-  title: 'About — Business Partner',
+  title: 'About Business Partner',
   description: 'Why Business Partner exists, and the kind of company we\u2019re building.',
 };
 
@@ -38,7 +38,7 @@ export default function AboutPage() {
 
         <div className="mt-8 flex flex-col gap-6 text-lg text-ink-soft">
           <p>
-            Every entrepreneur deserves the kind of support large companies take for granted —
+            Every entrepreneur deserves the kind of support large companies take for granted:
             someone who understands the business, keeps track of what&rsquo;s happening, and helps
             decide what matters most. Most small business owners can&rsquo;t hire that. We believe
             they shouldn&rsquo;t have to.
@@ -60,8 +60,8 @@ export default function AboutPage() {
           </p>
 
           <p>
-            We think that&rsquo;s a real problem worth taking seriously — not a productivity
-            inconvenience, but the actual ceiling on how well a business can be run.
+            We think that&rsquo;s a real problem worth taking seriously. It isn&rsquo;t a productivity
+            inconvenience; it&rsquo;s the actual ceiling on how well a business can be run.
           </p>
 
           <h2 className="font-editorial mt-4 text-[24px] font-semibold text-ink">
@@ -70,7 +70,7 @@ export default function AboutPage() {
 
           <p>
             We didn&rsquo;t set out to build another piece of software. Software that asks for more
-            of an owner&rsquo;s attention is solving the wrong problem — attention is exactly what&rsquo;s
+            of an owner&rsquo;s attention is solving the wrong problem: attention is exactly what&rsquo;s
             already in short supply.
           </p>
 
@@ -89,8 +89,8 @@ export default function AboutPage() {
 
           <p>
             Business Partner watches what you choose to connect, shows you what&rsquo;s already been
-            considered, and brings forward only what genuinely needs your judgement — with the
-            reasoning, not just the alert.
+            considered, and brings forward only what genuinely needs your judgement, along with
+            the reasoning, not just the alert.
           </p>
 
           <h2 className="font-editorial mt-4 text-[24px] font-semibold text-ink">
@@ -99,14 +99,14 @@ export default function AboutPage() {
 
           <p>
             We&rsquo;re building toward something bigger: a partner that understands a business more
-            deeply over time, and can eventually take on more of the work itself — always with
-            your authority, never without it. Today, that means judgement. Over time, it will mean
+            deeply over time, and can eventually take on more of the work itself, always with your
+            authority and never without it. Today, that means judgement. Over time, it will mean
             more.
           </p>
 
           <p>
             That&rsquo;s a deliberate sequence, not an accident of timing. Judgement has to be
-            trustworthy before action can be — a partner who acts before they&rsquo;ve earned your
+            trustworthy before action can be. A partner who acts before they&rsquo;ve earned your
             confidence isn&rsquo;t actually helping. So we&rsquo;re building in that order: understand
             first, then advise, and only once that&rsquo;s proven itself, take on more of the doing.
             Today, Business Partner&rsquo;s job is to make sure you never carry more than you have

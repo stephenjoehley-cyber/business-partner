@@ -2,17 +2,17 @@ const CAPABILITIES = [
   {
     label: 'See what\u2019s done',
     title: 'One less thing to worry about',
-    body: 'You can stop double-checking what\u2019s already been handled — whether today brings nothing at all, or several things that genuinely need you.',
+    body: 'You can stop double-checking what\u2019s already been handled, whether today brings nothing at all or several things that genuinely need you.',
   },
   {
     label: 'Focus on what matters',
     title: 'A clear next step, not another dashboard',
-    body: 'You don\u2019t have to dig for what matters or work out why — that part\u2019s already done.',
+    body: 'You don\u2019t have to dig for what matters or work out why. That part\u2019s already done.',
   },
   {
     label: 'Gets to know your business',
     title: 'Quieter every month',
-    body: 'The longer you use it, the less you\u2019ll need to explain — and the less noise you\u2019ll have to sort through yourself.',
+    body: 'The longer you use it, the less you\u2019ll need to explain, and the less noise you\u2019ll have to sort through yourself.',
   },
 ] as const;
 

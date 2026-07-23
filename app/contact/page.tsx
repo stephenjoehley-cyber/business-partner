@@ -3,7 +3,7 @@ import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
 
 export const metadata: Metadata = {
-  title: 'Contact — Business Partner',
+  title: 'Contact Business Partner',
   description: 'Get in touch with Business Partner directly.',
 };
 
@@ -31,7 +31,8 @@ export default function ContactPage() {
           Get in touch
         </h1>
         <p className="mt-6 text-lg text-ink-soft">
-          Questions, feedback, or just want to talk before you sign up — reach us directly.
+          Have a question or feedback, or just want to talk before you sign up? Reach us
+          directly.
         </p>
         <a
           href="mailto:investment@business-partner.co.za"

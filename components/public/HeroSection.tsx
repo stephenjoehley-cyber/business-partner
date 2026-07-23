@@ -72,12 +72,12 @@ export function HeroSection() {
 
           <div className="flex max-w-[560px] flex-col gap-3 text-lg text-ink-soft">
             <p>
-              Customers, staff, invoices, meetings — somehow it all has to live in your head, and
+              Customers, staff, invoices, meetings: somehow it all has to live in your head, and
               somehow you&rsquo;re expected to remember all of it.
             </p>
             <p>
-              Business Partner carries that weight with you — quietly keeping track of what&rsquo;s
-              already fine, and making sure you never miss what genuinely needs you.
+              Business Partner carries that weight with you, quietly keeping track of what&rsquo;s
+              already fine and making sure you never miss what genuinely needs you.
             </p>
           </div>
 
