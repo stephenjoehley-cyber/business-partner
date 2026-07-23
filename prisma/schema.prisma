@@ -202,3 +202,48 @@ model ConfirmedColumnMapping {
 
   @@unique([businessId, documentType, sourceSignature])
 }
+
+// Governed Capability Framework — Founder + CPO, 23 July 2026. The
+// control and publication layer through which the Executive Operating
+// Dashboard progressively governs how Business Partner operates
+// itself. Deliberately NOT scoped to Business (every other model in
+// this schema belongs to a customer's business) — this is Business
+// Partner's own operational data, a genuinely different, singular
+// platform-level tenant. There is exactly one instance of the company
+// running itself.
+//
+// Permanent architectural boundary, not a launch-day caveat: this
+// model governs publication, versioning, and distribution. It never
+// establishes correctness. A row reaching 'published' means it passed
+// this platform's own approval workflow — nothing more. For legal
+// content specifically (Terms, Privacy, Cookie Policy, whenever those
+// domains arrive), this framework has no opinion on whether the
+// document is legally sound; that responsibility sits entirely outside
+// this system.
+model GovernedCapability {
+  id     String @id @default(cuid())
+  domain String // 'business_configuration' initially; 'pricing', 'feature_flags', etc. as future domains arrive
+  key    String // e.g. 'support_email', scoped within a domain
+  value  Json
+
+  // Three states, not the four originally floated — a distinct 'review'
+  // stage has no one to assign it to yet in a single-founder company;
+  // building it now would be governance theatre, not governance. Kept
+  // as a plain string, not a hard-coded application enum, specifically
+  // so 'review' can be introduced later (once there's a second
+  // approver) without a migration or a redesign.
+  status String // 'draft' | 'approved' | 'published' | 'superseded'
+
+  proposedBy  String // Supabase user id
+  proposedAt  DateTime  @default(now())
+  approvedBy  String?
+  approvedAt  DateTime?
+  publishedAt DateTime?
+
+  // The append-only chain. Null for a key's first-ever version. A row
+  // is never edited once it reaches 'published' — a further change
+  // always creates a new row, never rewrites this one.
+  supersedesId String?
+
+  @@index([domain, key, status])
+}
