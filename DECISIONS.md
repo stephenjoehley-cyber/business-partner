@@ -1476,3 +1476,15 @@ Applied retroactively to everything shipped this session (Hero, ProductRoleSecti
 Deliberately not yet swept across the wider, already-existing authenticated product (Settings, Morning Brief, onboarding) — real dashes exist there too, predating this standard. Scope question raised separately: apply going forward only, or a dedicated retroactive pass across the whole product.
 
 **Status:** Standard in effect for all new work. Retroactive scope for the older authenticated product awaiting a decision.
+
+## Search Presence Standard Established and Applied (Founder + CPO, 23 July 2026)
+
+New standing practice: every public page implementation includes Page Title, Meta Description, Canonical URL, Open Graph, Twitter Card, Structured Data (Schema.org), and clean URL structure as part of the same build, not a later SEO pass. Metadata is treated as editorial content, governed by the same process as all customer-facing copy: Customer Understanding to Product Vision to Product Truth to Search Presence.
+
+Retrofitted onto all three shipped public pages (home, About, Contact): metadataBase set to the real production domain; canonical URLs added; Open Graph and Twitter Card metadata made explicit per page, never duplicated between pages; Schema.org structured data (Organization/WebSite, AboutPage, ContactPage) added, each matched exactly to the visible page copy.
+
+No dedicated social preview image asset existed anywhere in the product. Rather than wait on one, built a generator (lib/ui/ogImage.tsx) producing a real image at request time using the actual established brand tokens, one per page with its own real title. Verified the underlying API constructs successfully before shipping, and confirmed via a real production build succeeding, not assumed.
+
+453 tests, typecheck clean.
+
+**Status:** Search Presence standard in effect for all future public pages.
