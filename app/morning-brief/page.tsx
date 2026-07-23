@@ -2,9 +2,8 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
 import { getSignalsByIds, getSignalsForBusiness } from '@/lib/signals/repository';
-import { getLatestMorningBrief, getAllMorningBriefsForBusiness } from '@/lib/cognition/repository';
-import { observe } from '@/lib/cognition/observe';
-import { getConfiguredProviderId } from '@/lib/signals/config-repository';
+import { getLatestMorningBrief } from '@/lib/cognition/repository';
+import { computeDoneItems } from '@/lib/cognition/doneItems';
 import { generateNarrative } from '@/lib/narrative/generate';
 import { buildNarrativeInput } from '@/lib/narrative/fromMorningBrief';
 import { greetingForTime, isSameDay } from '@/lib/ui/time';
@@ -15,7 +14,7 @@ import { AccountBlock } from '@/components/foundation/AccountBlock';
 import { RecommendationTrigger } from './RecommendationTrigger';
 import { MorningBriefCard } from './MorningBriefCard';
 import { AllClearCard } from './AllClearCard';
-import { AwarenessLine } from './AwarenessLine';
+import { DoneSection } from './DoneSection';
 import { Greeting } from './Greeting';
 import { DemoModeBadge, DemoModeBanner } from './DemoModeBanner';
 
@@ -91,34 +90,15 @@ export default async function MorningBriefPage() {
   const today = new Date();
   const todaysAgenda = signals.filter((signal) => signal.domain === 'calendar' && isSameDay(signal.occurredAt, today));
 
-  // Executive Awareness, 20 July 2026 — both connection states are
-  // needed on every tier, since AwarenessLine appears regardless of
-  // which tier renders.
-  const isCalendarConnectedNow =
-    !demoMode && (await getConfiguredProviderId(business.id, 'calendar')) === 'google-calendar';
-  const isEmailConnectedNow = !demoMode && (await getConfiguredProviderId(business.id, 'email')) === 'google-gmail';
-  // Finance has no OAuth connection to check — it's upload-based. True
-  // once at least one finance signal exists on record, from the same
-  // signals list already loaded for the Brief itself, not a new query.
-  const hasFinanceSignal = signals.some((signal) => signal.domain === 'finance');
-
-  // Found in the Executive Signal Capability & Claims Audit, 20 July
-  // 2026: the original count was a rolling snapshot (whatever currently
-  // sits within Observe's 90-day safety net), not genuinely "since your
-  // last Brief" — the count could include the same emails across many
-  // consecutive days. Fixed by comparing each email signal's own
-  // ingestion time (createdAt — when Business Partner actually reviewed
-  // it) against the previous Brief's generatedAt, the same comparison
-  // continuity.ts already uses for the same reason. Falls back to the
-  // full current count only when there is no previous Brief to compare
-  // against at all (the business's first-ever generation).
-  const allBriefs = await getAllMorningBriefsForBusiness(business.id);
-  const previousBriefGeneratedAt =
-    allBriefs.length >= 2 ? allBriefs[allBriefs.length - 2].generatedAt : null;
-  const observedEmailSignals = observe(signals).filter((s) => s.domain === 'email');
-  const emailSignalCount = previousBriefGeneratedAt
-    ? observedEmailSignals.filter((s) => s.createdAt > previousBriefGeneratedAt).length
-    : observedEmailSignals.length;
+  // Asset 024 — Done & Due, 23 July 2026. Reuses the same `signals`
+  // already loaded above; only depends on which ones were surfaced as
+  // Due (latestBrief.supportingSignalIds), so it's meaningful even when
+  // latestBrief is the all_clear tier (supportingSignalIds is empty
+  // there, so everything relevant correctly shows as Done).
+  const doneItems = computeDoneItems(
+    signals,
+    latestBrief && latestBrief.tier !== 'all_clear' ? latestBrief.supportingSignalIds : []
+  );
 
   return (
     <AppShell
@@ -145,20 +125,15 @@ export default async function MorningBriefPage() {
         <Greeting name={greetingName} initialGreeting={greetingForTime()} />
 
         {/*
-          Executive Awareness, 20 July 2026 — present whenever a real
-          brief exists, on every tier, not just all_clear. Deliberately
-          absent from the pre-first-cycle empty state directly below
-          (no cycle has run yet, so "I've already been watching" would
-          not yet be true).
+          Asset 024 — Done & Due, 23 July 2026. First, always, per the
+          spec's fixed information hierarchy — establishes trust before
+          Due asks for attention. Present whenever a real brief exists,
+          on every tier, same reasoning Executive Awareness originally
+          established (20 July 2026): this is what Business Partner has
+          genuinely reviewed, stated honestly regardless of whether
+          anything below needs the owner today.
         */}
-        {latestBrief && (
-          <AwarenessLine
-            calendarConnected={isCalendarConnectedNow}
-            emailConnected={isEmailConnectedNow}
-            emailCount={emailSignalCount}
-            financeConnected={hasFinanceSignal}
-          />
-        )}
+        {latestBrief && <DoneSection items={doneItems} />}
 
         {!latestBrief && (
         /*
