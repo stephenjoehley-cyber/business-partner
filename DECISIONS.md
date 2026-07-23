@@ -1532,3 +1532,15 @@ Found earlier as a disclosed simplification (no mobile menu, About/Trust/FAQ onl
 **Status:** Website engineering-ready items now complete: Home, About, Contact (support email corrected and republished through the Governed Capability Framework, a real live defect caught before it reached the launch audit), Trust, FAQ, full navigation including mobile.
 
 **Remaining before the Commercial Launch Audit can run:** Terms of Service, Privacy Policy, and Cookie Policy (commissioned by the Founder through the Executive Editorial process, pending CPO review against Product Truth/Editorial Style Guide/Executive Presence before publication), plus Pricing, Payment Provider, and Founding Member Offer decisions. All explicitly Founder/CPO-gated, not engineering-blocked.
+
+## Commercial Launch Audit — Product Truth Corrections: Privacy Policy and Cookie Policy
+
+Found during engineering verification of the CPO-approved legal documents, 23 July 2026: both the Cookie Policy and Privacy Policy described capabilities that don't exist in the product today. Verified directly against the codebase, not assumed: no analytics tool of any kind exists anywhere (no Google Analytics, PostHog, Plausible, or similar); no cookie-based functional preference storage exists (preferences are stored in the database as Business Memory, not cookies); no cookie consent banner exists anywhere in the product.
+
+**Corrected, with no change to meaning or commercial policy:**
+- Cookie Policy: removed the Analytics Cookies and Functional Cookies sections and the consent-banner description; replaced with a single accurate section stating only essential and authentication cookies are currently in use, with a commitment to update the policy before introducing anything else.
+- Privacy Policy: the Analytics section now states plainly that no usage analytics are currently collected, rather than describing a collection practice that doesn't exist.
+
+Terms of Service required no correction — verified against the same standard and found accurate throughout.
+
+**Status:** Both documents corrected. Per Founder instruction, no further approval required for this specific correction since neither meaning nor commercial policy changed — recorded here as the Commercial Launch Audit's first Product Truth finding, ahead of the full audit once Pricing, Payment Provider, and Founding Member Offer are decided.
