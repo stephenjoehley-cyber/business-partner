@@ -2,7 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isDemoMode } from '@/lib/demo/config';
 
-const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback', '/forgot-password', '/auth/reset-password', '/brand'];
+// '/about' and '/contact' added here 23 July 2026 — found live: both
+// pages were built and deployed (Production SaaS Completion, Phase 1)
+// without being added to this list, so every signed-out visitor was
+// redirected straight to /login before either page ever rendered. Any
+// future public marketing page needs the same registration here, or it
+// will fail exactly the same way — this file's own auth check has no
+// way to know a route is "meant to be public" other than this list.
+export const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback', '/forgot-password', '/auth/reset-password', '/brand', '/about', '/contact'];
 const DEMO_REDIRECT_PATHS = ['/login', '/signup', '/onboarding', '/settings', '/forgot-password', '/auth/reset-password'];
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
