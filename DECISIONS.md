@@ -1502,3 +1502,15 @@ One disclosed simplification: header nav links are desktop-only; no mobile hambu
 455 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
 
 **Status:** Trust, FAQ, and navigation restructure complete. Phase 1 (Production Website) now covers Home, About, Trust, FAQ, Contact — remaining Founder-gated: Pricing, Privacy, Terms, Cookies, Payment integration.
+
+## Governed Capability Framework + Business Configuration — Complete (Founder + CPO)
+
+Delivered in five commits, all deployed and confirmed: schema (platform-level, deliberately not scoped to Business), core state-machine functions (draft/approved/published/superseded, impossible transitions explicitly rejected), founder-only access control (FOUNDER_USER_IDS allowlist, checked separately for page routes vs API routes since a redirect isn't a valid API response), the Business Configuration API + minimal UI, and the concrete propagation proof — the Contact page's support email now reads from the framework rather than being hardcoded.
+
+Permanent architectural boundary recorded directly in the schema's own documentation: this framework governs publication, versioning, and distribution. It never establishes correctness — legal content specifically remains the Founder's (and where appropriate, legal advisers') responsibility regardless of workflow status.
+
+475 tests, typecheck clean throughout. Honest limitation recorded: the actual end-to-end propagation claim (propose → approve → publish → the live page changes) could only be unit-tested from this environment, which has no real database connection — the genuine live verification is a Founder Acceptance step, not yet performed.
+
+**Outstanding, blocking real use:** `FOUNDER_USER_IDS` environment variable does not yet exist in production. Until it's set with a real Supabase user id, the allowlist is empty and no one, including the Founder, can reach /executive/*.
+
+**Status:** Deployed. Awaiting FOUNDER_USER_IDS configuration and Founder Acceptance (the real end-to-end propagation test).
