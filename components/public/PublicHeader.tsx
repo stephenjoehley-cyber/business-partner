@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AppLogo } from '@/components/foundation/AppLogo';
 import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
+import { PublicMobileNav } from './PublicMobileNav';
 
 /**
  * Founder/CPO decision, 23 July 2026: primary navigation reflects the
@@ -12,6 +13,10 @@ import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
  * footer (About/Trust/FAQ appear in both) — the header supports
  * discovery during the journey, the footer is a consistent reference
  * point, per the Founder/CPO's own stated reasoning.
+ *
+ * Commercial Launch Gate, 23 July 2026 — <PublicMobileNav /> added
+ * (mobile-only trigger) so these same destinations are reachable
+ * without relying on the footer alone on small screens.
  */
 const NAV_LINKS = [
   { href: PUBLIC_ROUTES.home, label: 'Home' },
@@ -24,8 +29,11 @@ export function PublicHeader() {
   return (
     <header className="border-b border-surface-border">
       <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 md:px-8">
-        <AppLogo variant="horizontal" size="lg" href={PUBLIC_ROUTES.home} priority className="hidden md:inline-block" />
-        <AppLogo variant="horizontal" size="sm" href={PUBLIC_ROUTES.home} priority className="md:hidden" />
+        <div className="flex items-center gap-2">
+          <PublicMobileNav />
+          <AppLogo variant="horizontal" size="lg" href={PUBLIC_ROUTES.home} priority className="hidden md:inline-block" />
+          <AppLogo variant="horizontal" size="sm" href={PUBLIC_ROUTES.home} priority className="md:hidden" />
+        </div>
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
           {NAV_LINKS.map((link) => (
