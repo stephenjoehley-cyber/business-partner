@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
+import { getPublishedValue } from '@/lib/executive/governedCapability';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Contact Business Partner',
@@ -19,18 +22,6 @@ export const metadata: Metadata = {
   },
 };
 
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  name: 'Contact Business Partner',
-  url: 'https://business-partner.co.za/contact',
-  mainEntity: {
-    '@type': 'Organization',
-    name: 'Business Partner',
-    email: 'investment@business-partner.co.za',
-  },
-};
-
 /**
  * Approved as proposed, 23 July 2026 — simple, direct, executive. No
  * contact form: a real email address, already confirmed live (Sprint
@@ -39,8 +30,30 @@ const structuredData = {
  * Founder/CPO's stated principle that every page optimises for its own
  * purpose) is accessibility, not persuasion — it does that job and
  * nothing more.
+ *
+ * Governed Capability Framework, 23 July 2026 — this is the concrete
+ * end-to-end proof the framework actually works, not just that it
+ * compiles: support_email now reads from getPublishedValue rather than
+ * being hardcoded. Falls back to the original confirmed-live address
+ * if nothing has been published through the framework yet — the same
+ * honest-default discipline as every other feature this sprint, never
+ * a broken page just because a governed value hasn't been set.
  */
-export default function ContactPage() {
+export default async function ContactPage() {
+  const supportEmail = ((await getPublishedValue('business_configuration', 'support_email')) as string | undefined) ?? 'investment@business-partner.co.za';
+
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: 'Contact Business Partner',
+    url: 'https://business-partner.co.za/contact',
+    mainEntity: {
+      '@type': 'Organization',
+      name: 'Business Partner',
+      email: supportEmail,
+    },
+  };
+
   return (
     <div className="min-h-screen bg-surface">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
@@ -60,10 +73,10 @@ export default function ContactPage() {
           directly.
         </p>
         <a
-          href="mailto:investment@business-partner.co.za"
+          href={`mailto:${supportEmail}`}
           className="focus-ring mt-6 inline-block text-lg font-medium text-ink underline underline-offset-2"
         >
-          investment@business-partner.co.za
+          {supportEmail}
         </a>
       </main>
       <PublicFooter />
