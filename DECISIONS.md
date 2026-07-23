@@ -1358,3 +1358,9 @@ Two product questions surfaced during acceptance testing, deliberately not resol
 - **Q29 — Executive Communication Intelligence.** What looked like a missing-qualification-rule question for email was reframed by the Founder into a genuinely deeper one: not "should email get a world-inherent path," but "what are the inherent executive truths contained within communication behaviour when Business Partner only has access to metadata" — finance and calendar have structural truths because invoices and meetings are objective; email's structural truths, if they exist, more likely emerge from communication *behaviour* (response patterns, silence, ongoing conversations, relationship history) than from elapsed time alone. Deserves its own dedicated Product Audit, not an answer arrived at today.
 
 **Founder's own observation, worth preserving verbatim in spirit:** both the long Memory page and the missing email signals initially looked like small, isolated fixes, and both revealed themselves to be larger product questions once actually discussed — exactly what this methodology exists to catch before implementation, not after.
+
+## Investor Readiness Sprint 001 — P0.1 Complete
+
+Contact email (investment@business-partner.co.za) confirmed live and receiving mail by the Founder, 23 July 2026. Definition of Done achieved. Favicon, robots.txt, and public-site QA also complete — see prior entries.
+
+Proceeding to authenticated-surface QA (/morning-brief, /settings).
