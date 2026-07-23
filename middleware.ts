@@ -85,6 +85,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Governed Capability Framework / Executive Operating Dashboard, 23
+  // July 2026 — this is not a customer-facing surface. An authenticated
+  // customer is a genuinely different case from a signed-out visitor,
+  // so this checks separately, after the ordinary auth check above:
+  // logged in, but not the founder, is redirected to their own real
+  // landing page rather than back to /login (which would incorrectly
+  // suggest they aren't authenticated at all).
+  if (request.nextUrl.pathname.startsWith('/executive')) {
+    const founderUserIds = (process.env.FOUNDER_USER_IDS ?? '').split(',').map((id) => id.trim()).filter(Boolean);
+    if (!founderUserIds.includes(user.id)) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/morning-brief';
+      return NextResponse.redirect(url);
+    }
+  }
+
   return response;
 }
 
