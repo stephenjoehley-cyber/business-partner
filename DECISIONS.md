@@ -1488,3 +1488,17 @@ No dedicated social preview image asset existed anywhere in the product. Rather 
 453 tests, typecheck clean.
 
 **Status:** Search Presence standard in effect for all future public pages.
+
+## Production SaaS Completion, Phase 1 — Trust, FAQ, and Navigation Restructure Complete
+
+Trust (/trust) and FAQ (/faq) live, both built through the same Asset 023 -> Product Vision -> Product Truth -> narrative process, full Search Presence from the start. Trust page deliberately conservative on security claims (Q26 explicitly deferred, described honestly as "planned but not yet built," not overstated). FAQ deliberately excludes pricing entirely, since that's Founder-gated and unconfirmed.
+
+Navigation restructured per the Founder/CPO's approved sequence: Home, About, Trust, FAQ, Sign In, Get Started in the header; About, Trust, FAQ, Contact in the footer (deliberate duplication, per their own stated reasoning). Privacy, Terms, and Cookies deliberately not added anywhere yet — those pages don't exist and are Founder-gated legal content.
+
+Both new routes added to middleware.ts's PUBLIC_PATHS in the same commit as the pages themselves, not after, and tests/middleware.test.ts (added after the prior live incident) confirmed green before pushing.
+
+One disclosed simplification: header nav links are desktop-only; no mobile hamburger menu exists yet, so these destinations are mobile-reachable via the footer only.
+
+455 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
+
+**Status:** Trust, FAQ, and navigation restructure complete. Phase 1 (Production Website) now covers Home, About, Trust, FAQ, Contact — remaining Founder-gated: Pricing, Privacy, Terms, Cookies, Payment integration.
