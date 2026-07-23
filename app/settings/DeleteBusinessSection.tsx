@@ -93,7 +93,7 @@ export function DeleteBusinessSection({ businessName }: DeleteBusinessSectionPro
           type="button"
           onClick={handleConfirmDelete}
           disabled={isSubmitting}
-          className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
+          className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {isSubmitting ? 'Deleting…' : 'Yes, delete everything'}
         </button>

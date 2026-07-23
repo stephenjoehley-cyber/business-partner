@@ -47,7 +47,7 @@ export function ConnectionCard({
         ) : (
           <a
             href={connectHref}
-            className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+            className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90"
           >
             Connect {name}
           </a>

@@ -64,8 +64,18 @@ body {
   at the source so all 21+ existing consumers are corrected at once, not
   just the logo.
 */
+/*
+  Investor Readiness Sprint 001, Priority 3 (Executive Experience
+  Polish), 23 July 2026 — found during the audit that zero interactive
+  elements anywhere had a transition class; every hover/disabled state
+  change was instant. Since .focus-ring is already applied to every
+  button, link, and form control in the product (21 files, per the
+  note above), adding it here fixes this everywhere at once. Safe by
+  construction — the existing prefers-reduced-motion block below
+  already zeroes out any transition-duration globally.
+*/
 .focus-ring {
-  @apply outline-none;
+  @apply outline-none transition-colors duration-150;
 }
 
 .focus-ring:focus-visible {

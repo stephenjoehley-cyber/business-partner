@@ -354,7 +354,7 @@ export function HelpUnderstandSection({
             type="button"
             onClick={handleAddGoal}
             disabled={isSavingGoal || !goalDescription.trim()}
-            className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
+            className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isSavingGoal ? 'Saving…' : 'Add priority'}
           </button>
@@ -519,7 +519,7 @@ export function HelpUnderstandSection({
             type="button"
             onClick={handleAddPerson}
             disabled={isSavingPerson || !personName.trim()}
-            className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
+            className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isSavingPerson ? 'Saving…' : 'Add relationship'}
           </button>

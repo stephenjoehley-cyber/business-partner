@@ -15,7 +15,7 @@ export default function NotFound() {
         <p className="mt-2 text-sm text-ink-faint">The link may be out of date, or the address may not be right.</p>
         <Link
           href="/"
-          className="focus-ring mt-6 inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+          className="focus-ring mt-6 inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90"
         >
           Back to Business Partner
         </Link>

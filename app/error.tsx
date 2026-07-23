@@ -30,7 +30,7 @@ export default function ErrorBoundary({ reset }: { error: Error & { digest?: str
         </p>
         <button
           onClick={reset}
-          className="focus-ring mt-6 inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+          className="focus-ring mt-6 inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90"
         >
           Try again
         </button>

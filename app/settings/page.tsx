@@ -154,7 +154,7 @@ export default async function SettingsPage({
         Back to your Done & Due
       </a>
 
-      <h1 className="font-body text-ink text-xl font-semibold">Business Memory</h1>
+      <h1 className="text-editorial-title">Business Memory</h1>
 
       <section className="flex flex-col gap-4">
         <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Personal</h2>
@@ -250,7 +250,7 @@ export default async function SettingsPage({
               <DisconnectButton endpoint="/api/integrations/google-calendar/disconnect" />
             ) : (
               <a href="/api/integrations/google-calendar/connect"
-                className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+                className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90"
               >
                 Connect Google Calendar
               </a>
@@ -282,7 +282,7 @@ export default async function SettingsPage({
               <DisconnectButton endpoint="/api/integrations/gmail/disconnect" />
             ) : (
               <a href="/api/integrations/gmail/connect"
-                className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface"
+                className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90"
               >
                 Connect Gmail
               </a>

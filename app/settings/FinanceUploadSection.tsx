@@ -408,7 +408,7 @@ function ConfirmationForm({
       <button
         type="submit"
         disabled={!allMappingQuestionsAnswered}
-        className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
+        className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
       >
         Continue
       </button>
@@ -439,7 +439,7 @@ function ResultView({ result, onDone }: { result: UploadResult; onDone: () => vo
     return (
       <div className="flex flex-col gap-3">
         <p className="text-ink">{result.message}</p>
-        <button type="button" onClick={onDone} className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface">
+        <button type="button" onClick={onDone} className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90">
           Try again
         </button>
       </div>
@@ -450,7 +450,7 @@ function ResultView({ result, onDone }: { result: UploadResult; onDone: () => vo
     return (
       <div className="flex flex-col gap-3">
         <p className="text-ink">{result.message}</p>
-        <button type="button" onClick={onDone} className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface">
+        <button type="button" onClick={onDone} className="focus-ring inline-block w-fit rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90">
           Done
         </button>
       </div>
@@ -487,7 +487,7 @@ function ResultView({ result, onDone }: { result: UploadResult; onDone: () => vo
           type="button"
           onClick={handleTakeMeThere}
           disabled={isNavigating}
-          className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
+          className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {isNavigating ? 'Preparing your brief…' : 'Take me there'}
         </button>

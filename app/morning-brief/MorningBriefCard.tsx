@@ -107,7 +107,7 @@ export function MorningBriefCard({
         </p>
       )}
 
-      <h2 className="text-lg font-semibold leading-snug">{headline}</h2>
+      <h2 className="text-editorial-headline leading-snug">{headline}</h2>
 
       <p className="mt-3 max-w-xl text-ink-faint">{whyItMatters}</p>
 
@@ -170,7 +170,7 @@ export function MorningBriefCard({
 
       {supportingSignals.length > 0 && (
         <details className="mt-6 border-t border-surface-border pt-4">
-          <summary className="cursor-pointer font-mono text-xs uppercase tracking-wide text-ink-faint focus-ring">
+          <summary className="cursor-pointer font-mono text-xs uppercase tracking-wide text-ink-faint transition-colors hover:text-ink focus-ring">
             View supporting evidence ({supportingSignals.length})
           </summary>
           <ul className="mt-3 flex flex-col gap-2">

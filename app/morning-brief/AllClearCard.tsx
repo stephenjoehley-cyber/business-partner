@@ -38,7 +38,7 @@ export function AllClearCard({ generatedAt, todaysAgenda }: AllClearCardProps) {
         </span>
       </div>
 
-      <h2 className="text-lg font-semibold leading-snug">Nothing today requires your personal attention.</h2>
+      <h2 className="text-editorial-headline leading-snug">Nothing today requires your personal attention.</h2>
 
       <p className="mt-2 max-w-md text-ink-faint">Enjoy the space to think ahead.</p>
 

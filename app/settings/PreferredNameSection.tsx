@@ -60,7 +60,7 @@ export function PreferredNameSection({ initialPreferredName }: { initialPreferre
           type="button"
           onClick={handleSave}
           disabled={isSubmitting}
-          className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface disabled:opacity-50"
+          className="focus-ring inline-block rounded-md bg-ink px-4 py-2 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {isSubmitting ? 'Saving…' : 'Save'}
         </button>
