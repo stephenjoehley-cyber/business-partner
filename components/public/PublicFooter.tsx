@@ -8,6 +8,13 @@ import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
  * About/Trust/FAQ from the primary navigation — common practice for
  * premium B2B SaaS, per the Founder/CPO's own stated reasoning.
  *
+ * Pricing added the same day, once that page existed. Blog added
+ * footer-only, following the same precedent as Contact — a
+ * supplementary surface, not part of the primary customer-question
+ * sequence in the header. Found missing entirely (not wired into any
+ * nav list at all) after the page itself had already shipped and been
+ * deployed — a plain oversight, corrected here rather than left.
+ *
  * Privacy, Terms, and Cookies are deliberately NOT here yet. Those
  * pages don't exist — they're Founder-gated legal content (Production
  * SaaS Completion Plan, Track B), not something Claude should draft on
@@ -20,6 +27,7 @@ const FOOTER_LINKS = [
   { href: PUBLIC_ROUTES.trust, label: 'Trust' },
   { href: PUBLIC_ROUTES.pricing, label: 'Pricing' },
   { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
+  { href: PUBLIC_ROUTES.blog, label: 'Blog' },
   { href: PUBLIC_ROUTES.contact, label: 'Contact' },
 ] as const;
 
