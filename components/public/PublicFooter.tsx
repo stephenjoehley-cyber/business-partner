@@ -18,6 +18,7 @@ import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
 const FOOTER_LINKS = [
   { href: PUBLIC_ROUTES.about, label: 'About' },
   { href: PUBLIC_ROUTES.trust, label: 'Trust' },
+  { href: PUBLIC_ROUTES.pricing, label: 'Pricing' },
   { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
   { href: PUBLIC_ROUTES.contact, label: 'Contact' },
 ] as const;

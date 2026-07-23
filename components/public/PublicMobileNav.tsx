@@ -26,6 +26,7 @@ const NAV_LINKS = [
   { href: PUBLIC_ROUTES.home, label: 'Home' },
   { href: PUBLIC_ROUTES.about, label: 'About' },
   { href: PUBLIC_ROUTES.trust, label: 'Trust' },
+  { href: PUBLIC_ROUTES.pricing, label: 'Pricing' },
   { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
 ] as const;
 

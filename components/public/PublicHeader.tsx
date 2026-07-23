@@ -7,8 +7,11 @@ import { PublicMobileNav } from './PublicMobileNav';
  * Founder/CPO decision, 23 July 2026: primary navigation reflects the
  * questions a prospective customer naturally asks, not the site's own
  * structure. Home introduces Business Partner; About answers "who are
- * you"; Trust answers "can I trust you with my business"; FAQ answers
- * the remaining practical questions; Sign In serves existing customers;
+ * you"; Trust answers "can I trust you with my business"; Pricing
+ * answers "what does it cost" (added once the Plans & Pricing page
+ * existed — not part of the originally approved sequence, placed here
+ * as the natural extension of the trust question); FAQ answers the
+ * remaining practical questions; Sign In serves existing customers;
  * Get Started is the primary action. Deliberate duplication with the
  * footer (About/Trust/FAQ appear in both) — the header supports
  * discovery during the journey, the footer is a consistent reference
@@ -22,6 +25,7 @@ const NAV_LINKS = [
   { href: PUBLIC_ROUTES.home, label: 'Home' },
   { href: PUBLIC_ROUTES.about, label: 'About' },
   { href: PUBLIC_ROUTES.trust, label: 'Trust' },
+  { href: PUBLIC_ROUTES.pricing, label: 'Pricing' },
   { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
 ] as const;
 

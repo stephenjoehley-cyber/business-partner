@@ -29,4 +29,12 @@ describe('PUBLIC_ROUTES', () => {
   it('faq points to /faq', () => {
     expect(PUBLIC_ROUTES.faq).toBe('/faq');
   });
+
+  it('pricing points to /pricing', () => {
+    expect(PUBLIC_ROUTES.pricing).toBe('/pricing');
+  });
+
+  it('blog points to /blog', () => {
+    expect(PUBLIC_ROUTES.blog).toBe('/blog');
+  });
 });
