@@ -1556,3 +1556,7 @@ Blog capability built and deployed, modeled as a new domain inside the Governed 
 478 tests, typecheck clean throughout. Every commit deployed and verified via GitHub commit status before the next began.
 
 **Status:** Website Sprint, Phase 1 deliverables (Plans & Pricing, Blog) complete. Remaining before the Commercial Launch Audit: PayFast integration (Phase 2, deliberately separate), and confirming no other outstanding items remain.
+
+## Fix: Blog Was Never Wired Into Navigation
+
+Found by the Founder, 23 July 2026: /blog and its supporting Governed Capability domain shipped and deployed correctly, but "Blog" was never added to any navigation list. Not a content-dependency issue — the empty state was already correctly built. Fixed, added footer-only, matching the existing Contact precedent. 478 tests, typecheck clean.
