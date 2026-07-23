@@ -336,7 +336,7 @@ export function HelpUnderstandSection({
             }}
           />
         </FormField>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleAddGoal}
@@ -392,7 +392,7 @@ export function HelpUnderstandSection({
                     value={editPersonEmail}
                     onChange={(e) => setEditPersonEmail(e.target.value)}
                   />
-                  <div className="flex gap-3">
+                  <div className="flex flex-wrap gap-3">
                     <button
                       type="button"
                       onClick={() => handleSavePersonEdit(p.id)}
@@ -496,7 +496,7 @@ export function HelpUnderstandSection({
           </FormField>
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleAddPerson}
@@ -519,7 +519,7 @@ export function HelpUnderstandSection({
           Business Partner reasons over what it knows the next time it prepares your Morning Brief.
           Refresh now to see today&apos;s Brief reflect anything you&apos;ve just added.
         </p>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleRefresh}

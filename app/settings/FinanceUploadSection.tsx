@@ -310,7 +310,7 @@ function ConfirmationForm({
 
           {q.kind === 'confirm' && (
             <div className="mt-1 flex flex-col gap-2">
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={() => setMappingAnswers((prev) => ({ ...prev, [q.canonicalField]: q.rawHeader! }))}
@@ -482,7 +482,7 @@ function ResultView({ result, onDone }: { result: UploadResult; onDone: () => vo
         </ul>
       )}
 
-      <div className="mt-2 flex gap-3">
+      <div className="mt-2 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={handleTakeMeThere}

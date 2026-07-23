@@ -12,23 +12,37 @@ export function DeleteBusinessSection({ businessName }: DeleteBusinessSectionPro
   const [confirming, setConfirming] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(false);
 
+  // Found during Sprint 001 authenticated QA, 23 July 2026: this never
+  // checked response.ok before redirecting to "?deleted=true" — a real
+  // server error (not just a thrown network exception) would still
+  // have told the owner their business was deleted while the data may
+  // still exist. Fixed to only redirect on a confirmed success, and to
+  // surface a visible error otherwise rather than fail silently.
   async function handleConfirmDelete() {
     setIsSubmitting(true);
-    await fetch('/api/account/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ feedback: feedback.trim() || undefined }),
-    });
-    // Deliberately no signOut() call here — Option A's entire point
-    // (Decision Backlog Q11) is that the owner's login stays active
-    // after deleting their business. Signing out would force an
-    // unnecessary re-login and contradicts the copy shown just above
-    // this button ("Your login will remain active..."). The owner is
-    // still authenticated; only the Business row is gone, so onboarding
-    // (an authenticated route) renders normally, showing the one-time
-    // acknowledgment.
-    router.push('/onboarding?deleted=true');
+    setError(false);
+    try {
+      const response = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: feedback.trim() || undefined }),
+      });
+      if (!response.ok) throw new Error('Delete failed');
+      // Deliberately no signOut() call here — Option A's entire point
+      // (Decision Backlog Q11) is that the owner's login stays active
+      // after deleting their business. Signing out would force an
+      // unnecessary re-login and contradicts the copy shown just above
+      // this button ("Your login will remain active..."). The owner is
+      // still authenticated; only the Business row is gone, so onboarding
+      // (an authenticated route) renders normally, showing the one-time
+      // acknowledgment.
+      router.push('/onboarding?deleted=true');
+    } catch {
+      setError(true);
+      setIsSubmitting(false);
+    }
   }
 
   if (!confirming) {
@@ -74,7 +88,7 @@ export function DeleteBusinessSection({ businessName }: DeleteBusinessSectionPro
         className="focus-ring mt-1 w-full rounded-md border border-surface-border p-2 text-sm text-ink"
       />
 
-      <div className="mt-4 flex gap-3">
+      <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={handleConfirmDelete}
@@ -92,6 +106,11 @@ export function DeleteBusinessSection({ businessName }: DeleteBusinessSectionPro
           Keep my business
         </button>
       </div>
+      {error && (
+        <p className="mt-3 text-sm text-signal-attention">
+          Something went wrong on my side, not yours. Nothing has been deleted — try again in a moment.
+        </p>
+      )}
     </div>
   );
 }
