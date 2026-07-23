@@ -1514,3 +1514,11 @@ Permanent architectural boundary recorded directly in the schema's own documenta
 **Outstanding, blocking real use:** `FOUNDER_USER_IDS` environment variable does not yet exist in production. Until it's set with a real Supabase user id, the allowlist is empty and no one, including the Founder, can reach /executive/*.
 
 **Status:** Deployed. Awaiting FOUNDER_USER_IDS configuration and Founder Acceptance (the real end-to-end propagation test).
+
+## Governed Capability Framework — Founder Acceptance Complete
+
+23 July 2026: the Founder personally exercised the full propose -> approve -> publish flow for Support email through /executive/business-configuration, and confirmed the live /contact page updated to the exact value published, with no engineering intervention. FOUNDER_USER_IDS confirmed configured and working — founder-only access control functioning as designed.
+
+This closes the one honest limitation recorded at initial completion (the end-to-end propagation claim could only be unit-tested from the sandbox environment, not genuinely verified live). It has now been verified live, by the Founder, on production.
+
+**Status:** Governed Capability Framework + Business Configuration — Founder Acceptance complete. Fully closed.
