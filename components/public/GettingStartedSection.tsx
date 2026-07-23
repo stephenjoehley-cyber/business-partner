@@ -12,7 +12,7 @@ const STEPS = [
   {
     number: '3',
     title: 'Begin with Done & Due',
-    body: 'Start the day with a clear view of what deserves attention and why.',
+    body: 'Start the day already knowing what\u2019s handled, and what deserves your attention.',
   },
 ] as const;
 

@@ -2,10 +2,22 @@ import Link from 'next/link';
 import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
 
 /**
- * Contract §8. Copy is fixed by the Contract, not adjustable. The visual
- * treatment is intentionally just typography, whitespace, and a quiet
- * hexagon motif (echoing the logo geometry) — no fake dashboard, no
- * stock photography, no generic AI imagery.
+ * Asset 023 — Customer Truth, Ideal Customer Profile & Market Position,
+ * and the Founder/CPO's approved Done & Due narrative direction, 23 July
+ * 2026. Copy is governed by Asset 023, not fixed — this replaces the
+ * original "Start every day knowing what matters most" promise, which
+ * expressed only the "focus" half of the product's actual emotional
+ * sequence (Asset 023 §7 / Asset 024's own Experience Philosophy: relief
+ * before focus). The visual treatment (typography, whitespace, the quiet
+ * hexagon motif) is unchanged — this is a narrative update, not a
+ * redesign.
+ *
+ * Deliberate mitigation of the standalone-ambiguity risk flagged in the
+ * Website Narrative Alignment Review: the headline never appears without
+ * its two explanatory lines directly beneath it in the rendered page —
+ * the metadata description (app/layout.tsx) carries a fuller sentence
+ * for contexts (search snippets, shared links) where the headline could
+ * otherwise appear alone.
  */
 export function HeroSection() {
   return (
@@ -29,13 +41,19 @@ export function HeroSection() {
           <p className="text-sm font-medium text-brass-deep">Business Partner</p>
 
           <h1 className="font-editorial max-w-[720px] text-[40px] font-semibold leading-[1.1] text-ink md:text-[56px] lg:text-[64px]">
-            Start every day knowing what matters most.
+            See what&rsquo;s done. Focus on what matters.
           </h1>
 
-          <p className="max-w-[560px] text-lg text-ink-soft">
-            Business Partner helps you see what needs attention, understand why it matters and
-            decide what to do next.
-          </p>
+          <div className="flex max-w-[560px] flex-col gap-3 text-lg text-ink-soft">
+            <p>
+              Business Partner quietly reviews what you&rsquo;ve connected and shows you what&rsquo;s
+              already been considered — nothing you need to act on.
+            </p>
+            <p>
+              When something genuinely needs you, it&rsquo;s brought to the surface, with the
+              reasoning and the next step already worked out.
+            </p>
+          </div>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <Link

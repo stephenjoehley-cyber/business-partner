@@ -14,8 +14,7 @@ export function OwnerProblemSection() {
         </p>
 
         <p className="mt-4 text-lg text-ink-soft">
-          Business Partner is being built to provide that perspective before you have to ask for
-          it.
+          Business Partner is designed to give you that perspective before you have to ask for it.
         </p>
       </div>
     </section>

@@ -25,7 +25,7 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: 'Business Partner',
-  description: 'Your AI Chief Operating Officer.',
+  description: 'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

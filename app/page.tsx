@@ -5,13 +5,13 @@ import { getBusinessByOwner } from '@/lib/brain/repository';
 import { Homepage } from '@/components/public/Homepage';
 
 export const metadata: Metadata = {
-  title: 'Business Partner — Start every day knowing what matters most',
+  title: 'Business Partner — See what\u2019s done. Focus on what matters.',
   description:
-    'Business Partner helps business owners see what needs attention, understand why it matters and decide what to do next.',
+    'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
   openGraph: {
-    title: 'Business Partner — Start every day knowing what matters most',
+    title: 'Business Partner — See what\u2019s done. Focus on what matters.',
     description:
-      'Business Partner helps business owners see what needs attention, understand why it matters and decide what to do next.',
+      'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
     type: 'website',
   },
 };
