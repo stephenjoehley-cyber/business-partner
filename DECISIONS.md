@@ -1379,3 +1379,27 @@ Reviewed /morning-brief and /settings against: broken interactions, mobile respo
 One finding flagged for Track B, not touched: "Morning Brief" appears as user-facing text in 8 places outside its own feature folder — full inventory already sent to the Founder, ready to inform the Done & Due transition's acceptance criteria.
 
 **Status:** Authenticated-surface QA complete. No product-decision items surfaced beyond the Morning Brief text inventory.
+
+## Investor Readiness Sprint 001, Execution Package 002 — Done & Due (Asset 024) Complete
+
+Delivered in four small, independently deployed commits, presentation-layer only — Qualification, the Cognitive Engine, Business Memory, and orchestration untouched throughout, exactly as Asset 024's engineering notes require.
+
+**Product Truth resolution carried into implementation:** Done reflects completed cognitive work (signals observed and assessed, not escalated) via `computeDoneItems` — a new pure function reusing `observe()` directly, zero new Cognitive Engine computation. Never implies autonomous action (following up, confirming, contacting) — verified with an explicit test asserting the output never contains that language.
+
+**What shipped:**
+1. `computeDoneItems` + tests — the honest content source.
+2. `DoneSection` wired in, replacing `AwarenessLine`'s role entirely (superseded, not duplicated). Empty state uses Asset 024's exact wording verbatim.
+3. Every user-facing "Morning Brief" reference relabelled to "Done & Due" — nav, login, homepage, settings, finance upload, onboarding (10 files, text only).
+4. A visible "Due" heading added, wrapping both the recommendation card and the all-clear card, so the page structurally shows Done → Due in sequence. `AllClearCard`'s empty-state copy now uses Asset 024's exact mandated wording as a presentation-layer override — the Cognitive Engine's own `message` field (`recommend.ts`) is untouched, since that's decision-engine territory.
+
+**Correctly not built, per the spec's own rules — not a gap:**
+- Executive Capacity Recovered — no observable time-tracking capability exists; spec says hide rather than fabricate.
+- Looking Ahead — no genuine synthesis capability exists; spec says show only when real, never invent.
+
+**Verified, not assumed:** ran the real pipeline against demo data end-to-end (not just isolated unit tests) — confirmed Done correctly shows empty when a small dataset has everything already escalated to Due, the honest non-padded empty state the spec requires.
+
+**One thing flagged, not resolved unilaterally:** `AwarenessLine.tsx` and its test file are unused but not deleted — real, tested prior work, worth a deliberate decision rather than a silent deletion.
+
+463 tests total, typecheck clean throughout. Every commit deployed and verified before the next began.
+
+**Status:** Execution Package 002 complete.
