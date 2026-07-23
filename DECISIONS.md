@@ -1466,3 +1466,13 @@ New standing principle recorded, per the Founder/CPO: every page has its own dis
 **Fixed:** both routes added to PUBLIC_PATHS. **Also fixed the actual gap, not just the symptom:** a new test (tests/middleware.test.ts) cross-references PUBLIC_PATHS against PUBLIC_ROUTES directly, so a future public page forgotten in one list but not the other fails a test rather than reaching production silently, as this one did.
 
 453 tests. Deployed and confirmed via GitHub commit status.
+
+## New Standing Editorial Standard: No Em Dashes or En Dashes in Customer-Facing Copy
+
+Founder/CPO instruction, 23 July 2026: write as a professional human author would. Where an em dash would be used, restructure the sentence, or use a comma, full stop, semicolon, or colon instead. Applies to every future page, document, and piece of customer-facing copy, without needing a reminder each time.
+
+Applied retroactively to everything shipped this session (Hero, ProductRoleSection, homepage/About/Contact metadata and body copy) — each instance restructured individually, not a blind character substitution, since that often produces an ungrammatical sentence.
+
+Deliberately not yet swept across the wider, already-existing authenticated product (Settings, Morning Brief, onboarding) — real dashes exist there too, predating this standard. Scope question raised separately: apply going forward only, or a dedicated retroactive pass across the whole product.
+
+**Status:** Standard in effect for all new work. Retroactive scope for the older authenticated product awaiting a decision.
