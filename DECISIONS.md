@@ -1438,3 +1438,13 @@ Resumed and executed the four-step plan prepared earlier this sprint, interrupte
 449 tests, typecheck clean. Visual/interaction only — no logic touched.
 
 **Status:** Priority 3 complete.
+
+## Website Narrative Alignment Review — Asset 023 Implementation, Fully Closed
+
+Final revision deployed, 23 July 2026: rebuilt Hero and ProductRoleSection intro starting from Asset 023's customer language rather than the product's own Done & Due structure — the actual point of the whole exercise, identified explicitly by the Founder and CPO as more important than any single line of copy. Hero headline now contains no product mention at all; Business Partner is introduced only once recognition has landed. "Done & Due" as a named term doesn't appear until GettingStartedSection, later in the page — concept before label, confirmed directly against the real render order in Homepage.tsx, not assumed.
+
+Four full revision passes across this review, each correcting a genuinely distinct concern: Product Truth (outcome vs. capability, dropping the AI-COO tagline and internal architecture labels), Commercial Storytelling (benefit vs. mechanism), Editorial Discipline (no absolute claims, plus the new copy-review-as-complete-package practice), and Customer-First Sequencing (starting from Asset 023, not the product's own structure).
+
+449 tests, typecheck clean throughout every pass. Every commit deployed and verified via GitHub commit status before the next began.
+
+**Status:** Complete. Website Narrative Alignment Review — Asset 023 Implementation closed.
