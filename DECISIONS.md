@@ -1403,3 +1403,11 @@ Delivered in four small, independently deployed commits, presentation-layer only
 463 tests total, typecheck clean throughout. Every commit deployed and verified before the next began.
 
 **Status:** Execution Package 002 complete.
+
+## Engineering Backlog — Demo Data Enhancement (Not a Product Issue)
+
+Founder direction, 23 July 2026: before investor demonstrations, the seeded demo data should include a realistic mix of both Done and Due items, so the complete Done & Due experience is visible in a demo. Currently the demo dataset is small enough that everything qualifies as Due, leaving Done empty — mathematically correct given the dataset's size, but not representative of a real account's accumulated history.
+
+Explicitly categorised as a demo-data enhancement, not an engineering or product defect — the underlying logic (`computeDoneItems`) is already correct and verified; this is about the seed data's shape, not the code.
+
+**Status:** Backlogged, to be addressed before investor demonstrations, not blocking current execution packages.
