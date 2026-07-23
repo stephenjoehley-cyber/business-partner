@@ -10,7 +10,7 @@ export interface NavItem {
  * here only once its destination genuinely exists.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
-  { href: '/morning-brief', label: 'Morning Brief' },
+  { href: '/morning-brief', label: 'Done & Due' },
   { href: '/settings', label: 'Memory' },
 ];
 

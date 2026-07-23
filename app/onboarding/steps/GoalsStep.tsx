@@ -45,7 +45,7 @@ export function GoalsStep({ initialValues, onSubmit, onBack, isSubmitting }: Pro
       <div>
         <h1 className="text-2xl font-semibold">What matters most right now?</h1>
         <p className="mt-1 text-ink-faint">
-          List your priorities in order. Your Morning Brief will weigh recommendations against these.
+          List your priorities in order. Done &amp; Due will weigh recommendations against these.
         </p>
       </div>
 

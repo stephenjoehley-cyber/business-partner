@@ -534,8 +534,8 @@ export function HelpUnderstandSection({
 
       <div className="border-t border-surface-border pt-6">
         <p className="text-sm text-ink-faint">
-          Business Partner reasons over what it knows the next time it prepares your Morning Brief.
-          Refresh now to see today&apos;s Brief reflect anything you&apos;ve just added.
+          Business Partner reasons over what it knows the next time it prepares your Done &amp; Due.
+          Refresh now to see today&apos;s update reflect anything you&apos;ve just added.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
@@ -544,7 +544,7 @@ export function HelpUnderstandSection({
             disabled={isRefreshing}
             className="focus-ring inline-block rounded-md border border-surface-border px-4 py-2 text-sm font-medium text-ink disabled:opacity-50"
           >
-            {isRefreshing ? 'Refreshing…' : 'Refresh my Morning Brief'}
+            {isRefreshing ? 'Refreshing…' : 'Refresh my Done & Due'}
           </button>
           {refreshStatus === 'error' && (
             <p className="text-sm text-signal-attention">Something went wrong — please try again.</p>

@@ -173,7 +173,7 @@ export function OnboardingWizard({ initialBusiness }: { initialBusiness: Busines
           <h1 className="text-2xl font-semibold">Getting ready…</h1>
           <p className="text-ink-faint">
             {isFinalizing
-              ? "I'm putting together your first Morning Brief."
+              ? "I'm putting together your first Done & Due."
               : "I wasn't able to finish just now."}
           </p>
           {!isFinalizing && (

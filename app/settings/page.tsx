@@ -151,7 +151,7 @@ export default async function SettingsPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 px-6 py-12">
       <a href="/morning-brief" className="focus-ring text-sm text-ink-faint hover:text-ink">
-        Back to your Morning Brief
+        Back to your Done & Due
       </a>
 
       <h1 className="font-body text-ink text-xl font-semibold">Business Memory</h1>

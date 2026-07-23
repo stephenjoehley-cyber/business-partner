@@ -152,7 +152,7 @@ export function FinanceUploadSection() {
         <div className="flex flex-col gap-4">
           <p className="text-sm text-ink-faint">
             Bring me what&rsquo;s owed to you and what you owe, and I&rsquo;ll use it to better understand your
-            business, bringing anything that genuinely needs you into a Morning Brief.
+            business, bringing anything that genuinely needs you into Done &amp; Due.
           </p>
           <p className="font-mono text-xs uppercase tracking-wide text-ink-faint">What kind of file is this?</p>
           <div className="flex flex-col gap-3">

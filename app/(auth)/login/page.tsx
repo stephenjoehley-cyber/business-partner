@@ -12,7 +12,7 @@ export default function LoginPage() {
   return (
     <AuthShell
       heading="Welcome back."
-      supporting="Sign in to continue to your Morning Brief."
+      supporting="Sign in to continue to your Done & Due."
       routePrompt={
         <>
           New to Business Partner?{' '}

@@ -5,12 +5,15 @@
  * Narrative Layer LLM call), yet was the one route without a loading
  * state at all. Matches the same quiet, labelled pattern already
  * established for /settings — no indefinite spinner.
+ *
+ * Wording updated for Asset 024, 23 July 2026 — "Done & Due" language,
+ * consistent with the page it precedes.
  */
 export default function MorningBriefLoading() {
   return (
     <div className="flex min-h-[40vh] items-center justify-center">
       <p className="text-sm text-ink-faint" role="status" aria-live="polite">
-        Preparing your Morning Brief…
+        Preparing today&apos;s Done &amp; Due…
       </p>
     </div>
   );

@@ -51,7 +51,7 @@ export function PreferredNameSection({ initialPreferredName }: { initialPreferre
       </FormField>
 
       <p className="mt-2 text-sm text-ink-faint">
-        Your preferred name is used in your Morning Brief and throughout Business Partner&apos;s
+        Your preferred name is used in your Done &amp; Due and throughout Business Partner&apos;s
         executive conversations.
       </p>
 

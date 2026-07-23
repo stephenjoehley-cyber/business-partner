@@ -11,7 +11,7 @@ const STEPS = [
   },
   {
     number: '3',
-    title: 'Begin with a Morning Brief',
+    title: 'Begin with Done & Due',
     body: 'Start the day with a clear view of what deserves attention and why.',
   },
 ] as const;
