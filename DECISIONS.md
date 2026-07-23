@@ -1411,3 +1411,17 @@ Founder direction, 23 July 2026: before investor demonstrations, the seeded demo
 Explicitly categorised as a demo-data enhancement, not an engineering or product defect — the underlying logic (`computeDoneItems`) is already correct and verified; this is about the seed data's shape, not the code.
 
 **Status:** Backlogged, to be addressed before investor demonstrations, not blocking current execution packages.
+
+## Website Narrative Alignment Review — Asset 023 Implementation, Complete (Founder + CPO)
+
+Delivered across three passes, each correcting a genuinely different concern, all approved before implementation per the new copy-review practice established this session (customer-facing narrative reviewed as a complete package, not individual strings):
+
+1. **Product Truth pass:** dropped the "AI Chief Operating Officer" tagline (flagged both by Asset 023 §13 directly and the company's own Deliverable B market evidence) and the internal Cognitive Engine pipeline stage names ("Understand/Prioritise/Recommend") that had been exposed as customer-facing section labels — the review's single most significant finding.
+2. **Commercial Storytelling pass:** corrected copy that was accurate but mechanism-first ("reviews," "shows you," "brought to the surface") into owner-benefit language, anchored in Asset 023 §11's own recorded owner language rather than generic paraphrase.
+3. **No-absolute-claims pass:** caught proactively across the whole package, not just where first flagged — three separate instances of unqualified guarantees ("you'll never...", "you won't...") softened to describe the product's actual present-day design rather than a promise about every future day.
+
+**Q30 recorded to the Decision Backlog:** a broader vision for "Done" (validated business progress — completed conversations, finished tasks, verified meeting outcomes) was proposed and deliberately not adopted into today's narrative, since it would require capabilities that don't yet exist (task tracking, conversation-completion detection, document-review status). Explicitly tied to Asset 024's own stated trajectory ("Future versions of Done will progressively include completed operational work as autonomous capabilities are introduced").
+
+449 tests, typecheck clean throughout — every pass was a pure copy change, no logic touched. Each commit deployed and verified via GitHub commit status before the next began.
+
+**Status:** Complete.
