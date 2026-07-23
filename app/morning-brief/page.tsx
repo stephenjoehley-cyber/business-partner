@@ -159,6 +159,12 @@ export default async function MorningBriefPage() {
         </div>
       )}
 
+      {latestBrief && (
+        <div className="mb-2">
+          <h2 className="font-mono text-xs uppercase tracking-wide text-ink-faint">Due</h2>
+        </div>
+      )}
+
       {latestBrief?.tier === 'all_clear' && (
         <AllClearCard
           message={latestBrief.message}

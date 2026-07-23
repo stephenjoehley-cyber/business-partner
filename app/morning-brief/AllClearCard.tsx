@@ -18,8 +18,17 @@ function meetingTime(occurredAt: Date): string {
  * about, so Business Partner says so plainly rather than manufacturing
  * something to show. "Nothing urgent" is presented as useful information,
  * not as an empty or broken state.
+ *
+ * Asset 024 — Done & Due, 23 July 2026: the empty-state copy shown here
+ * is the spec's own exact mandated wording, not the Cognitive Engine's
+ * `message` field (still "No signals currently require executive
+ * attention.", recommend.ts, untouched — that string may be consumed
+ * elsewhere, e.g. logging). This is a deliberate presentation-layer
+ * override, not a decision-engine change — `message` is accepted as a
+ * prop but no longer displayed verbatim, exactly the same restraint as
+ * the rest of this package.
  */
-export function AllClearCard({ message, generatedAt, todaysAgenda }: AllClearCardProps) {
+export function AllClearCard({ generatedAt, todaysAgenda }: AllClearCardProps) {
   return (
     <div className="rounded-lg border border-surface-border bg-surface-card p-8">
       <div className="flex items-start justify-between gap-4">
@@ -29,9 +38,9 @@ export function AllClearCard({ message, generatedAt, todaysAgenda }: AllClearCar
         </span>
       </div>
 
-      <h2 className="text-lg font-semibold leading-snug">All clear.</h2>
+      <h2 className="text-lg font-semibold leading-snug">Nothing today requires your personal attention.</h2>
 
-      <p className="mt-2 max-w-md text-ink-faint">{message}</p>
+      <p className="mt-2 max-w-md text-ink-faint">Enjoy the space to think ahead.</p>
 
       {todaysAgenda.length > 0 && (
         <div className="mt-6 border-t border-surface-border pt-4">
