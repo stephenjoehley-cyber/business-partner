@@ -22,6 +22,7 @@ import {
   getPublishedValue,
   getCapabilityHistory,
   getPendingCapabilities,
+  getAllPublishedInDomain,
   InvalidCapabilityTransitionError,
 } from '@/lib/executive/governedCapability';
 
@@ -142,5 +143,19 @@ describe('getPendingCapabilities', () => {
     expect(findManyMock).toHaveBeenCalledWith(
       expect.objectContaining({ where: { domain: 'business_configuration', status: { in: ['draft', 'approved'] } } })
     );
+  });
+});
+
+describe('getAllPublishedInDomain', () => {
+  it('returns every published row across a domain, not just one key', async () => {
+    findManyMock.mockResolvedValue([
+      makeRow({ id: 'post-1', key: 'first-post', status: 'published' }),
+      makeRow({ id: 'post-2', key: 'second-post', status: 'published' }),
+    ]);
+
+    const result = await getAllPublishedInDomain('blog');
+
+    expect(result).toHaveLength(2);
+    expect(findManyMock).toHaveBeenCalledWith(expect.objectContaining({ where: { domain: 'blog', status: 'published' } }));
   });
 });

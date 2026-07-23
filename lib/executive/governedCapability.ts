@@ -127,6 +127,21 @@ export async function getCapabilityHistory(domain: string, key: string): Promise
   return rows.map(toRecord);
 }
 
+/**
+ * Every currently published value across an entire domain, not just
+ * one key — needed the moment a domain has many keys sharing one
+ * listing (Blog: every post, keyed by slug). A generic extension, not
+ * something built specifically for Blog; any future multi-key domain
+ * benefits from it too.
+ */
+export async function getAllPublishedInDomain(domain: string): Promise<GovernedCapabilityRecord[]> {
+  const rows = await prisma.governedCapability.findMany({
+    where: { domain, status: 'published' },
+    orderBy: { publishedAt: 'desc' },
+  });
+  return rows.map(toRecord);
+}
+
 /** Every pending (draft or approved-but-not-yet-published) proposal for a domain, for the review/approve UI. */
 export async function getPendingCapabilities(domain: string): Promise<GovernedCapabilityRecord[]> {
   const rows = await prisma.governedCapability.findMany({

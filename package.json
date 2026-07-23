@@ -20,6 +20,7 @@
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.45.4",
     "lucide-react": "^0.453.0",
+    "marked": "^18.0.7",
     "next": "^14.2.15",
     "papaparse": "^5.5.4",
     "react": "^18.3.1",
