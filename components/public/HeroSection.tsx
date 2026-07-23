@@ -27,6 +27,16 @@ import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
  *    unqualified guarantee — corrected to "confident," a feeling
  *    Asset 023 §5/§7/§9 all name directly, without claiming certainty
  *    the product can't fully back in every case.
+ * 4. Sequencing (Founder + CPO, 23 July 2026): the corrected version
+ *    still started from the product's own "Done & Due" structure and
+ *    worked outward to find customer-sounding words for it. Rebuilt
+ *    from Asset 023's customer language first — the headline now
+ *    contains no product mention at all; Business Partner is
+ *    introduced only in the second supporting line, once recognition
+ *    (§16's "They understand my world") has already landed. "Done &
+ *    Due" as a named term deliberately doesn't appear here at all —
+ *    the concept is introduced before the label, which it first
+ *    receives later in GettingStartedSection.
  *
  * Deliberate mitigation of the standalone-ambiguity risk flagged in the
  * Website Narrative Alignment Review: the headline never appears without
@@ -57,14 +67,17 @@ export function HeroSection() {
           <p className="text-sm font-medium text-brass-deep">Business Partner</p>
 
           <h1 className="font-editorial max-w-[720px] text-[40px] font-semibold leading-[1.1] text-ink md:text-[56px] lg:text-[64px]">
-            See what&rsquo;s done. Focus on what matters.
+            You&rsquo;re not disorganised. You&rsquo;re just carrying too much.
           </h1>
 
           <div className="flex max-w-[560px] flex-col gap-3 text-lg text-ink-soft">
-            <p>Start your day confident you haven&rsquo;t missed what matters.</p>
             <p>
-              When something genuinely needs you, you&rsquo;ll know exactly why — and exactly what
-              to do next.
+              Customers, staff, invoices, meetings — somehow it all has to live in your head, and
+              somehow you&rsquo;re expected to remember all of it.
+            </p>
+            <p>
+              Business Partner carries that weight with you — quietly keeping track of what&rsquo;s
+              already fine, and making sure you never miss what genuinely needs you.
             </p>
           </div>
 

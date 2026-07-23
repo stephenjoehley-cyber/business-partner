@@ -5,11 +5,11 @@ import { getBusinessByOwner } from '@/lib/brain/repository';
 import { Homepage } from '@/components/public/Homepage';
 
 export const metadata: Metadata = {
-  title: 'Business Partner — See what\u2019s done. Focus on what matters.',
+  title: 'Business Partner — You\u2019re not disorganised. You\u2019re just carrying too much.',
   description:
     'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
   openGraph: {
-    title: 'Business Partner — See what\u2019s done. Focus on what matters.',
+    title: 'Business Partner — You\u2019re not disorganised. You\u2019re just carrying too much.',
     description:
       'Business Partner shows you what\u2019s already been considered and brings forward only what genuinely needs you today.',
     type: 'website',

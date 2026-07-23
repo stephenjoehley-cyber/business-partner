@@ -53,8 +53,8 @@ export function ProductRoleSection() {
         </h2>
 
         <p className="mt-6 max-w-[620px] text-lg text-ink-soft">
-          Every day, some things need you and some things don&rsquo;t. Business Partner tells you
-          which is which — so you can stop trying to hold it all together yourself.
+          Every day, some things genuinely need you, and some things don&rsquo;t. You shouldn&rsquo;t
+          have to sort that out yourself.
         </p>
 
         <div className="mt-12 grid gap-10 md:grid-cols-3">
