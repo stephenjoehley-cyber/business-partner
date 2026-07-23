@@ -1364,3 +1364,18 @@ Two product questions surfaced during acceptance testing, deliberately not resol
 Contact email (investment@business-partner.co.za) confirmed live and receiving mail by the Founder, 23 July 2026. Definition of Done achieved. Favicon, robots.txt, and public-site QA also complete — see prior entries.
 
 Proceeding to authenticated-surface QA (/morning-brief, /settings).
+
+## Investor Readiness Sprint 001 — Authenticated Surface QA Complete
+
+Reviewed /morning-brief and /settings against: broken interactions, mobile responsiveness, loading/empty/error states, executive polish. Six real, safe, no-product-decision fixes shipped:
+
+1. Loading state added for /morning-brief (was missing; the most async-heavy route in the app).
+2. App-wide error boundary and 404 page added (neither existed anywhere).
+3. Mobile overflow risk fixed across 8 button/element rows in Settings (flex-wrap added).
+4. DisconnectButton: fixed a stuck-forever UI state on a failed disconnect (no response.ok check, no error handling at all).
+5. DeleteBusinessSection: fixed a real correctness bug — a failed delete (server error, not just a dropped connection) would still have redirected the owner to "your business has been deleted," while data may have still existed. Verified the underlying delete is genuinely atomic before writing that guarantee into the error copy.
+6. Closed a previously-known, previously-untracked gap: Goal/Person delete failures were silent; now surface a visible error.
+
+One finding flagged for Track B, not touched: "Morning Brief" appears as user-facing text in 8 places outside its own feature folder — full inventory already sent to the Founder, ready to inform the Done & Due transition's acceptance criteria.
+
+**Status:** Authenticated-surface QA complete. No product-decision items surfaced beyond the Morning Brief text inventory.
