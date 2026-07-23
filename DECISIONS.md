@@ -1522,3 +1522,13 @@ Permanent architectural boundary recorded directly in the schema's own documenta
 This closes the one honest limitation recorded at initial completion (the end-to-end propagation claim could only be unit-tested from the sandbox environment, not genuinely verified live). It has now been verified live, by the Founder, on production.
 
 **Status:** Governed Capability Framework + Business Configuration — Founder Acceptance complete. Fully closed.
+
+## Commercial Launch Gate — Mobile Navigation Complete
+
+Found earlier as a disclosed simplification (no mobile menu, About/Trust/FAQ only reachable via footer on small screens); fixed now since the launch gate explicitly requires complete mobile usability. Reuses the exact Radix Dialog mechanism already established for the authenticated app's own MobileNav (2026-07-18 Founder decision restricting Radix to this one use), not a second pattern.
+
+475 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
+
+**Status:** Website engineering-ready items now complete: Home, About, Contact (support email corrected and republished through the Governed Capability Framework, a real live defect caught before it reached the launch audit), Trust, FAQ, full navigation including mobile.
+
+**Remaining before the Commercial Launch Audit can run:** Terms of Service, Privacy Policy, and Cookie Policy (commissioned by the Founder through the Executive Editorial process, pending CPO review against Product Truth/Editorial Style Guide/Executive Presence before publication), plus Pricing, Payment Provider, and Founding Member Offer decisions. All explicitly Founder/CPO-gated, not engineering-blocked.
