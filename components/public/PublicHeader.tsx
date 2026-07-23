@@ -3,9 +3,11 @@ import { AppLogo } from '@/components/foundation/AppLogo';
 import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
 
 /**
- * Contract §7 — logo, Sign in (quiet), Get started (primary). No other
- * public navigation; deliberately not adding Product/Features/About/etc.
- * since none of those destinations exist.
+ * Contract §7 — logo, Sign in (quiet), Get started (primary). About and
+ * Contact now exist (23 July 2026) but live in the footer, not here —
+ * the header's job is orientation and the primary action, not full site
+ * navigation; adding every real destination here would work against the
+ * same restraint that governs the rest of the public site.
  */
 export function PublicHeader() {
   return (

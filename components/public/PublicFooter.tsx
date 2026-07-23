@@ -1,23 +1,31 @@
+import Link from 'next/link';
 import { AppLogo } from '@/components/foundation/AppLogo';
+import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
 
 /**
  * Contract §15 — minimal. Privacy/Terms/Security links still don't exist
- * yet, so still absent, per the Contract's prohibition on dead links.
+ * yet (Founder-gated commercial/legal decisions — see Production SaaS
+ * Completion Plan, 23 July 2026), so still absent, per the Contract's
+ * prohibition on dead links.
  *
- * Investor Readiness Sprint 001, P0.1 — Contact added now that a real
- * address exists (investment@business-partner.co.za). Shown as plain
- * text alongside the mailto link, not just an icon or a bare "Contact"
- * label — a plain address works even without a configured mail client,
- * and is honest about exactly where a message will go.
+ * About and Contact added, 23 July 2026, now that both are real
+ * destinations — the direct mailto link (added during Sprint 001, P0.1)
+ * is superseded by the dedicated Contact page, which carries the same
+ * email address as its own real destination rather than a footer scrap.
  */
 export function PublicFooter() {
   return (
     <footer className="border-t border-surface-border">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 py-10 text-center md:px-8">
         <AppLogo variant="mark" size="sm" />
-        <a href="mailto:investment@business-partner.co.za" className="focus-ring text-sm text-ink-faint underline underline-offset-2">
-          investment@business-partner.co.za
-        </a>
+        <div className="flex gap-6">
+          <Link href={PUBLIC_ROUTES.about} className="focus-ring text-sm text-ink-faint hover:text-ink">
+            About
+          </Link>
+          <Link href={PUBLIC_ROUTES.contact} className="focus-ring text-sm text-ink-faint hover:text-ink">
+            Contact
+          </Link>
+        </div>
         <p className="text-sm text-ink-faint">© 2026 Business Partner. All rights reserved.</p>
       </div>
     </footer>

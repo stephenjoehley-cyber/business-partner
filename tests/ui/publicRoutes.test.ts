@@ -13,4 +13,12 @@ describe('PUBLIC_ROUTES', () => {
   it('home points to /', () => {
     expect(PUBLIC_ROUTES.home).toBe('/');
   });
+
+  it('about points to /about', () => {
+    expect(PUBLIC_ROUTES.about).toBe('/about');
+  });
+
+  it('contact points to /contact', () => {
+    expect(PUBLIC_ROUTES.contact).toBe('/contact');
+  });
 });

@@ -8,4 +8,6 @@ export const PUBLIC_ROUTES = {
   home: '/',
   signIn: '/login',
   getStarted: '/signup',
+  about: '/about',
+  contact: '/contact',
 } as const;
