@@ -10,4 +10,6 @@ export const PUBLIC_ROUTES = {
   getStarted: '/signup',
   about: '/about',
   contact: '/contact',
+  trust: '/trust',
+  faq: '/faq',
 } as const;

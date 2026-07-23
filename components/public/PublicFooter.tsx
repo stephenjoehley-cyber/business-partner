@@ -3,28 +3,36 @@ import { AppLogo } from '@/components/foundation/AppLogo';
 import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
 
 /**
- * Contract §15 — minimal. Privacy/Terms/Security links still don't exist
- * yet (Founder-gated commercial/legal decisions — see Production SaaS
- * Completion Plan, 23 July 2026), so still absent, per the Contract's
- * prohibition on dead links.
+ * Founder/CPO decision, 23 July 2026: footer provides a consistent
+ * reference point throughout the site, deliberately duplicating
+ * About/Trust/FAQ from the primary navigation — common practice for
+ * premium B2B SaaS, per the Founder/CPO's own stated reasoning.
  *
- * About and Contact added, 23 July 2026, now that both are real
- * destinations — the direct mailto link (added during Sprint 001, P0.1)
- * is superseded by the dedicated Contact page, which carries the same
- * email address as its own real destination rather than a footer scrap.
+ * Privacy, Terms, and Cookies are deliberately NOT here yet. Those
+ * pages don't exist — they're Founder-gated legal content (Production
+ * SaaS Completion Plan, Track B), not something Claude should draft on
+ * its own authority. Contract §15's standing rule (no link to a page
+ * that doesn't exist) still applies; add each one the moment its real
+ * destination exists, not before.
  */
+const FOOTER_LINKS = [
+  { href: PUBLIC_ROUTES.about, label: 'About' },
+  { href: PUBLIC_ROUTES.trust, label: 'Trust' },
+  { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
+  { href: PUBLIC_ROUTES.contact, label: 'Contact' },
+] as const;
+
 export function PublicFooter() {
   return (
     <footer className="border-t border-surface-border">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-5 py-10 text-center md:px-8">
         <AppLogo variant="mark" size="sm" />
-        <div className="flex gap-6">
-          <Link href={PUBLIC_ROUTES.about} className="focus-ring text-sm text-ink-faint hover:text-ink">
-            About
-          </Link>
-          <Link href={PUBLIC_ROUTES.contact} className="focus-ring text-sm text-ink-faint hover:text-ink">
-            Contact
-          </Link>
+        <div className="flex flex-wrap justify-center gap-6">
+          {FOOTER_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="focus-ring text-sm text-ink-faint hover:text-ink">
+              {link.label}
+            </Link>
+          ))}
         </div>
         <p className="text-sm text-ink-faint">© 2026 Business Partner. All rights reserved.</p>
       </div>

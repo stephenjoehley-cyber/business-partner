@@ -21,4 +21,12 @@ describe('PUBLIC_ROUTES', () => {
   it('contact points to /contact', () => {
     expect(PUBLIC_ROUTES.contact).toBe('/contact');
   });
+
+  it('trust points to /trust', () => {
+    expect(PUBLIC_ROUTES.trust).toBe('/trust');
+  });
+
+  it('faq points to /faq', () => {
+    expect(PUBLIC_ROUTES.faq).toBe('/faq');
+  });
 });

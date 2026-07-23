@@ -9,7 +9,7 @@ import { isDemoMode } from '@/lib/demo/config';
 // future public marketing page needs the same registration here, or it
 // will fail exactly the same way — this file's own auth check has no
 // way to know a route is "meant to be public" other than this list.
-export const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback', '/forgot-password', '/auth/reset-password', '/brand', '/about', '/contact'];
+export const PUBLIC_PATHS = ['/login', '/signup', '/auth/callback', '/forgot-password', '/auth/reset-password', '/brand', '/about', '/contact', '/trust', '/faq'];
 const DEMO_REDIRECT_PATHS = ['/login', '/signup', '/onboarding', '/settings', '/forgot-password', '/auth/reset-password'];
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 

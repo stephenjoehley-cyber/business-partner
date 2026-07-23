@@ -3,18 +3,37 @@ import { AppLogo } from '@/components/foundation/AppLogo';
 import { PUBLIC_ROUTES } from '@/lib/ui/publicRoutes';
 
 /**
- * Contract §7 — logo, Sign in (quiet), Get started (primary). About and
- * Contact now exist (23 July 2026) but live in the footer, not here —
- * the header's job is orientation and the primary action, not full site
- * navigation; adding every real destination here would work against the
- * same restraint that governs the rest of the public site.
+ * Founder/CPO decision, 23 July 2026: primary navigation reflects the
+ * questions a prospective customer naturally asks, not the site's own
+ * structure. Home introduces Business Partner; About answers "who are
+ * you"; Trust answers "can I trust you with my business"; FAQ answers
+ * the remaining practical questions; Sign In serves existing customers;
+ * Get Started is the primary action. Deliberate duplication with the
+ * footer (About/Trust/FAQ appear in both) — the header supports
+ * discovery during the journey, the footer is a consistent reference
+ * point, per the Founder/CPO's own stated reasoning.
  */
+const NAV_LINKS = [
+  { href: PUBLIC_ROUTES.home, label: 'Home' },
+  { href: PUBLIC_ROUTES.about, label: 'About' },
+  { href: PUBLIC_ROUTES.trust, label: 'Trust' },
+  { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
+] as const;
+
 export function PublicHeader() {
   return (
     <header className="border-b border-surface-border">
       <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-5 md:px-8">
         <AppLogo variant="horizontal" size="lg" href={PUBLIC_ROUTES.home} priority className="hidden md:inline-block" />
         <AppLogo variant="horizontal" size="sm" href={PUBLIC_ROUTES.home} priority className="md:hidden" />
+
+        <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="focus-ring text-sm text-ink-faint hover:text-ink">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
         <div className="flex items-center gap-3">
           <Link
