@@ -1544,3 +1544,15 @@ Found during engineering verification of the CPO-approved legal documents, 23 Ju
 Terms of Service required no correction — verified against the same standard and found accurate throughout.
 
 **Status:** Both documents corrected. Per Founder instruction, no further approval required for this specific correction since neither meaning nor commercial policy changed — recorded here as the Commercial Launch Audit's first Product Truth finding, ahead of the full audit once Pricing, Payment Provider, and Founding Member Offer are decided.
+
+## Website Sprint, Phase 1 — Pricing and Blog Capability Complete
+
+Founder commercial decision, 23 July 2026 (revised same day for clarity): standard subscription price is R399/month; launch includes a limited Founding Customer offer at R199/month for life, for qualifying early customers. Plans & Pricing page (/pricing) shows both deliberately — R399 struck through, R199 as the real price — so the launch offer's value is legible against the real standard price, not shown in isolation. No payment capability in this phase, per the agreed Phase 1/Phase 2 split; the call to action leads to the existing signup flow.
+
+Terms of Service updated to state R399 explicitly (previously "then-current standard pricing"), for consistency with the website now showing that figure openly. CPO approved this specific wording change directly.
+
+Blog capability built and deployed, modeled as a new domain inside the Governed Capability Framework exactly as approved — a genuine demonstration of the Framework's extensibility, not a separate content-management system. Founder-only management at /executive/blog; public surfaces at /blog and /blog/[slug], both with full Search Presence including dynamic per-post metadata and generated Open Graph images.
+
+478 tests, typecheck clean throughout. Every commit deployed and verified via GitHub commit status before the next began.
+
+**Status:** Website Sprint, Phase 1 deliverables (Plans & Pricing, Blog) complete. Remaining before the Commercial Launch Audit: PayFast integration (Phase 2, deliberately separate), and confirming no other outstanding items remain.
