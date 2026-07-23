@@ -1458,3 +1458,11 @@ New standing principle recorded, per the Founder/CPO: every page has its own dis
 451 tests, typecheck clean. Footer and header updated; nav-only-to-real-destinations principle maintained throughout.
 
 **Status:** About and Contact complete. Remaining Phase 1 candidates not yet scoped: dedicated Trust and FAQ pages (named by the Founder/CPO as having distinct jobs, don't appear to require Founder-gated commercial/legal decisions) — awaiting confirmation before starting.
+
+## Real Defect Found by the Founder Immediately After Deploy — Fixed
+
+23 July 2026: About and Contact, deployed as part of Phase 1, redirected every signed-out visitor straight to /login before either page rendered. Root cause: middleware.ts maintains its own PUBLIC_PATHS allowlist, separate from lib/ui/publicRoutes.ts's PUBLIC_ROUTES — both pages were added to the latter but never the former, and nothing checks the two stay in sync.
+
+**Fixed:** both routes added to PUBLIC_PATHS. **Also fixed the actual gap, not just the symptom:** a new test (tests/middleware.test.ts) cross-references PUBLIC_PATHS against PUBLIC_ROUTES directly, so a future public page forgotten in one list but not the other fails a test rather than reaching production silently, as this one did.
+
+453 tests. Deployed and confirmed via GitHub commit status.
