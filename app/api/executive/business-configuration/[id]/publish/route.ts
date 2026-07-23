@@ -1,0 +1,25 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { publishCapability, InvalidCapabilityTransitionError } from '@/lib/executive/governedCapability';
+
+export const dynamic = 'force-dynamic';
+
+export async function POST(request: Request, { params }: { params: { id: string } }) {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  try {
+    const published = await publishCapability(params.id);
+    return NextResponse.json({ published });
+  } catch (err) {
+    if (err instanceof InvalidCapabilityTransitionError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
+    throw err;
+  }
+}

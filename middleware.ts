@@ -92,9 +92,12 @@ export async function middleware(request: NextRequest) {
   // logged in, but not the founder, is redirected to their own real
   // landing page rather than back to /login (which would incorrectly
   // suggest they aren't authenticated at all).
-  if (request.nextUrl.pathname.startsWith('/executive')) {
+  if (request.nextUrl.pathname.startsWith('/executive') || request.nextUrl.pathname.startsWith('/api/executive')) {
     const founderUserIds = (process.env.FOUNDER_USER_IDS ?? '').split(',').map((id) => id.trim()).filter(Boolean);
     if (!founderUserIds.includes(user.id)) {
+      if (request.nextUrl.pathname.startsWith('/api/executive')) {
+        return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+      }
       const url = request.nextUrl.clone();
       url.pathname = '/morning-brief';
       return NextResponse.redirect(url);
