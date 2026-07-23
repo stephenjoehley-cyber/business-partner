@@ -76,6 +76,7 @@ export function HelpUnderstandSection({
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [goalStatus, setGoalStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null);
+  const [goalDeleteError, setGoalDeleteError] = useState(false);
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editGoalDescription, setEditGoalDescription] = useState('');
   const [isSavingGoalEdit, setIsSavingGoalEdit] = useState(false);
@@ -88,6 +89,7 @@ export function HelpUnderstandSection({
   const [isSavingPerson, setIsSavingPerson] = useState(false);
   const [personStatus, setPersonStatus] = useState<'idle' | 'saved' | 'error'>('idle');
   const [deletingPersonId, setDeletingPersonId] = useState<string | null>(null);
+  const [personDeleteError, setPersonDeleteError] = useState(false);
   const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
   const [editPersonName, setEditPersonName] = useState('');
   const [editPersonRelationship, setEditPersonRelationship] = useState<RelationshipType>('customer');
@@ -123,10 +125,13 @@ export function HelpUnderstandSection({
 
   async function handleDeleteGoal(id: string) {
     setDeletingGoalId(id);
+    setGoalDeleteError(false);
     const res = await fetch(`/api/business-memory/goals/${id}`, { method: 'DELETE' });
     setDeletingGoalId(null);
     if (res.ok) {
       setGoals((prev) => prev.filter((g) => g.id !== id));
+    } else {
+      setGoalDeleteError(true);
     }
   }
 
@@ -194,10 +199,13 @@ export function HelpUnderstandSection({
 
   async function handleDeletePerson(id: string) {
     setDeletingPersonId(id);
+    setPersonDeleteError(false);
     const res = await fetch(`/api/business-memory/people/${id}`, { method: 'DELETE' });
     setDeletingPersonId(null);
     if (res.ok) {
       setPeople((prev) => prev.filter((p) => p.id !== id));
+    } else {
+      setPersonDeleteError(true);
     }
   }
 
@@ -270,6 +278,11 @@ export function HelpUnderstandSection({
   return (
     <div className="flex flex-col gap-6">
       <div>
+        {goalDeleteError && (
+          <p className="mb-2 text-xs text-signal-attention">
+            Something went wrong on my side, not yours. Try deleting again in a moment.
+          </p>
+        )}
         {goals.length > 0 && (
           <ul className="mb-4 flex flex-col gap-2">
             {goals.map((g) =>
@@ -355,6 +368,11 @@ export function HelpUnderstandSection({
       </div>
 
       <div className="border-t border-surface-border pt-6">
+        {personDeleteError && (
+          <p className="mb-2 text-xs text-signal-attention">
+            Something went wrong on my side, not yours. Try deleting again in a moment.
+          </p>
+        )}
         {people.length > 0 && (
           <ul className="mb-4 flex flex-col gap-2">
             {people.map((p) =>
