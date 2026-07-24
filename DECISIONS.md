@@ -1620,3 +1620,11 @@ One thing flagged rather than silently corrected: the Founder's example email (p
 501 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
 
 **Status:** Complete. partners@business-partner.co.za confirmed real and monitored by the Founder, 23 July 2026 - no longer pending.
+
+## LinkedIn Article Version — One Canonical Insight, Two Outputs
+
+23 July 2026 (Founder decision): Executive Insights now support an optional linkedInVersion alongside the canonical website body, since manual publication was explicitly acceptable and no LinkedIn API integration was requested. Genuinely small addition, not new infrastructure: the post value is already flexible JSON, so no schema change was needed. Never rendered publicly; exists purely as a founder-facing convenience with a one-click copy in the management panel. Shown only for postType 'essay', matching the Founder's own framing that this is specifically for Executive Insights, not Product Updates.
+
+501 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
+
+**Status:** Complete.
