@@ -17,6 +17,13 @@ import { PublicMobileNav } from './PublicMobileNav';
  * discovery during the journey, the footer is a consistent reference
  * point, per the Founder/CPO's own stated reasoning.
  *
+ * Blog added here directly at the Founder's request, 23 July 2026 —
+ * originally placed footer-only (matching Contact's precedent, a
+ * supplementary surface rather than part of the core question
+ * sequence), moved into the header once asked for explicitly. Placed
+ * last, after FAQ, since it doesn't answer one of the core sequential
+ * questions the rest of this list is built around.
+ *
  * Commercial Launch Gate, 23 July 2026 — <PublicMobileNav /> added
  * (mobile-only trigger) so these same destinations are reachable
  * without relying on the footer alone on small screens.
@@ -27,6 +34,7 @@ const NAV_LINKS = [
   { href: PUBLIC_ROUTES.trust, label: 'Trust' },
   { href: PUBLIC_ROUTES.pricing, label: 'Pricing' },
   { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
+  { href: PUBLIC_ROUTES.blog, label: 'Blog' },
 ] as const;
 
 export function PublicHeader() {
