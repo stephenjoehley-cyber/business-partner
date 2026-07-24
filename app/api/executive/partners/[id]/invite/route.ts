@@ -14,8 +14,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   try {
-    await invitePartner(params.id, user.id);
-    return NextResponse.json({ success: true });
+    const { inviteLink } = await invitePartner(params.id, user.id);
+    return NextResponse.json({ inviteLink });
   } catch (err) {
     if (err instanceof PartnerInviteError) {
       return NextResponse.json({ error: err.message }, { status: 409 });

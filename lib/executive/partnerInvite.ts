@@ -11,16 +11,23 @@ import { isDemoMode } from '@/lib/demo/config';
  * exposed to client-side code — it is not, and must never become,
  * NEXT_PUBLIC_-prefixed.
  *
- * Used for exactly one operation: inviting a partner to their read-
- * only portal account. Nothing else in this codebase gets access to a
- * service-role client, and this module exports nothing but the one
- * function below — not the client itself.
+ * Used for exactly one operation: generating a partner's portal invite
+ * link. Nothing else in this codebase gets access to a service-role
+ * client, and this module exports nothing but the one function below —
+ * not the client itself.
  *
- * Depends on one manual Supabase dashboard configuration: the "Invite
- * user" email template (Authentication -> Email Templates) must link
- * to app/auth/confirm/route.ts's token_hash format, not the default
- * {{ .ConfirmationURL }} — see that route's own doc comment for why,
- * and the exact template text required.
+ * Found live during Founder Acceptance, 23 July 2026: the original
+ * design used inviteUserByEmail, which relies on Supabase's own email
+ * template system — but that project's Supabase account has no custom
+ * SMTP configured, and Supabase does not allow editing any email
+ * template (including the link format app/auth/confirm/route.ts
+ * depends on) without one. Rather than ask for that infrastructure to
+ * be stood up just to unblock one link, this uses generateLink()
+ * instead — it creates the exact same invite token and user record,
+ * but never sends an email at all, returning the link directly so the
+ * Founder can share it however is convenient right now. If custom SMTP
+ * is ever configured for another reason, sending this same link
+ * automatically becomes a small, later enhancement, not a redesign.
  */
 
 export class PartnerInviteError extends Error {
@@ -36,7 +43,7 @@ export class PartnerInviteError extends Error {
  * on the Partner row — the same "who did what, when" discipline
  * already established for GovernedCapability's proposedBy/approvedBy.
  */
-export async function invitePartner(partnerId: string, invitedBy: string): Promise<void> {
+export async function invitePartner(partnerId: string, invitedBy: string): Promise<{ inviteLink: string }> {
   if (isDemoMode()) {
     throw new PartnerInviteError('Partner invitations are not available in demo mode.');
   }
@@ -60,23 +67,27 @@ export async function invitePartner(partnerId: string, invitedBy: string): Promi
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(partner.contactEmail, {
-    redirectTo: '/partner',
+  const { data, error } = await adminClient.auth.admin.generateLink({
+    type: 'invite',
+    email: partner.contactEmail,
   });
 
-  if (error || !data.user) {
+  if (error || !data.user || !data.properties?.hashed_token) {
     // Logged server-side only (Vercel's private function logs, never
     // reachable by any client) — this is Supabase's response about the
     // operation, not the credential itself, so logging it here doesn't
-    // violate the containment rule above. Found necessary live, 23 July
-    // 2026: the deliberately generic client-facing message meant a real
-    // failure couldn't be diagnosed at all without this.
+    // violate the containment rule above.
     console.error('Partner invite failed:', { partnerId, contactEmail: partner.contactEmail, error });
-    throw new PartnerInviteError('Something went wrong sending this invitation.');
+    throw new PartnerInviteError('Something went wrong generating this invitation.');
   }
 
   await prisma.partner.update({
     where: { id: partnerId },
     data: { authUserId: data.user.id, invitedBy, invitedAt: new Date() },
   });
+
+  const siteUrl = 'https://business-partner.co.za';
+  const inviteLink = `${siteUrl}/auth/confirm?token_hash=${data.properties.hashed_token}&type=invite&redirect_to=/partner`;
+
+  return { inviteLink };
 }

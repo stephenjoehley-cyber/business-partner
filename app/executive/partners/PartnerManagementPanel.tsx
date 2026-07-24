@@ -29,6 +29,7 @@ export function PartnerManagementPanel({ initialPartners }: { initialPartners: P
   const [revenueSharePercent, setRevenueSharePercent] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [generatedLink, setGeneratedLink] = useState<{ partnerId: string; link: string } | null>(null);
 
   async function refreshPartners() {
     const res = await fetch('/api/executive/partners');
@@ -74,12 +75,15 @@ export function PartnerManagementPanel({ initialPartners }: { initialPartners: P
   async function handleInvite(id: string) {
     setBusyId(id);
     setError(null);
+    setGeneratedLink(null);
     try {
       const res = await fetch(`/api/executive/partners/${id}/invite`, { method: 'POST' });
       if (!res.ok) {
         const responseBody = await res.json().catch(() => ({}));
-        throw new Error(responseBody.error ?? 'Something went wrong sending this invite.');
+        throw new Error(responseBody.error ?? 'Something went wrong generating this invite.');
       }
+      const data = await res.json();
+      setGeneratedLink({ partnerId: id, link: data.inviteLink });
       await refreshPartners();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong on my side, not yours.');
@@ -150,27 +154,38 @@ export function PartnerManagementPanel({ initialPartners }: { initialPartners: P
         ) : (
           <div className="mt-3 flex flex-col gap-3">
             {partners.map((p) => (
-              <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-surface-border p-4">
-                <div className="text-sm text-ink">
-                  <p className="font-medium">
-                    {p.partnerName} ({p.organisation})
-                  </p>
-                  <p className="text-ink-faint">
-                    Code: {p.referralCode} · {p.revenueShareTerms[0]?.revenueSharePercent ?? 0}% share ·{' '}
-                    {p._count.referrals} referred signup{p._count.referrals === 1 ? '' : 's'}
-                  </p>
+              <div key={p.id} className="flex flex-col gap-3 rounded-lg border border-surface-border p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-sm text-ink">
+                    <p className="font-medium">
+                      {p.partnerName} ({p.organisation})
+                    </p>
+                    <p className="text-ink-faint">
+                      Code: {p.referralCode} · {p.revenueShareTerms[0]?.revenueSharePercent ?? 0}% share ·{' '}
+                      {p._count.referrals} referred signup{p._count.referrals === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  {p.authUserId ? (
+                    <span className="text-xs text-ink-faint">Portal active</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleInvite(p.id)}
+                      disabled={busyId === p.id}
+                      className="focus-ring rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
+                    >
+                      {busyId === p.id ? 'Generating…' : 'Generate invite link'}
+                    </button>
+                  )}
                 </div>
-                {p.authUserId ? (
-                  <span className="text-xs text-ink-faint">Portal active</span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleInvite(p.id)}
-                    disabled={busyId === p.id}
-                    className="focus-ring rounded-md bg-ink px-3 py-1.5 text-sm font-medium text-surface transition-opacity hover:opacity-90 disabled:opacity-50"
-                  >
-                    {busyId === p.id ? 'Sending…' : 'Send portal invite'}
-                  </button>
+                {generatedLink?.partnerId === p.id && (
+                  <div className="rounded-md border border-surface-border bg-surface p-3">
+                    <p className="text-xs text-ink-faint">
+                      No automatic email is sent yet (no email service is configured). Copy this link and send
+                      it to the partner yourself:
+                    </p>
+                    <p className="mt-2 break-all text-sm text-ink">{generatedLink.link}</p>
+                  </div>
                 )}
               </div>
             ))}
