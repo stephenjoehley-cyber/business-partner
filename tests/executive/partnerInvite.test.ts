@@ -72,7 +72,7 @@ describe('invitePartner', () => {
 
     await invitePartner('partner-1', 'founder-user-id');
 
-    expect(inviteUserByEmailMock).toHaveBeenCalledWith('partner@example.com');
+    expect(inviteUserByEmailMock).toHaveBeenCalledWith('partner@example.com', { redirectTo: '/partner' });
     expect(updateMock).toHaveBeenCalledWith({
       where: { id: 'partner-1' },
       data: expect.objectContaining({ authUserId: 'new-partner-user-id', invitedBy: 'founder-user-id' }),

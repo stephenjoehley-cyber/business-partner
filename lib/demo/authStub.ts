@@ -20,6 +20,13 @@ import { DEMO_OWNER_EMAIL, DEMO_OWNER_ID } from './config';
  * Preferred Name retroactively (Decision Backlog Q9), the same
  * `user_metadata` mechanism as signup, just reached from a different
  * screen.
+ *
+ * 2026-07-23: `verifyOtp()` added — needed once the Partner Portal's
+ * invite acceptance flow started exchanging a token_hash for a session
+ * server-side (app/auth/confirm/route.ts), the correct SSR-consistent
+ * way to handle Supabase's invite links, found necessary live during
+ * Founder Acceptance when the hash-fragment default flow proved
+ * incompatible with @supabase/ssr's PKCE-based browser client.
  */
 export interface AuthClient {
   auth: {
@@ -38,6 +45,7 @@ export interface AuthClient {
       options?: { emailRedirectTo?: string; data?: Record<string, unknown> };
     }): Promise<{ data: unknown; error: { message: string } | null }>;
     exchangeCodeForSession(code: string): Promise<{ data: unknown; error: unknown }>;
+    verifyOtp(params: { type: string; token_hash: string }): Promise<{ data: unknown; error: { message: string } | null }>;
     setSession(session: { access_token: string; refresh_token: string }): Promise<{ data: unknown; error: unknown }>;
     getSession(): Promise<{ data: { session: unknown }; error: unknown }>;
     resetPasswordForEmail(
@@ -79,6 +87,9 @@ export const demoAuthClient: AuthClient = {
       return { data: { user: DEMO_USER, session: null }, error: null };
     },
     async exchangeCodeForSession() {
+      return { data: { session: null }, error: null };
+    },
+    async verifyOtp() {
       return { data: { session: null }, error: null };
     },
     async setSession() {

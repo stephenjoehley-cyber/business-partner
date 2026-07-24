@@ -15,6 +15,12 @@ import { isDemoMode } from '@/lib/demo/config';
  * only portal account. Nothing else in this codebase gets access to a
  * service-role client, and this module exports nothing but the one
  * function below — not the client itself.
+ *
+ * Depends on one manual Supabase dashboard configuration: the "Invite
+ * user" email template (Authentication -> Email Templates) must link
+ * to app/auth/confirm/route.ts's token_hash format, not the default
+ * {{ .ConfirmationURL }} — see that route's own doc comment for why,
+ * and the exact template text required.
  */
 
 export class PartnerInviteError extends Error {
@@ -54,7 +60,9 @@ export async function invitePartner(partnerId: string, invitedBy: string): Promi
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(partner.contactEmail);
+  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(partner.contactEmail, {
+    redirectTo: '/partner',
+  });
 
   if (error || !data.user) {
     // Logged server-side only (Vercel's private function logs, never
