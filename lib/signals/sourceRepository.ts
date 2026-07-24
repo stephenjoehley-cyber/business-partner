@@ -104,7 +104,22 @@ export async function updateSignalSource(
   if (isDemoMode()) {
     return updateDemoSignalSource(id, updates);
   }
-  const row = await prisma.signalSource.update({ where: { id }, data: updates });
+  const { excludedRows, ...directFields } = updates;
+  const row = await prisma.signalSource.update({
+    where: { id },
+    data: {
+      ...directFields,
+      // Prisma's update input needs the relation expressed as a nested
+      // write, not a raw array (the shape create accepts) — found by a
+      // real Vercel build failure, 23 July 2026, not caught by this
+      // sandbox's own stale Prisma client. Reachable in practice: a
+      // retry that succeeds after an earlier rejected/pending attempt
+      // for the same checksum reuses (updates) that existing row rather
+      // than creating a second one, and excluded rows are genuinely
+      // being written for the first time at that point.
+      ...(excludedRows && excludedRows.length > 0 ? { excludedRows: { create: excludedRows } } : {}),
+    },
+  });
   return row as SignalSourceRecord;
 }
 
