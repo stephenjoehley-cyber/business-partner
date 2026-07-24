@@ -14,4 +14,5 @@ export const PUBLIC_ROUTES = {
   faq: '/faq',
   pricing: '/pricing',
   blog: '/blog',
+  partners: '/partners',
 } as const;

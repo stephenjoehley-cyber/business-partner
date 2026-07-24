@@ -37,4 +37,8 @@ describe('PUBLIC_ROUTES', () => {
   it('blog points to /blog', () => {
     expect(PUBLIC_ROUTES.blog).toBe('/blog');
   });
+
+  it('partners points to /partners', () => {
+    expect(PUBLIC_ROUTES.partners).toBe('/partners');
+  });
 });

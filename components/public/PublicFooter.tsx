@@ -28,6 +28,7 @@ const FOOTER_LINKS = [
   { href: PUBLIC_ROUTES.pricing, label: 'Pricing' },
   { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
   { href: PUBLIC_ROUTES.blog, label: 'Insights' },
+  { href: PUBLIC_ROUTES.partners, label: 'Partner Programme' },
   { href: PUBLIC_ROUTES.contact, label: 'Contact' },
 ] as const;
 
