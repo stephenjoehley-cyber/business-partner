@@ -1590,3 +1590,11 @@ One real Vercel build failure found and fixed during this work: adding excludedR
 500 tests, typecheck clean throughout. Every commit deployed and verified via GitHub commit status before the next began.
 
 **Status:** Complete. First release under the new "engineering correctness + customer-noticed value" standard — customers can now see why a row was excluded, from history, at the moment they actually go looking for it.
+
+## Product Updates — Operating Rhythm Established
+
+23 July 2026: reframed the Blog capability as customer-facing "Product Updates," per Founder instruction that this should be part of the ongoing operating rhythm, not a once-off addition. Nav relabeled ('Updates'), listing page's own heading/metadata updated to match. No new engineering — reuses the Blog capability closed earlier this session.
+
+First real entry drafted (see-why-a-row-wasnt-included, covering Financial Evidence History) through the same governed narrative process as every other piece of customer-facing copy, framed entirely from the customer's side of the change. Awaiting Founder publication through /executive/blog.
+
+**Standing practice going forward:** every future customer-visible release gets a short Product Updates entry as part of its own completion, the same way it already gets a DECISIONS.md entry.
