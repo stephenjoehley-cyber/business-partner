@@ -1570,3 +1570,13 @@ All seven Founder/CPO requirements from the approved Implementation Plan address
 489 tests, typecheck clean throughout every step. Every commit deployed and verified via GitHub commit status before the next began.
 
 **Status:** Partner Capability complete. Ready for the Founder's own end-to-end test: create a partner, send the invite, sign up through the referral link, confirm the portal shows the real referral.
+
+## Partner Capability — Closed (Founder + CPO, 23 July 2026)
+
+Founder Acceptance completed live: a real partner record created, a real invite link generated and used to establish a genuine portal session, the real referral link verified to land correctly on the Signup page (not the homepage, checked directly rather than assumed), and edit/deactivate/delete added for real, disclosed gaps found during that same testing.
+
+Two real defects were found and fixed live during this acceptance, not discovered later: the original invite mechanism (inviteUserByEmail) delivered a session as a URL hash fragment incompatible with this codebase's PKCE-based SSR client, and depended on a custom-SMTP requirement this Supabase project doesn't have configured. Both resolved by switching to generateLink(), which produces the same working token without needing Supabase's own email system at all — a smaller, more honest fix than standing up new infrastructure to unblock one link.
+
+Per Founder/CPO instruction: Partner Capability is complete for Phase 1 and formally closed. Architectural boundaries held (governance vs. correctness, application-level isolation named precisely rather than implied, versioned commercial terms preserving historical accuracy). Future enhancement — specifically, automatic email sending and revenue amount/statement population — is deliberately deferred to when driven by a real subsequent milestone (payment automation after PayFast), not built ahead of that need.
+
+**Status:** Closed.
