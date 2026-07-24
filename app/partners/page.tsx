@@ -46,6 +46,15 @@ const structuredData = {
  * everywhere else: referral tracking, the portal, and revenue share
  * are all real and working; no specific earnings figures are claimed,
  * since none would be honest at this stage.
+ *
+ * Partner Launch Kit, 23 July 2026 (Founder decision) — a real,
+ * standing operational commitment, not a technology feature: every
+ * approved partner gets a website announcement, LinkedIn content, and
+ * client email copy prepared by hand, through the same governed
+ * editorial process as everything else, when they're approved. This
+ * page now promises that explicitly, which means it must actually
+ * happen the next time a real partner is approved — not an automation
+ * claim, a service commitment.
  */
 export default function PartnersPage() {
   return (
@@ -79,6 +88,11 @@ export default function PartnersPage() {
           <ul className="flex flex-col gap-3">
             <li>Your own referral link, ready to share with your audience or clients.</li>
             <li>A real-time view of everyone who&rsquo;s signed up through it, and your revenue share.</li>
+            <li>
+              A professionally prepared Partner Launch Kit, including a website announcement,
+              LinkedIn content, and client email copy, so you can introduce Business Partner
+              properly from day one, not figure it out yourself.
+            </li>
             <li>Nothing to manage. No dashboard to configure, no reports to compile yourself.</li>
           </ul>
 
@@ -86,7 +100,7 @@ export default function PartnersPage() {
           <ol className="flex flex-col gap-3">
             <li>1. Get in touch. We review every enquiry personally.</li>
             <li>2. We agree terms together, including your revenue share.</li>
-            <li>3. You get your own referral link and a portal to track it.</li>
+            <li>3. You get your own referral link, a portal to track it, and your Launch Kit.</li>
             <li>4. Share it however suits you. Everything else is tracked automatically.</li>
           </ol>
 
