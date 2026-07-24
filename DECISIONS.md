@@ -1610,3 +1610,13 @@ Posts published before this distinction default to Essay until edited via the ne
 500 tests, typecheck clean. Deployed and confirmed.
 
 **Status:** Complete.
+
+## Partner Programme Public Page — Complete
+
+23 July 2026: the public front door to the Partner Capability closed earlier this session. Founder correctly distinguished this as "exposing an existing capability" (Why Partner, Benefits, How it Works) from a genuinely new one (self-service application and approval workflow) — the latter deliberately not built, "Become a Partner" leads to a direct, personally-reviewed email instead, matching Contact's own established reasoning. Written for a different audience than every other page (partners, not business owners); Product Truth applied identically, no earnings figures claimed.
+
+One thing flagged rather than silently corrected: the Founder's example email (partners@business-partner.ai) didn't match the real site domain; implemented as partners@business-partner.co.za instead, pending confirmation that inbox is real and monitored.
+
+501 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
+
+**Status:** Complete, pending the Founder's confirmation of the partner contact inbox before wide promotion.
