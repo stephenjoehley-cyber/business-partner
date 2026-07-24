@@ -1580,3 +1580,13 @@ Two real defects were found and fixed live during this acceptance, not discovere
 Per Founder/CPO instruction: Partner Capability is complete for Phase 1 and formally closed. Architectural boundaries held (governance vs. correctness, application-level isolation named precisely rather than implied, versioned commercial terms preserving historical accuracy). Future enhancement — specifically, automatic email sending and revenue amount/statement population — is deliberately deferred to when driven by a real subsequent milestone (payment automation after PayFast), not built ahead of that need.
 
 **Status:** Closed.
+
+## Financial Evidence History — Complete
+
+23 July 2026: durable persistence of the per-row exclusion reasons the extractor already produces at extraction time, deferred at F1's own completion (22 July 2026). ExcludedRowRecord persists alongside the SignalSource itself; the finance history list's click-to-expand interaction (removed as dead at F1's completion) now exists again, backed by real data.
+
+One real Vercel build failure found and fixed during this work: adding excludedRows to SignalSourceInput flowed into updateSignalSource's type too, but Prisma's update input needs a nested-write shape for a relation, not the raw array create's input accepts — a real type mismatch this sandbox's own stale Prisma client (checksum-fetch blocked) couldn't catch, only Vercel's real build could. Fixed properly: updateSignalSource now builds the correct nested shape, since the retry-after-a-prior-rejected-upload path genuinely needs to write excluded rows via update, not just create.
+
+500 tests, typecheck clean throughout. Every commit deployed and verified via GitHub commit status before the next began.
+
+**Status:** Complete. First release under the new "engineering correctness + customer-noticed value" standard — customers can now see why a row was excluded, from history, at the moment they actually go looking for it.
