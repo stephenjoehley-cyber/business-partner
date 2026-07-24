@@ -135,6 +135,15 @@ describe('ingestDocument', () => {
     expect(updateSignalSourceMock).toHaveBeenCalledWith('source-new', { status: 'completed' });
   });
 
+  it('passes excludedRows through to createSignalSource — Financial Evidence History, 23 July 2026', async () => {
+    createSignalSourceMock.mockResolvedValue({ id: 'source-new', status: 'processing' });
+    updateSignalSourceMock.mockResolvedValue({ id: 'source-new', status: 'completed' });
+
+    await ingestDocument('biz-1', 'aged_debtors', { filename: 'x.csv', content: VALID_CSV });
+
+    expect(createSignalSourceMock).toHaveBeenCalledWith(expect.objectContaining({ excludedRows: expect.any(Array) }));
+  });
+
   it('computes qualifiedCount from real Qualification, not just how many signals were persisted', async () => {
     createSignalSourceMock.mockResolvedValue({ id: 'source-new', status: 'processing' });
     updateSignalSourceMock.mockResolvedValue({ id: 'source-new', status: 'completed' });

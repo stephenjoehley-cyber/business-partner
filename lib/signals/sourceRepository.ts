@@ -31,6 +31,13 @@ export interface SignalSourceInput {
   excludedRowCount: number;
   reconciliationResult: string;
   status: string;
+  /**
+   * Financial Evidence History, 23 July 2026 — durable persistence of
+   * per-row exclusion reasons, deferred at F1's own completion. Reason
+   * is the same ExcludedRowReason code already defined in
+   * lib/signals/extractor.ts, never pre-translated text.
+   */
+  excludedRows?: { rowNumber: number; reason: string }[];
 }
 
 export interface SignalSourceRecord extends SignalSourceInput {
@@ -42,8 +49,31 @@ export async function createSignalSource(input: SignalSourceInput): Promise<Sign
   if (isDemoMode()) {
     return createDemoSignalSource(input);
   }
-  const row = await prisma.signalSource.create({ data: input });
+  const { excludedRows, ...sourceFields } = input;
+  const row = await prisma.signalSource.create({
+    data: {
+      ...sourceFields,
+      ...(excludedRows && excludedRows.length > 0 ? { excludedRows: { create: excludedRows } } : {}),
+    },
+  });
   return row as SignalSourceRecord;
+}
+
+/**
+ * Financial Evidence History, 23 July 2026 — backs the history list's
+ * per-upload detail view. Returns the stored reason codes, unstranslated;
+ * the route/UI layer applies excludedRowReasonText, the same separation
+ * already established for the immediate upload-result experience.
+ */
+export async function getExcludedRowsForSource(sourceId: string): Promise<{ rowNumber: number; reason: string }[]> {
+  if (isDemoMode()) {
+    return [];
+  }
+  const rows = await prisma.excludedRowRecord.findMany({
+    where: { signalSourceId: sourceId },
+    orderBy: { rowNumber: 'asc' },
+  });
+  return rows.map((r: { rowNumber: number; reason: string }) => ({ rowNumber: r.rowNumber, reason: r.reason }));
 }
 
 /**

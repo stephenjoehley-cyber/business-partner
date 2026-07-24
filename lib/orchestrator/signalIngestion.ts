@@ -164,6 +164,9 @@ export async function ingestDocument(
     excludedRowCount: outcome.excludedRowCount,
     reconciliationResult: outcome.reconciliationResult,
     status: 'processing',
+    // Financial Evidence History, 23 July 2026 — persisted alongside
+    // the source itself, in the same write, rather than a second pass.
+    excludedRows: outcome.excludedRows,
   });
 
   const signalsWithSource = outcome.signals.map((s) => ({ ...s, sourceId: source.id }));
