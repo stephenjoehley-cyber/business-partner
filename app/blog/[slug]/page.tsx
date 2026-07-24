@@ -22,7 +22,7 @@ function isBlogPostValue(value: unknown): value is BlogPostValue {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const value = await getPublishedValue('blog', params.slug);
   if (!isBlogPostValue(value)) {
-    return { title: 'Blog' };
+    return { title: 'Insights' };
   }
   return {
     title: value.title,

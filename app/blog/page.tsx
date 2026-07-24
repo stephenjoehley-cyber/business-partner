@@ -7,19 +7,19 @@ import { getAllPublishedInDomain } from '@/lib/executive/governedCapability';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Product Updates',
-  description: 'What\u2019s changed in Business Partner, and why it helps you.',
+  title: 'Insights',
+  description: 'Product updates and thinking from Business Partner.',
   alternates: { canonical: '/blog' },
   openGraph: {
-    title: 'Product Updates',
-    description: 'What\u2019s changed in Business Partner, and why it helps you.',
+    title: 'Insights',
+    description: 'Product updates and thinking from Business Partner.',
     type: 'website',
     url: '/blog',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Product Updates',
-    description: 'What\u2019s changed in Business Partner, and why it helps you.',
+    title: 'Insights',
+    description: 'Product updates and thinking from Business Partner.',
   },
 };
 
@@ -85,7 +85,7 @@ export default async function BlogIndexPage() {
       <PublicHeader />
       <main id="main-content" className="mx-auto max-w-[720px] px-5 py-16 md:px-8 md:py-24">
         <h1 className="font-editorial text-[32px] font-semibold leading-tight text-ink md:text-[40px]">
-          Product Updates
+          Insights
         </h1>
 
         {withValues.length === 0 ? (
@@ -93,10 +93,13 @@ export default async function BlogIndexPage() {
         ) : (
           <>
             {updates.length > 0 && (
-              <div className="mt-10 flex flex-col gap-8">
-                {updates.map(({ post, value }) => (
-                  <PostCard key={post.id} post={post} value={value} />
-                ))}
+              <div className="mt-10">
+                <h2 className="font-editorial text-2xl font-semibold text-ink">Product Updates</h2>
+                <div className="mt-6 flex flex-col gap-8">
+                  {updates.map(({ post, value }) => (
+                    <PostCard key={post.id} post={post} value={value} />
+                  ))}
+                </div>
               </div>
             )}
 

@@ -14,6 +14,6 @@ function isBlogPostValue(value: unknown): value is BlogPostValue {
 
 export default async function Image({ params }: { params: { slug: string } }) {
   const value = await getPublishedValue('blog', params.slug);
-  const title = isBlogPostValue(value) ? value.title : 'Blog';
+  const title = isBlogPostValue(value) ? value.title : 'Insights';
   return generateOgImage(title);
 }
