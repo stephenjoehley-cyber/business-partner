@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
+import { prisma } from '@/lib/prisma';
+import { isDemoMode } from '@/lib/demo/config';
 import { Homepage } from '@/components/public/Homepage';
 
 export const metadata: Metadata = {
@@ -56,6 +58,15 @@ const structuredData = {
  * homepage; signed-in owners are redirected onward exactly as before —
  * existing auth redirect logic is unchanged, just reached conditionally
  * rather than unconditionally.
+ *
+ * Partner Capability, 23 July 2026 (Step 5) — identity resolution now
+ * has three destinations, not two. Partner is checked first: it's a
+ * narrow, single-purpose identity with no other destination to fall
+ * back to, unlike a Customer/onboarding user. Founder-level access
+ * (FOUNDER_USER_IDS, /executive) is a separate, additive authorization
+ * checked in middleware.ts, not a competing redirect destination here —
+ * a founder dogfooding their own account as a customer still lands on
+ * their own Morning Brief, exactly as before.
  */
 export default async function RootPage() {
   const supabase = createClient();
@@ -64,6 +75,12 @@ export default async function RootPage() {
   } = await supabase.auth.getUser();
 
   if (user) {
+    if (!isDemoMode()) {
+      const partner = await prisma.partner.findUnique({ where: { authUserId: user.id } });
+      if (partner) {
+        redirect('/partner');
+      }
+    }
     const business = await getBusinessByOwner(user.id);
     redirect(business ? '/morning-brief' : '/onboarding');
   }
