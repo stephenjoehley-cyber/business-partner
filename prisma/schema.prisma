@@ -26,6 +26,7 @@ model Business {
   providerConfigs SignalProviderConfig[]
   signalSources   SignalSource[]
   confirmedColumnMappings ConfirmedColumnMapping[]
+  partnerReferral PartnerReferral?
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   onboardingCompletedAt DateTime?
@@ -246,4 +247,71 @@ model GovernedCapability {
   supersedesId String?
 
   @@index([domain, key, status])
+}
+
+// Partner Capability — Founder + CPO, 23 July 2026. Business Partner
+// operating one of its own primary launch channels (publisher and
+// professional partnerships) in the same AI-first manner customers are
+// asked to operate their own businesses. The Founder remains
+// responsible for the relationship; this is the repeatable
+// administration around it — invitation, referral attribution,
+// transparency, and reporting — never the relationship itself.
+//
+// Deliberately its own relational model, not a Governed Capability
+// domain: a Partner needs a real, queryable authentication identity
+// (authUserId) for their portal login, which a JSON value under a
+// governed-capability key cannot cleanly support. Same information the
+// original scoping considered, shaped correctly for what's actually
+// being asked of it once a login is involved.
+model Partner {
+  id           String    @id @default(cuid())
+  // Set once the partner accepts their portal invite (auth.admin.
+  // inviteUserByEmail, via the one contained service-role module —
+  // lib/executive/partnerInvite.ts). Null until then.
+  authUserId   String?   @unique
+  partnerName  String
+  organisation String
+  contactEmail String
+  referralCode String    @unique
+  status       String    // 'active' | 'inactive'
+  dateJoined   DateTime  @default(now())
+
+  // Auditability of privileged actions (Founder + CPO requirement,
+  // 23 July 2026) — who triggered this partner's invite, and when.
+  invitedBy String?
+  invitedAt DateTime?
+
+  revenueShareTerms PartnerRevenueShareTerm[]
+  referrals         PartnerReferral[]
+}
+
+// Future-safe commercial terms (Founder + CPO requirement, 23 July
+// 2026): a single current percentage on Partner cannot survive a real
+// renegotiation without silently rewriting history. A past month's
+// revenue share calculation (once Phase 2/PayFast makes real
+// calculation possible) looks up whichever term was effective during
+// that month, never just today's rate.
+model PartnerRevenueShareTerm {
+  id                  String    @id @default(cuid())
+  partnerId           String
+  partner             Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  revenueSharePercent Float
+  effectiveFrom       DateTime  @default(now())
+  effectiveTo         DateTime? // null = the currently active term
+}
+
+// Immutable referral attribution (Founder + CPO requirement, 23 July
+// 2026) — create-only by design, the same append-only discipline
+// already proven for Signal and GovernedCapability. No update or
+// delete function is ever written for this model; once a customer is
+// created with a referral code attached, that attribution is permanent
+// history, never a mutable field that could quietly change later.
+model PartnerReferral {
+  id           String   @id @default(cuid())
+  businessId   String   @unique
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  partnerId    String
+  partner      Partner  @relation(fields: [partnerId], references: [id])
+  referralCode String
+  createdAt    DateTime @default(now())
 }
