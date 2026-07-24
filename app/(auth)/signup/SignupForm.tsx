@@ -1,15 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { FormField, inputClasses } from '@/components/FormField';
 import { PasswordField } from '@/components/PasswordField';
 import { humanizeAuthError } from '@/lib/auth/errors';
 
-/** Extracted from app/(auth)/signup/page.tsx (D1.2) — see LoginForm's doc comment for why. */
+/**
+ * Extracted from app/(auth)/signup/page.tsx (D1.2) — see LoginForm's
+ * doc comment for why.
+ *
+ * Partner Capability, 23 July 2026 — a referral code (?ref=CODE)
+ * follows the exact same mechanism already proven for preferredName:
+ * passed through Supabase's own user_metadata at signup, since no
+ * Business exists yet to attach it to. Resolved into a real
+ * PartnerReferral row later, when the Business is actually created
+ * during onboarding (app/api/onboarding/business/route.ts) — this form
+ * only ever carries the code along, never validates or creates
+ * anything itself.
+ */
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [preferredName, setPreferredName] = useState('');
   const [email, setEmail] = useState('');
@@ -22,12 +35,14 @@ export function SignupForm() {
     setIsSubmitting(true);
     setError(null);
 
+    const referralCode = searchParams.get('ref')?.trim() || undefined;
+
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { preferredName: preferredName.trim() || undefined },
+        data: { preferredName: preferredName.trim() || undefined, referralCode },
       },
     });
 

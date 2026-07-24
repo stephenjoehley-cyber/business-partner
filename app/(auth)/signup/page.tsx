@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { SignupForm } from './SignupForm';
 
 export const metadata: Metadata = {
-  title: 'Get started — Business Partner',
+  title: 'Get started: Business Partner',
   robots: { index: false, follow: false },
 };
 
@@ -23,7 +24,10 @@ export default function SignupPage() {
         </>
       }
     >
-      <SignupForm />
+      {/* useSearchParams (for ?ref= referral capture, added 23 July 2026) requires a Suspense boundary in the App Router. */}
+      <Suspense fallback={null}>
+        <SignupForm />
+      </Suspense>
     </AuthShell>
   );
 }

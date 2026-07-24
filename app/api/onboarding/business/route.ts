@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createBusinessProfile, getBusinessByOwner, updateBusinessProfile } from '@/lib/brain/repository';
 import { businessProfileSchema } from '@/lib/brain/validation';
+import { resolveReferral } from '@/lib/executive/partnerReferral';
 
 /**
  * Forces this route to always run per-request rather than being
@@ -38,6 +39,17 @@ export async function POST(request: Request) {
   const business = existing
     ? await updateBusinessProfile(existing.id, parsed.data)
     : await createBusinessProfile(user.id, parsed.data);
+
+  // Partner Capability, 23 July 2026 — only on genuine first-time
+  // creation, matching PartnerReferral's own create-only, one-row-per-
+  // business design. The referral code travelled here via Supabase's
+  // own user_metadata, the same mechanism already proven for
+  // preferredName, since no Business existed at signup time to attach
+  // it to directly.
+  if (!existing) {
+    const referralCode = user.user_metadata?.referralCode as string | undefined;
+    await resolveReferral(business.id, referralCode);
+  }
 
   return NextResponse.json({ business });
 }
