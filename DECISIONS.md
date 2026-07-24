@@ -1619,4 +1619,4 @@ One thing flagged rather than silently corrected: the Founder's example email (p
 
 501 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
 
-**Status:** Complete, pending the Founder's confirmation of the partner contact inbox before wide promotion.
+**Status:** Complete. partners@business-partner.co.za confirmed real and monitored by the Founder, 23 July 2026 - no longer pending.
