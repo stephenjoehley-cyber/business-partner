@@ -1628,3 +1628,13 @@ One thing flagged rather than silently corrected: the Founder's example email (p
 501 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
 
 **Status:** Complete.
+
+## Partner Launch Kit — A Real Standing Commitment, Not Just Copy
+
+23 July 2026 (Founder decision): the Partner Programme page now explicitly promises every approved partner a professionally prepared Launch Kit (website announcement, LinkedIn content, client email copy) as part of the programme itself. Deliberately not automation, and not claimed as such — a service commitment fulfilled by hand, through the same governed editorial process as everything else, distinct from the earlier "orchestration" discussion which was correctly identified as premature (no real approved partners exist yet to prove that pattern against).
+
+**This is now a real, tracked operational obligation, not just website copy:** the next time a real partner is approved (not a test record), whoever is handling Business Partner's engineering/product work at that time must actually draft this Launch Kit by hand, through the governed narrative process, before or as part of onboarding that partner. Recorded here explicitly so this isn't missed by a future session.
+
+501 tests, typecheck clean. Deployed and confirmed via GitHub commit status.
+
+**Status:** Copy live. Fulfillment pending the first real, non-test partner approval.
