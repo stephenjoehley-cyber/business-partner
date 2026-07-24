@@ -32,6 +32,15 @@ interface BlogPostValue {
   postType: 'update' | 'essay';
   /** Attribution, 23 July 2026 — defaults to the company voice if not set. */
   author?: string;
+  /**
+   * LinkedIn distribution, 23 July 2026 (Founder decision) — one
+   * canonical Insight, two outputs. This is never rendered on the
+   * public site; it exists purely as a founder-facing convenience so
+   * the LinkedIn-adapted draft lives next to its canonical source
+   * instead of a separate document, ready to copy when published
+   * manually. No API integration, no automation — none was asked for.
+   */
+  linkedInVersion?: string;
 }
 
 function isValidBlogPostValue(value: unknown): value is BlogPostValue {

@@ -9,13 +9,22 @@ interface BlogPostValue {
   body: string;
   postType?: 'update' | 'essay';
   author?: string;
+  linkedInVersion?: string;
 }
 
 function isBlogPostValue(value: unknown): value is BlogPostValue {
   return !!value && typeof value === 'object' && 'title' in value;
 }
 
-const EMPTY_DRAFT = { slug: '', title: '', excerpt: '', body: '', postType: 'update' as 'update' | 'essay', author: '' };
+const EMPTY_DRAFT = {
+  slug: '',
+  title: '',
+  excerpt: '',
+  body: '',
+  postType: 'update' as 'update' | 'essay',
+  author: '',
+  linkedInVersion: '',
+};
 
 /**
  * Founder-only. Same error-handling discipline established for every
@@ -48,6 +57,7 @@ export function BlogManagementPanel({
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   async function refreshPending() {
     const res = await fetch('/api/executive/blog');
@@ -68,6 +78,7 @@ export function BlogManagementPanel({
       body: value.body,
       postType: value.postType ?? 'essay',
       author: value.author ?? '',
+      linkedInVersion: value.linkedInVersion ?? '',
     });
   }
 
@@ -92,6 +103,7 @@ export function BlogManagementPanel({
             body: draft.body.trim(),
             postType: draft.postType,
             author: draft.author.trim() || undefined,
+            linkedInVersion: draft.linkedInVersion.trim() || undefined,
           },
         }),
       });
@@ -208,6 +220,15 @@ export function BlogManagementPanel({
             rows={8}
             className="focus-ring rounded-md border border-surface-border p-2 text-sm text-ink"
           />
+          {draft.postType === 'essay' && (
+            <textarea
+              value={draft.linkedInVersion}
+              onChange={(e) => setDraft((d) => ({ ...d, linkedInVersion: e.target.value }))}
+              placeholder="LinkedIn Article version (optional). Written for the same audience, adapted for LinkedIn. Never shown on the website; stays here for you to copy when you post it manually."
+              rows={6}
+              className="focus-ring rounded-md border border-surface-border p-2 text-sm text-ink"
+            />
+          )}
           <div className="flex gap-3">
             <button
               type="button"
@@ -280,17 +301,34 @@ export function BlogManagementPanel({
             {published.map((p) => {
               const value = isBlogPostValue(p.value) ? p.value : undefined;
               return (
-                <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-surface-border p-3">
-                  <a href={`/blog/${p.key}`} target="_blank" rel="noreferrer" className="focus-ring text-sm text-ink hover:text-brass-deep">
-                    {value?.title ?? p.key} ({value?.postType ?? 'essay'}) (/blog/{p.key})
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => startEdit(p)}
-                    className="focus-ring rounded-md border border-surface-border px-3 py-1 text-xs text-ink"
-                  >
-                    Edit
-                  </button>
+                <div key={p.id} className="flex flex-col gap-2 rounded-md border border-surface-border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <a href={`/blog/${p.key}`} target="_blank" rel="noreferrer" className="focus-ring text-sm text-ink hover:text-brass-deep">
+                      {value?.title ?? p.key} ({value?.postType ?? 'essay'}) (/blog/{p.key})
+                    </a>
+                    <div className="flex gap-2">
+                      {value?.linkedInVersion && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(value.linkedInVersion ?? '');
+                            setCopiedId(p.id);
+                            setTimeout(() => setCopiedId(null), 2000);
+                          }}
+                          className="focus-ring rounded-md border border-surface-border px-3 py-1 text-xs text-ink"
+                        >
+                          {copiedId === p.id ? 'Copied!' : 'Copy LinkedIn version'}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => startEdit(p)}
+                        className="focus-ring rounded-md border border-surface-border px-3 py-1 text-xs text-ink"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
                 </div>
               );
             })}
