@@ -1560,3 +1560,13 @@ Blog capability built and deployed, modeled as a new domain inside the Governed 
 ## Fix: Blog Was Never Wired Into Navigation
 
 Found by the Founder, 23 July 2026: /blog and its supporting Governed Capability domain shipped and deployed correctly, but "Blog" was never added to any navigation list. Not a content-dependency issue — the empty state was already correctly built. Fixed, added footer-only, matching the existing Contact precedent. 478 tests, typecheck clean.
+
+## Partner Capability — Complete (Steps 1-6)
+
+Built and deployed across six independently verified commits: schema (Partner, PartnerRevenueShareTerm, PartnerReferral); referral capture at signup via Supabase's own user_metadata mechanism (same pattern already proven for preferredName); the one contained service-role module (lib/executive/partnerInvite.ts); founder-only partner management (/executive/partners); identity resolution (Partner checked first at the root redirect, before the existing Customer/onboarding logic); and the read-only Partner Portal (/partner).
+
+All seven Founder/CPO requirements from the approved Implementation Plan addressed directly: identity resolution across Founder/Partner/Customer/Onboarding; strict service-role containment (one module, never a singleton, never logged); application-level data isolation (not literal Postgres RLS, which isn't how this codebase accesses its database anywhere — named explicitly rather than implied); complete auditability (invitedBy/invitedAt); immutable, create-only referral attribution; versioned revenue-share terms so a future renegotiation can never rewrite historical calculations; and Product Truth throughout the portal — revenue amount and payment history shown as an honest absence, never a fabricated figure, until Phase 2 (PayFast) makes them real.
+
+489 tests, typecheck clean throughout every step. Every commit deployed and verified via GitHub commit status before the next began.
+
+**Status:** Partner Capability complete. Ready for the Founder's own end-to-end test: create a partner, send the invite, sign up through the referral link, confirm the portal shows the real referral.
