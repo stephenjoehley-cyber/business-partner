@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getPendingCapabilities, getPublishedValue } from '@/lib/executive/governedCapability';
+import { ExecutiveNav } from '@/components/foundation/ExecutiveNav';
 import { BusinessConfigurationPanel } from './BusinessConfigurationPanel';
 
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,7 @@ export default async function BusinessConfigurationPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
+      <ExecutiveNav />
       <h1 className="text-2xl font-semibold text-ink">Business Configuration</h1>
       <p className="mt-2 text-ink-faint">
         Values published here become the single source of truth wherever they are used across the

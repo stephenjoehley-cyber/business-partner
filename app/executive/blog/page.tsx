@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getPendingCapabilities, getAllPublishedInDomain } from '@/lib/executive/governedCapability';
+import { ExecutiveNav } from '@/components/foundation/ExecutiveNav';
 import { BlogManagementPanel } from './BlogManagementPanel';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,7 @@ export default async function BlogManagementPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
+      <ExecutiveNav />
       <h1 className="text-2xl font-semibold text-ink">Blog</h1>
       <p className="mt-2 text-ink-faint">
         Propose a post, then approve and publish it here. Published posts appear on the public

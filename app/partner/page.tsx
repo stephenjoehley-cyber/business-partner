@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
+import { AppLogo } from '@/components/foundation/AppLogo';
+import { SignOutButton } from '@/components/foundation/SignOutButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +48,10 @@ export default async function PartnerPortalPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
+      <div className="mb-8 flex items-center justify-between border-b border-surface-border pb-4">
+        <AppLogo variant="horizontal" size="sm" href="/partner" />
+        <SignOutButton />
+      </div>
       <h1 className="text-2xl font-semibold text-ink">Partnership with Business Partner</h1>
       <p className="mt-2 text-ink-faint">{partner.organisation}</p>
 

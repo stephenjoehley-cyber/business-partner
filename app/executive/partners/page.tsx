@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
+import { ExecutiveNav } from '@/components/foundation/ExecutiveNav';
 import { PartnerManagementPanel } from './PartnerManagementPanel';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,7 @@ export default async function PartnersPage() {
 
   return (
     <main className="mx-auto max-w-2xl px-6 py-12">
+      <ExecutiveNav />
       <h1 className="text-2xl font-semibold text-ink">Partners</h1>
       <p className="mt-2 text-ink-faint">
         Create a partner record, then invite them to their own read-only portal. Referral
