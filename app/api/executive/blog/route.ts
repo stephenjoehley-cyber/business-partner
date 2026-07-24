@@ -21,12 +21,30 @@ interface BlogPostValue {
   title: string;
   excerpt: string;
   body: string;
+  /**
+   * Found necessary live, 23 July 2026: the same domain was carrying
+   * both terse Product Updates entries and longer-form essays, mixed
+   * together with no way to tell them apart on the public listing.
+   * Distinguishing by content, not by a second domain — same
+   * reasoning as keeping Business Configuration's fields together
+   * rather than one domain per field.
+   */
+  postType: 'update' | 'essay';
+  /** Attribution, 23 July 2026 — defaults to the company voice if not set. */
+  author?: string;
 }
 
 function isValidBlogPostValue(value: unknown): value is BlogPostValue {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
-  return typeof v.title === 'string' && v.title.trim().length > 0 && typeof v.excerpt === 'string' && typeof v.body === 'string' && v.body.trim().length > 0;
+  return (
+    typeof v.title === 'string' &&
+    v.title.trim().length > 0 &&
+    typeof v.excerpt === 'string' &&
+    typeof v.body === 'string' &&
+    v.body.trim().length > 0 &&
+    (v.postType === 'update' || v.postType === 'essay')
+  );
 }
 
 export async function GET() {

@@ -11,6 +11,8 @@ interface BlogPostValue {
   title: string;
   excerpt: string;
   body: string;
+  postType?: 'update' | 'essay';
+  author?: string;
 }
 
 function isBlogPostValue(value: unknown): value is BlogPostValue {
@@ -62,7 +64,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     headline: value.title,
     description: value.excerpt || value.title,
     datePublished: post?.publishedAt?.toISOString(),
-    author: { '@type': 'Organization', name: 'Business Partner' },
+    author: { '@type': 'Organization', name: value.author ?? 'Business Partner' },
   };
 
   return (
@@ -81,6 +83,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
         </h1>
         {post?.publishedAt && (
           <p className="mt-3 font-mono text-xs uppercase tracking-wide text-ink-faint">
+            {value.author ?? 'Business Partner'} {'\u00b7'}{' '}
             {post.publishedAt.toLocaleDateString('en-ZA', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         )}
