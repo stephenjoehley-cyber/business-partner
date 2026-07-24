@@ -27,7 +27,7 @@ const FOOTER_LINKS = [
   { href: PUBLIC_ROUTES.trust, label: 'Trust' },
   { href: PUBLIC_ROUTES.pricing, label: 'Pricing' },
   { href: PUBLIC_ROUTES.faq, label: 'FAQ' },
-  { href: PUBLIC_ROUTES.blog, label: 'Blog' },
+  { href: PUBLIC_ROUTES.blog, label: 'Updates' },
   { href: PUBLIC_ROUTES.contact, label: 'Contact' },
 ] as const;
 

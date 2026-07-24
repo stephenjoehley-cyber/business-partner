@@ -7,19 +7,19 @@ import { getAllPublishedInDomain } from '@/lib/executive/governedCapability';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Blog',
-  description: 'Updates and thinking from Business Partner.',
+  title: 'Product Updates',
+  description: 'What\u2019s changed in Business Partner, and why it helps you.',
   alternates: { canonical: '/blog' },
   openGraph: {
-    title: 'Blog',
-    description: 'Updates and thinking from Business Partner.',
+    title: 'Product Updates',
+    description: 'What\u2019s changed in Business Partner, and why it helps you.',
     type: 'website',
     url: '/blog',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Blog',
-    description: 'Updates and thinking from Business Partner.',
+    title: 'Product Updates',
+    description: 'What\u2019s changed in Business Partner, and why it helps you.',
   },
 };
 
@@ -53,7 +53,7 @@ export default async function BlogIndexPage() {
       <PublicHeader />
       <main id="main-content" className="mx-auto max-w-[720px] px-5 py-16 md:px-8 md:py-24">
         <h1 className="font-editorial text-[32px] font-semibold leading-tight text-ink md:text-[40px]">
-          Blog
+          Product Updates
         </h1>
 
         {posts.length === 0 ? (
