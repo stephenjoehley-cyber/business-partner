@@ -10,16 +10,18 @@ vi.mock('@/lib/brain/repository', () => ({
 
 vi.mock('@/lib/signals/sourceRepository', () => ({
   listSignalSourcesForBusiness: vi.fn(),
+  getExcludedRowsForSource: vi.fn().mockResolvedValue([]),
 }));
 
 import { createClient } from '@/lib/supabase/server';
 import { getBusinessByOwner } from '@/lib/brain/repository';
-import { listSignalSourcesForBusiness } from '@/lib/signals/sourceRepository';
+import { listSignalSourcesForBusiness, getExcludedRowsForSource } from '@/lib/signals/sourceRepository';
 import { GET } from '@/app/api/business-memory/finance/history/route';
 
 const createClientMock = createClient as unknown as ReturnType<typeof vi.fn>;
 const getBusinessByOwnerMock = getBusinessByOwner as unknown as ReturnType<typeof vi.fn>;
 const listSignalSourcesMock = listSignalSourcesForBusiness as unknown as ReturnType<typeof vi.fn>;
+const getExcludedRowsForSourceMock = getExcludedRowsForSource as unknown as ReturnType<typeof vi.fn>;
 
 function mockAuthedUser(userId: string | null) {
   createClientMock.mockReturnValue({
@@ -34,6 +36,8 @@ describe('GET /api/business-memory/finance/history', () => {
     createClientMock.mockReset();
     getBusinessByOwnerMock.mockReset();
     listSignalSourcesMock.mockReset();
+    getExcludedRowsForSourceMock.mockReset();
+    getExcludedRowsForSourceMock.mockResolvedValue([]);
   });
 
   it('returns 401 without an authenticated user', async () => {
@@ -65,7 +69,7 @@ describe('GET /api/business-memory/finance/history', () => {
     expect(body.uploads[0].needsConfirmation).toBe(false);
   });
 
-  it('labels a completed source with excluded rows as "Mostly understood"', async () => {
+  it('labels a completed source with excluded rows as "Mostly understood", and includes the translated excluded-row detail — Financial Evidence History, 23 July 2026', async () => {
     mockAuthedUser('user-1');
     getBusinessByOwnerMock.mockResolvedValue({ id: 'biz-1' });
     listSignalSourcesMock.mockResolvedValue([
@@ -79,10 +83,19 @@ describe('GET /api/business-memory/finance/history', () => {
         createdAt: new Date('2026-07-01'),
       },
     ]);
+    getExcludedRowsForSourceMock.mockResolvedValue([
+      { rowNumber: 3, reason: 'unparseable_amount' },
+      { rowNumber: 7, reason: 'missing_currency' },
+    ]);
 
     const res = await GET();
     const body = await res.json();
     expect(body.uploads[0].status).toBe('Mostly understood');
+    expect(body.uploads[0].excludedRows).toEqual([
+      { rowNumber: 3, reason: "the amount didn't make sense to me" },
+      { rowNumber: 7, reason: "I couldn't tell what currency this was in" },
+    ]);
+    expect(getExcludedRowsForSourceMock).toHaveBeenCalledWith('source-1');
   });
 
   it('flags a pending_confirmation source as needing confirmation', async () => {

@@ -60,6 +60,7 @@ interface HistoryItem {
   status: string;
   addedDate: string;
   needsConfirmation: boolean;
+  excludedRows: { rowNumber: number; reason: string }[];
 }
 
 async function submitUpload(
@@ -81,6 +82,11 @@ async function submitUpload(
 export function FinanceUploadSection() {
   const [step, setStep] = useState<Step>({ kind: 'select_type' });
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  // Financial Evidence History, 23 July 2026 — the click-to-expand
+  // interaction removed as dead at F1's completion, now backed by real,
+  // persisted data instead of nothing. One item open at a time, same
+  // restraint as everywhere else in this product.
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 
   async function loadHistory() {
     const res = await fetch('/api/business-memory/finance/history');
@@ -244,6 +250,24 @@ export function FinanceUploadSection() {
                   <span className="mt-1 text-xs text-ink-faint">
                     {item.status} · Added {item.addedDate}
                   </span>
+                  {item.excludedRows.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedHistoryId(expandedHistoryId === item.id ? null : item.id)}
+                      className="focus-ring mt-2 w-fit text-xs text-ink-faint underline"
+                    >
+                      See what I couldn&rsquo;t use
+                    </button>
+                  )}
+                  {expandedHistoryId === item.id && (
+                    <ul className="mt-2 flex flex-col gap-1 text-xs text-ink-faint">
+                      {item.excludedRows.map((row) => (
+                        <li key={row.rowNumber}>
+                          Row {row.rowNumber}: {row.reason}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </li>
             ))}
