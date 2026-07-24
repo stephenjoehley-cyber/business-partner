@@ -130,6 +130,7 @@ model SignalSource {
   status               String    // 'pending_confirmation' | 'processing' | 'completed' | 'rejected'
   createdAt            DateTime  @default(now())
   signals              Signal[]
+  excludedRows         ExcludedRowRecord[]
 
   @@unique([businessId, checksum])
 }
@@ -314,4 +315,23 @@ model PartnerReferral {
   partner      Partner  @relation(fields: [partnerId], references: [id])
   referralCode String
   createdAt    DateTime @default(now())
+}
+
+// Financial Evidence History — Founder + CPO, 23 July 2026 (Decision
+// Backlog item, deferred at F1's own completion, 22 July 2026). The
+// extractor (lib/signals/extractor.ts) already produces per-row
+// exclusion reasons at extraction time; this model is the durable
+// persistence that was explicitly deferred then, not a new capability.
+// Reason stored as the same ExcludedRowReason code already defined in
+// the extractor contract, never pre-translated text — translation to
+// plain language stays at the presentation layer (excludedRowReasonText),
+// the same separation already established everywhere else.
+model ExcludedRowRecord {
+  id             String       @id @default(cuid())
+  signalSourceId String
+  signalSource   SignalSource @relation(fields: [signalSourceId], references: [id], onDelete: Cascade)
+  rowNumber      Int
+  reason         String
+
+  @@index([signalSourceId])
 }
