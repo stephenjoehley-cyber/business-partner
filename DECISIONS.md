@@ -1598,3 +1598,15 @@ One real Vercel build failure found and fixed during this work: adding excludedR
 First real entry drafted (see-why-a-row-wasnt-included, covering Financial Evidence History) through the same governed narrative process as every other piece of customer-facing copy, framed entirely from the customer's side of the change. Awaiting Founder publication through /executive/blog.
 
 **Standing practice going forward:** every future customer-visible release gets a short Product Updates entry as part of its own completion, the same way it already gets a DECISIONS.md entry.
+
+## Blog: postType Split, Attribution, and Edit — Found Necessary Live
+
+23 July 2026: the Founder found terse Product Updates entries mixed with longer-form essays on the same listing, with no way to distinguish them, once real content of both kinds existed. Confirms the earlier decision to merge Product Updates into Blog was right for infrastructure reuse but incomplete without a way to distinguish content types once both existed for real.
+
+Added: postType ('update' | 'essay') distinguishing the two on the public listing (two sections, Product Updates then Essays); author/attribution (optional, defaults to "Business Partner"); Edit support in the management panel (pre-fills a published post's current content for revision — the underlying propose/approve/publish/supersede mechanism already supported this, the gap was purely UI convenience).
+
+Posts published before this distinction default to Essay until edited via the new Edit function — including the one genuine Product Update entry ("see-why-a-row-wasnt-included"), which needs its postType corrected via Edit.
+
+500 tests, typecheck clean. Deployed and confirmed.
+
+**Status:** Complete.
