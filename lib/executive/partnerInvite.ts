@@ -57,9 +57,13 @@ export async function invitePartner(partnerId: string, invitedBy: string): Promi
   const { data, error } = await adminClient.auth.admin.inviteUserByEmail(partner.contactEmail);
 
   if (error || !data.user) {
-    // Deliberately generic — the underlying Supabase error could
-    // theoretically echo configuration details; never surface it
-    // directly to a caller outside this module.
+    // Logged server-side only (Vercel's private function logs, never
+    // reachable by any client) — this is Supabase's response about the
+    // operation, not the credential itself, so logging it here doesn't
+    // violate the containment rule above. Found necessary live, 23 July
+    // 2026: the deliberately generic client-facing message meant a real
+    // failure couldn't be diagnosed at all without this.
+    console.error('Partner invite failed:', { partnerId, contactEmail: partner.contactEmail, error });
     throw new PartnerInviteError('Something went wrong sending this invitation.');
   }
 
